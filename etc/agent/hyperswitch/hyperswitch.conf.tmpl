@@ -1,0 +1,20 @@
+[DEFAULT]
+host = ##host##
+debug = True
+rpc_backend = rabbit
+use_syslog = False
+state_path = /var/run/hyperswitch
+rootwrap_config = /etc/hyperswitch/rootwrap.conf
+
+[oslo_messaging_rabbit]
+rabbit_userid = ##rabbit_userid##
+rabbit_password = ##rabbit_password##
+rabbit_hosts = ##rabbit_hosts##
+
+[hyperswitch]
+network_mngt_interface = ##network_mngt_interface##
+network_data_interface = ##network_data_interface##
+network_vms_interface = ##network_vms_interface##
+eth0_cidr = ##eth0_ip##/##eth0_size##
+eth1_cidr = ##eth1_ip##/##eth1_size##
+eth2_cidr = ##eth2_ip##/##eth2_size##
