@@ -16,18 +16,24 @@ set -x
 #      sysctl -p
 
 # install the nova/neutron packages
-add-apt-repository -y cloud-archive:mitaka
-apt-get -y update
-apt-get -y dist-upgrade
-apt-get --no-install-recommends -y install neutron-plugin-openvswitch-agent neutron-l3-agent
-apt-get -y install bridge-utils openvpn easy-rsa python-ryu
+yum install -y centos-release-openstack-mitaka
+yum install -y epel-release
+yum update -y
+yum install -y openstack-neutron-openvswitch
+yum install -y bridge-utils python-ryu
+yum install -y openvpn easy-rsa
+
+systemctl enable neutron-openvswitch-agent.service
+systemctl enable openvswitch.service
+service openvswitch start
 
 ovs-vsctl --may-exist add-br br-ex
 
-# remove automatic openvpn start
-update-rc.d openvpn disable
+yum install -y git
+git clone https://github.com/Hybrid-Cloud/hypernet-agentless.git
 
-FROM_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
+FROM_DIR="/root/hypernet-agentless/"
+cd $FROM_DIR
 
 # hyper agent python packages
 python ./setup.py install
@@ -42,17 +48,19 @@ do
 done
 
 # init conf
-rm -f /etc/init/hyperswitch*
-cp -r $FROM_DIR/etc/init/* /etc/init
+rm -f /usr/lib/systemd/system/hyperswitch*
+cp -r $FROM_DIR/etc/agent/systemd/* /usr/lib/systemd/system/
+
+systemctl enable hyperswitch.service
 
 # etc hyperswitch conf
 rm -rf /etc/hyperswitch
-cp -r $FROM_DIR/etc/hyperswitch /etc
+cp -r $FROM_DIR/etc/agent/hyperswitch /etc
 
 # neutron template
 rm -rf `find /etc/neutron -name "*.tmpl"`
-cp $FROM_DIR/etc/neutron/neutron.conf.tmpl /etc/neutron
-cp $FROM_DIR/etc/neutron/plugins/ml2/openvswitch_agent.ini.tmpl /etc/neutron/plugins/ml2
+cp $FROM_DIR/etc/agent/neutron/neutron.conf.tmpl /etc/neutron
+cp $FROM_DIR/etc/agent/neutron/plugins/ml2/openvswitch_agent.ini.tmpl /etc/neutron/plugins/ml2
 
 # var folder
 rm -rf /var/log/hyperswitch

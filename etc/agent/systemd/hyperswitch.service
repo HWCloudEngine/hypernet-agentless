@@ -1,0 +1,17 @@
+[Unit]
+Description=HyperNet HyperSwitch Agent
+After=neutron-openvswitch-agent.service
+PartOf=network.service
+Requires=openvswitch.service neutron-openvswitch-agent.service
+
+[Service]
+Type=simple
+User=neutron
+PermissionsStartOnly=true
+ExecStartPre=echo "hyperswitch pre-start" && mkdir -p /var/run/hyperswitch && chown neutron:root /var/run/hyperswitch
+ExecStart=/usr/local/bin/hyperswitch --config-file=/etc/hyperswitch/hyperswitch.conf --log-file=/var/log/hyperswitch/hyperswitch.log
+PrivateTmp=true
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
