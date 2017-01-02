@@ -6,7 +6,7 @@ PARAMS="rabbit_userid rabbit_hosts rabbit_password host local_ip network_mngt_in
 
 function get_user_data {
     # get user data from 169.254.169.254
-    curl http://169.254.169.254/latest/user-data/ > /tmp/user-data-1111
+    curl http://169.254.169.254/1.0/user-data/ > /tmp/user-data-1111
     source /tmp/user-data-1111
 }
 
