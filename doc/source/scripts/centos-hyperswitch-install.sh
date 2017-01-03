@@ -43,14 +43,18 @@ python ./setup.py install
 bin_files='hyperswitch-config.sh'
 for f in $bin_files
 do
-    rm -f /usr/local/bin/$f
-    cp $FROM_DIR/bin/$f /usr/local/bin
+    rm -f /usr/bin/$f
+    cp $FROM_DIR/bin/$f /usr/bin
 done
 
 # init conf
 rm -f /usr/lib/systemd/system/hyperswitch*
 cp -r $FROM_DIR/etc/agent/systemd/* /usr/lib/systemd/system/
 
+systemctl daemon-reload
+
+systemctl enable hyperswitch-cleanup.service
+systemctl enable hyperswitch-config.service
 systemctl enable hyperswitch.service
 
 # etc hyperswitch conf

@@ -1,4 +1,5 @@
 import abc
+import glob
 import six
 import threading
 
@@ -66,18 +67,22 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         self.mgnt_nic = cfg.CONF.hyperswitch.network_mngt_interface
         self.vm_nic = cfg.CONF.hyperswitch.network_vms_interface
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
-        # retrieve the vms nic cidr 
-        lease_file = '/var/lib/dhcp/dhclient.%s.leases' % self.vm_nic
+        # retrieve the vms nic cidr
+        lease_file = None
+        for name in glob.glob('/var/lib/*/*%s.lease' % self.vm_nic):
+            lease_file = name
         mask = None
         ip = None
+        self.routers = None
         with open(lease_file, 'r') as f:
             for line in f:
                 if 'subnet-mask' in line:
                     mask = line.split()[2].split(';')[0]
                 if 'fixed-address' in line:
                     ip = line.split()[1].split(';')[0]
+                if 'routers' in line:
+                    self.routers = line.split()[2].split(';')[0]
         self.vm_cidr = '%s/%s' % (ip, get_nsize(mask))
-
         self.br_vpn = cfg.CONF.hyperswitch.vpn_bridge_name
 
     def get_br_name(self, iface_id):
@@ -143,11 +148,17 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
                    run_as_root=True)
         hu.set_mac_ip(self.br_vpn, vm_nic_mac, vm_nic_cidr)
 
+        if self.routers:
+            hu.execute('ip', 'route', 'add', 'default', 'via', self.routers,
+                       run_as_root=True)
         # add the vm interface to the bridge
         hu.add_ovs_port(self.br_vpn, self.vm_nic)
 
         # set the controller as local controller
-        mgnt_ip = hu.get_nic_cidr(self.mgnt_nic).split('/')[0]
+        if self.mgnt_nic == self.vm_nic:
+            mgnt_ip = self.vm_cidr.split('/')[0]
+        else:
+            mgnt_ip = hu.get_nic_cidr(self.mgnt_nic).split('/')[0]
         hu.execute('ovs-vsctl',
                    'set-controller',
                    self.br_vpn,

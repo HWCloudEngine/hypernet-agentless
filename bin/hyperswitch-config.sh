@@ -6,8 +6,17 @@ PARAMS="rabbit_userid rabbit_hosts rabbit_password host local_ip network_mngt_in
 
 function get_user_data {
     # get user data from 169.254.169.254
-    curl http://169.254.169.254/1.0/user-data/ > /tmp/user-data-1111
-    source /tmp/user-data-1111
+    while :
+    do
+        curl http://169.254.169.254/1.0/user-data/ > /tmp/user-data-11111111
+        if [ $? -eq 0 ]
+        then
+            break
+        fi
+        sleep 3
+        echo "retry get user data file"
+    done
+    source /tmp/user-data-11111111
 }
 
 # try to read for user data from 169.254.169.254

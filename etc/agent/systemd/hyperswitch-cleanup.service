@@ -1,0 +1,17 @@
+[Unit]
+Description=HyperNet HyperSwitch Cleanup
+After=hyperswitch-config.service
+Before=neutron-openvswitch-agent.service
+PartOf=network.service
+Requires=
+
+[Service]
+Type=simple
+User=root
+PermissionsStartOnly=true
+ExecStart=/usr/bin/hyperswitch-cleanup --log-file /var/log/hyperswitch/hyperswitch-cleanup.log --config-file /etc/hyperswitch/hyperswitch.conf
+PrivateTmp=true
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

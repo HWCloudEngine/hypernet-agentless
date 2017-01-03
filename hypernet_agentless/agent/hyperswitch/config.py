@@ -38,7 +38,10 @@ OPTS_AGENT = [
                    " to use the real root filter facility. Change to 'sudo' "
                    "to skip the filtering and just run the command directly."))
 ]
-cfg.CONF.register_opts(OPTS_AGENT, 'AGENT')
+try:
+    cfg.CONF.register_opts(OPTS_AGENT, 'AGENT')
+except:
+    pass
 
 
 def init(args, **kwargs):

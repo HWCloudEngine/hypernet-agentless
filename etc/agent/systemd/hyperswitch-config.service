@@ -1,0 +1,15 @@
+[Unit]
+Description=HyperNet HyperSwitch Config
+After=syslog.target network.target network.service openvswitch.service
+Requires=network.service
+
+[Service]
+Type=simple
+User=root
+PermissionsStartOnly=true
+ExecStart=/usr/bin/hyperswitch-config.sh >> /var/log/hyperswitch/hyperswitch-config.log
+PrivateTmp=true
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

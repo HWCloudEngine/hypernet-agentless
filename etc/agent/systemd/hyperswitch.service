@@ -1,15 +1,15 @@
 [Unit]
 Description=HyperNet HyperSwitch Agent
-After=neutron-openvswitch-agent.service
+After=neutron-openvswitch-agent.service hyperswitch-cleanup.service
 PartOf=network.service
-Requires=openvswitch.service neutron-openvswitch-agent.service
+Requires=hyperswitch-config.service hyperswitch-cleanup.service openvswitch.service neutron-openvswitch-agent.service
 
 [Service]
 Type=simple
-User=neutron
+User=root
 PermissionsStartOnly=true
 ExecStartPre=echo "hyperswitch pre-start" && mkdir -p /var/run/hyperswitch && chown neutron:root /var/run/hyperswitch
-ExecStart=/usr/local/bin/hyperswitch --config-file=/etc/hyperswitch/hyperswitch.conf --log-file=/var/log/hyperswitch/hyperswitch.log
+ExecStart=/usr/bin/hyperswitch --config-file=/etc/hyperswitch/hyperswitch.conf --log-file=/var/log/hyperswitch/hyperswitch.log
 PrivateTmp=true
 KillMode=process
 
