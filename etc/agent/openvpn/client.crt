@@ -1,0 +1,95 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 2 (0x2)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=IL, ST=IL, L=Hod Hasharon, O=Toga, OU=server, CN=demovpn/name=hyperswitch/emailAddress=lionel.zerbib@huawei.com
+        Validity
+            Not Before: Jan  4 13:39:46 2017 GMT
+            Not After : Jan  2 13:39:46 2027 GMT
+        Subject: C=IL, ST=IL, L=Hod Hasharon, O=Toga, OU=server, CN=client/name=hyperswitch/emailAddress=lionel.zerbib@huawei.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:c8:1d:ad:fc:71:ad:62:32:0f:38:ed:39:1e:5c:
+                    5f:32:a6:d0:96:ca:50:5a:52:26:8b:d5:3c:01:a8:
+                    69:63:a2:8e:55:6c:cc:b5:95:71:60:34:27:a3:2d:
+                    f7:1e:fd:13:c4:1f:46:1d:ca:81:5d:ff:be:c9:38:
+                    69:a7:38:ee:8d:12:2d:fb:cd:79:d4:63:0c:0a:5f:
+                    f6:d3:c1:7e:c0:09:8b:6c:a5:07:ca:0e:bb:b0:f3:
+                    f2:c5:ac:21:4f:39:cd:77:eb:bd:44:e1:f1:d4:7b:
+                    46:83:5f:ad:f7:e5:6d:70:7c:20:6e:71:e7:ca:68:
+                    98:df:d6:8b:35:0a:88:24:bf:2f:5c:4f:66:bb:7d:
+                    70:ab:87:59:74:15:47:b0:92:97:05:84:96:22:8f:
+                    8c:ed:cb:d8:38:f6:6f:1d:6b:fd:d8:15:95:6a:d0:
+                    01:29:4f:71:b3:cb:46:c2:09:da:a4:29:56:e1:72:
+                    91:2c:b3:f6:c6:f4:c6:9f:1e:63:a0:df:8b:b6:68:
+                    0b:9f:4b:c0:a5:29:ee:dc:da:fb:87:0e:37:b9:ee:
+                    7e:41:c3:8d:2c:2c:5a:b8:c3:25:de:58:fe:a7:1b:
+                    ea:e5:7a:43:ca:18:b8:74:e2:f6:f4:f5:2c:ef:63:
+                    51:70:3f:09:ac:73:4d:6b:87:16:0a:e2:a9:7a:68:
+                    8e:f3
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Comment: 
+                Easy-RSA Generated Certificate
+            X509v3 Subject Key Identifier: 
+                9B:AE:72:C2:2F:69:99:99:F7:EE:1E:63:41:75:3E:71:7E:43:50:EE
+            X509v3 Authority Key Identifier: 
+                keyid:80:8A:F5:CD:9C:E2:13:FB:C8:90:A6:AF:C1:91:BA:55:5C:10:7D:EB
+                DirName:/C=IL/ST=IL/L=Hod Hasharon/O=Toga/OU=server/CN=demovpn/name=hyperswitch/emailAddress=lionel.zerbib@huawei.com
+                serial:D4:37:A9:6E:9B:81:09:12
+
+            X509v3 Extended Key Usage: 
+                TLS Web Client Authentication
+            X509v3 Key Usage: 
+                Digital Signature
+    Signature Algorithm: sha256WithRSAEncryption
+         9e:54:b4:d4:63:46:f7:61:af:1b:a2:42:df:db:a6:e9:59:4f:
+         a2:82:81:ae:b9:75:d6:4d:5c:bd:a6:ab:01:7e:37:8f:56:b5:
+         37:03:83:1a:a0:33:71:fe:53:78:8e:79:a4:c7:e8:4e:a8:7e:
+         4e:30:b6:e1:eb:ce:56:1d:b7:d0:01:80:16:8b:31:17:42:fa:
+         86:9b:5d:d3:9e:10:b0:22:62:78:a9:16:52:42:74:0c:3f:40:
+         ae:65:4e:45:28:96:d0:ff:ff:84:c0:d5:79:93:31:6f:2d:96:
+         1b:4c:ca:f1:94:fe:53:70:55:76:c8:70:0d:75:61:5f:96:28:
+         10:37:ca:e0:ce:a9:68:a5:21:5e:97:82:2e:7d:bb:3e:56:ff:
+         89:9f:8e:dd:76:62:2c:85:af:bb:04:0a:07:c2:a3:e7:47:7d:
+         da:cb:3b:72:b6:0d:74:9c:be:e5:96:82:f1:2c:26:65:82:87:
+         25:69:a7:50:9b:ce:c2:dc:98:f7:6a:eb:a8:d8:c8:56:94:94:
+         95:99:fd:c1:a4:45:3a:f6:45:ed:6d:80:72:82:ae:af:e9:a8:
+         b4:d7:75:0d:2e:60:1e:85:88:bb:91:db:eb:ea:d4:1f:5d:39:
+         35:02:9c:a0:d3:03:80:42:de:66:cd:48:b8:73:06:0c:8d:96:
+         08:9c:32:00
+-----BEGIN CERTIFICATE-----
+MIIFGzCCBAOgAwIBAgIBAjANBgkqhkiG9w0BAQsFADCBojELMAkGA1UEBhMCSUwx
+CzAJBgNVBAgTAklMMRUwEwYDVQQHEwxIb2QgSGFzaGFyb24xDTALBgNVBAoTBFRv
+Z2ExDzANBgNVBAsTBnNlcnZlcjEQMA4GA1UEAxMHZGVtb3ZwbjEUMBIGA1UEKRML
+aHlwZXJzd2l0Y2gxJzAlBgkqhkiG9w0BCQEWGGxpb25lbC56ZXJiaWJAaHVhd2Vp
+LmNvbTAeFw0xNzAxMDQxMzM5NDZaFw0yNzAxMDIxMzM5NDZaMIGhMQswCQYDVQQG
+EwJJTDELMAkGA1UECBMCSUwxFTATBgNVBAcTDEhvZCBIYXNoYXJvbjENMAsGA1UE
+ChMEVG9nYTEPMA0GA1UECxMGc2VydmVyMQ8wDQYDVQQDEwZjbGllbnQxFDASBgNV
+BCkTC2h5cGVyc3dpdGNoMScwJQYJKoZIhvcNAQkBFhhsaW9uZWwuemVyYmliQGh1
+YXdlaS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDIHa38ca1i
+Mg847TkeXF8yptCWylBaUiaL1TwBqGljoo5VbMy1lXFgNCejLfce/RPEH0YdyoFd
+/77JOGmnOO6NEi37zXnUYwwKX/bTwX7ACYtspQfKDruw8/LFrCFPOc13671E4fHU
+e0aDX6335W1wfCBucefKaJjf1os1Cogkvy9cT2a7fXCrh1l0FUewkpcFhJYij4zt
+y9g49m8da/3YFZVq0AEpT3Gzy0bCCdqkKVbhcpEss/bG9MafHmOg34u2aAufS8Cl
+Ke7c2vuHDje57n5Bw40sLFq4wyXeWP6nG+rlekPKGLh04vb09SzvY1FwPwmsc01r
+hxYK4ql6aI7zAgMBAAGjggFZMIIBVTAJBgNVHRMEAjAAMC0GCWCGSAGG+EIBDQQg
+Fh5FYXN5LVJTQSBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUwHQYDVR0OBBYEFJuucsIv
+aZmZ9+4eY0F1PnF+Q1DuMIHXBgNVHSMEgc8wgcyAFICK9c2c4hP7yJCmr8GRulVc
+EH3roYGopIGlMIGiMQswCQYDVQQGEwJJTDELMAkGA1UECBMCSUwxFTATBgNVBAcT
+DEhvZCBIYXNoYXJvbjENMAsGA1UEChMEVG9nYTEPMA0GA1UECxMGc2VydmVyMRAw
+DgYDVQQDEwdkZW1vdnBuMRQwEgYDVQQpEwtoeXBlcnN3aXRjaDEnMCUGCSqGSIb3
+DQEJARYYbGlvbmVsLnplcmJpYkBodWF3ZWkuY29tggkA1DepbpuBCRIwEwYDVR0l
+BAwwCgYIKwYBBQUHAwIwCwYDVR0PBAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQCe
+VLTUY0b3Ya8bokLf26bpWU+igoGuuXXWTVy9pqsBfjePVrU3A4MaoDNx/lN4jnmk
+x+hOqH5OMLbh685WHbfQAYAWizEXQvqGm13TnhCwImJ4qRZSQnQMP0CuZU5FKJbQ
+//+EwNV5kzFvLZYbTMrxlP5TcFV2yHANdWFfligQN8rgzqlopSFel4Iufbs+Vv+J
+n47ddmIsha+7BAoHwqPnR33ayztytg10nL7lloLxLCZlgoclaadQm87C3Jj3auuo
+2MhWlJSVmf3BpEU69kXtbYBygq6v6ai013UNLmAehYi7kdvr6tQfXTk1Apyg0wOA
+Qt5mzUi4cwYMjZYInDIA
+-----END CERTIFICATE-----
