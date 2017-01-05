@@ -1,5 +1,5 @@
-
-from oslo_config import cfg
+from hypernet_agentless._i18n import _
+from oslo.config import cfg
 
 OPTS_HYPERSWITCH = [
     cfg.StrOpt('provider', default='null',

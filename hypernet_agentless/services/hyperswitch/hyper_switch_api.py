@@ -1,13 +1,13 @@
 
-import oslo_messaging as messaging
+import oslo.messaging as messaging
 
 from neutron import manager
 from neutron.common import rpc
+from neutron.openstack.common import log as logging
 from neutron.plugins.common import constants as p_const
 
 from hypernet_agentless.services.hyperswitch import config
 
-from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 
