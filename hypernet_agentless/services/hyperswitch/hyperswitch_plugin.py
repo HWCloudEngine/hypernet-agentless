@@ -1,8 +1,8 @@
 
 from hypernet_agentless.services.hyperswitch import config
 from hypernet_agentless.services.hyperswitch import hyper_switch_api
-from hypernet_agentless.services.hyperswitch.providers import aws_impl
-from hypernet_agentless.services.hyperswitch.providers import null_impl
+
+
 from hypernet_agentless.extensions import hyperswitch
 
 from neutron import manager
@@ -18,10 +18,13 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
     
     def __init__(self):
         if config.get_provider() == 'aws':
+            from hypernet_agentless.services.hyperswitch.providers import aws_impl
             self._provider_impl = aws_impl.AWSProvider()
         elif config.get_provider() == 'openstack':
-            self._provider_impl = aws_impl.AWSProvider()
+            from hypernet_agentless.services.hyperswitch.providers import null_impl
+            self._provider_impl = null_impl.NULLProvider()
         else:
+            from hypernet_agentless.services.hyperswitch.providers import null_impl
             self._provider_impl = null_impl.NULLProvider()
         self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
         self._vms_subnets = self._provider_impl.get_vms_subnet()

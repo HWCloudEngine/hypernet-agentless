@@ -1,6 +1,6 @@
+from hypernet_agentless._i18n import _
 from oslo.config import cfg
 
-from neutron.agent.linux import ovs_lib
 from neutron.common import rpc
 from neutron.openstack.common import log as logging
 
@@ -15,7 +15,7 @@ LOG = logging.getLogger(__name__)
 
 # import the configuration options
 cfg.CONF.import_opt('host', 'neutron.common.config')
-#cfg.CONF.import_opt('ovs_vsctl_timeout', 'neutron.agent.common.ovs_lib')
+cfg.CONF.import_opt('ovs_vsctl_timeout', 'neutron.agent.linux.ovs_lib')
 
 
 OPTS = [

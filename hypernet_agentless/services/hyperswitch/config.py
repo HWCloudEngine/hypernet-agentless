@@ -1,4 +1,4 @@
-
+from hypernet_agentless._i18n import _
 from oslo.config import cfg
 
 OPTS_HYPERSWITCH = [
