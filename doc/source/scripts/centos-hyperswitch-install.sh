@@ -15,6 +15,14 @@ set -x
 #         - net.ipv4.conf.default.rp_filter 0
 #      sysctl -p
 
+# deactivate no wanted services
+systemctl disable firewalld
+systemctl stop firewalld
+systemctl disable NetworkManager
+systemctl stop NetworkManager
+systemctl enable network
+systemctl start network
+
 # install the nova/neutron packages
 yum install -y centos-release-openstack-mitaka
 yum install -y epel-release

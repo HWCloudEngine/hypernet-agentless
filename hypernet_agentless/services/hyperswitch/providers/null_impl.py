@@ -14,7 +14,7 @@ class NULLProvider(provider_api.ProviderDriver):
     
     def __init__(self):
         # TODO: add fictive tenant, network and subnets according to vms_cidr
-        pass
+        self._plugin_property = None
 
     @property
     def _plugin(self):

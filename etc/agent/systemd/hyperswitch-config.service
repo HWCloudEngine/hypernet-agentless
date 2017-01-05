@@ -1,7 +1,7 @@
 [Unit]
 Description=HyperNet HyperSwitch Config
 After=syslog.target network.target network.service openvswitch.service
-Requires=network.service
+Requires=
 
 [Service]
 Type=simple

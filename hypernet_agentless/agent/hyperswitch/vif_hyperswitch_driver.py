@@ -192,6 +192,7 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         self._drivers.append(OpenVPNTCP(first_port=1194))
         self._drivers.append(OpenVPNUDP(first_port=1194))
         self.br_vpn = cfg.CONF.hyperswitch.vpn_bridge_name
+        self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
 
     def mod_flow(self,
                  datapath,
