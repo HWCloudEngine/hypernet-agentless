@@ -4,7 +4,7 @@ from neutron import manager
 from hypernet_agentless.services.hyperswitch import config
 from hypernet_agentless.services.hyperswitch import provider_api
 
-from oslo_log import log as logging
+from neutron.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

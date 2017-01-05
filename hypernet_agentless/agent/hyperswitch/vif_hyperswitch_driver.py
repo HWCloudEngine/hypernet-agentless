@@ -3,12 +3,13 @@ import glob
 import six
 import threading
 
-from oslo_config import cfg
+from oslo.config import cfg
 
-from oslo_log import log as logging
 
 from hypernet_agentless.agent.hyperswitch import hyperswitch_utils as hu
 from hypernet_agentless.agent.hyperswitch import vif_driver
+
+from neutron.openstack.common import log as logging
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
