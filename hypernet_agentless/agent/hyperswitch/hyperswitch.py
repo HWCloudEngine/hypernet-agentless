@@ -1,16 +1,22 @@
 import sys
+import site
+
+sys.path.insert(0, '/opt/juno_neutron/lib/python2.7/site-packages')
+sys.path.insert(0, '/opt/juno_neutron/lib64/python2.7/site-packages')
+site.addsitedir('/opt/juno_neutron/lib/python2.7/site-packages')
+site.addsitedir('/opt/juno_neutron/lib64/python2.7/site-packages')
 
 import eventlet
 eventlet.monkey_patch()
 
-import oslo_messaging as messaging
+import oslo.messaging as messaging
 
 from hypernet_agentless.agent.hyperswitch import config
 from hypernet_agentless.agent.hyperswitch import vif_hyperswitch_driver
 
-from oslo_config import cfg
+from oslo.config import cfg
 
-from oslo_log import log as logging
+from neutron.openstack.common import log as logging
 
 from neutron import context
 from neutron.common import rpc
