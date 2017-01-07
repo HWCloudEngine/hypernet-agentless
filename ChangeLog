@@ -1,0 +1,10 @@
+CHANGES
+=======
+
+* change dependencies
+*  change import
+* fix one NIC and centos startup
+* fix userdata link
+* add centos hyperswitch installation
+* first hypernet agentless version (aws or manual provider)
+* Initial commit
