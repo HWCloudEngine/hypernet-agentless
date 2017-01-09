@@ -46,7 +46,7 @@ except:
 
 def init(args, **kwargs):
     product_name = "hyperswitch-agent"
-    logging.register_options(cfg.CONF)
+    #logging.register_options(cfg.CONF)
     logging.setup(cfg.CONF, product_name)
     cfg.CONF(args=args, project=product_name,
              version='%%(prog)s %s' % version.version_info.release_string(),
