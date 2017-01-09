@@ -7,6 +7,7 @@ from hypernet_agentless.extensions import hyperswitch
 
 from neutron import manager
 from neutron.openstack.common import log as logging
+from neutron.plugins.common import constants
 
 
 LOG = logging.getLogger(__name__)
@@ -34,9 +35,13 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
     def _core_plugin(self):
         return manager.NeutronManager.get_plugin()
 
+    def get_plugin_name(self):
+        """Get name of the plugin."""
+        return constants.HYPERSWITCH
+
     def get_plugin_type(self):
         """Get type of the plugin."""
-        return "hyperswitch"
+        return constants.HYPERSWITCH
 
     def get_plugin_description(self):
         """Get description of the plugin."""

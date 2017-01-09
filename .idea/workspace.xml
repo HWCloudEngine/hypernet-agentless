@@ -2,33 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f2ec74a0-d9e6-41e1-99e3-b1f11c8ae4b7" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.project" afterPath="$PROJECT_DIR$/.project" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.pydevproject" afterPath="$PROJECT_DIR$/.pydevproject" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/devstack/override-defaults" afterPath="$PROJECT_DIR$/devstack/override-defaults" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/devstack/plugin.sh" afterPath="$PROJECT_DIR$/devstack/plugin.sh" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/devstack/settings" afterPath="$PROJECT_DIR$/devstack/settings" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/doc/source/hypernet_agentless.rst" afterPath="$PROJECT_DIR$/doc/source/hypernet_agentless.rst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/doc/source/scripts/connect.ps1" afterPath="$PROJECT_DIR$/doc/source/scripts/connect.ps1" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/hyperswitch/hyperswitch.conf" afterPath="$PROJECT_DIR$/etc/agent/hyperswitch/hyperswitch.conf" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/hyperswitch/hyperswitch.conf.tmpl" afterPath="$PROJECT_DIR$/etc/agent/hyperswitch/hyperswitch.conf.tmpl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/hyperswitch/rootwrap.conf" afterPath="$PROJECT_DIR$/etc/agent/hyperswitch/rootwrap.conf" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/hyperswitch/rootwrap.d/network.filters" afterPath="$PROJECT_DIR$/etc/agent/hyperswitch/rootwrap.d/network.filters" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/init/hyperswitch-cleanup.conf" afterPath="$PROJECT_DIR$/etc/agent/init/hyperswitch-cleanup.conf" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/init/hyperswitch-config.conf" afterPath="$PROJECT_DIR$/etc/agent/init/hyperswitch-config.conf" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/init/hyperswitch.conf" afterPath="$PROJECT_DIR$/etc/agent/init/hyperswitch.conf" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/neutron/neutron.conf.tmpl" afterPath="$PROJECT_DIR$/etc/agent/neutron/neutron.conf.tmpl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/neutron/plugins/ml2/openvswitch_agent.ini.tmpl" afterPath="$PROJECT_DIR$/etc/agent/neutron/plugins/ml2/openvswitch_agent.ini.tmpl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/systemd/hyperswitch-cleanup.service" afterPath="$PROJECT_DIR$/etc/agent/systemd/hyperswitch-cleanup.service" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/systemd/hyperswitch-config.service" afterPath="$PROJECT_DIR$/etc/agent/systemd/hyperswitch-config.service" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/agent/systemd/hyperswitch.service" afterPath="$PROJECT_DIR$/etc/agent/systemd/hyperswitch.service" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/etc/server/neutron/hyperswitch_plugin.ini" afterPath="$PROJECT_DIR$/etc/server/neutron/hyperswitch_plugin.ini" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/hypernet_agentless/extensions/hyperswitch.py" afterPath="$PROJECT_DIR$/hypernet_agentless/extensions/hyperswitch.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/requirements.txt" afterPath="$PROJECT_DIR$/requirements.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/setup.cfg" afterPath="$PROJECT_DIR$/setup.cfg" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/setup.py" afterPath="$PROJECT_DIR$/setup.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tox.ini" afterPath="$PROJECT_DIR$/tox.ini" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py" afterPath="$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py" />
     </list>
     <ignored path="hypernet-agentless.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -49,67 +23,23 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="hyperswitch_utils.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/hyperswitch_utils.py">
+      <file leaf-file-name="hyper_switch_api.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyper_switch_api.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="375">
-              <caret line="25" column="0" selection-start-line="25" selection-start-column="0" selection-end-line="25" selection-end-column="0" />
+            <state relative-caret-position="15">
+              <caret line="1" column="0" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
               <folding>
-                <element signature="e#0#12#0" expanded="true" />
+                <element signature="e#1#35#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="vif_driver.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/vif_driver.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="vif_hyperswitch_driver.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/vif_hyperswitch_driver.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding>
-                <element signature="e#0#10#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="_hyperswitch.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/hypernet_agentless/client_ext/_hyperswitch.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding>
-                <element signature="e#0#42#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="_agentlessport.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/hypernet_agentless/client_ext/_agentlessport.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="30">
-              <caret line="2" column="0" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="38" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="hyperswitch_plugin.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="hyperswitch_plugin.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="585">
-              <caret line="42" column="26" selection-start-line="42" selection-start-column="26" selection-end-line="42" selection-end-column="26" />
+            <state relative-caret-position="-225">
+              <caret line="9" column="44" selection-start-line="9" selection-start-column="44" selection-end-line="9" selection-end-column="44" />
               <folding>
                 <element signature="e#1#59#0" expanded="true" />
               </folding>
@@ -117,11 +47,53 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="__init__.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/__init__.py">
+      <file leaf-file-name="hyperswitch.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hypernet_agentless/extensions/hyperswitch.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="75">
+              <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="44" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="hyperswitch_plugin.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/build/lib.linux-x86_64-2.7/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="15">
+              <caret line="1" column="0" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
+              <folding>
+                <element signature="e#1#59#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="provider_api.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/provider_api.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="0">
               <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="null_impl.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/providers/null_impl.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="90">
+              <caret line="6" column="0" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="51" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="_i18n.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hypernet_agentless/_i18n.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="435">
+              <caret line="29" column="0" selection-start-line="29" selection-start-column="0" selection-end-line="29" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -130,8 +102,8 @@
       <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="555">
-              <caret line="37" column="20" selection-start-line="37" selection-start-column="20" selection-end-line="37" selection-end-column="20" />
+            <state relative-caret-position="0">
+              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="38" />
               <folding>
                 <element signature="e#0#38#0" expanded="true" />
               </folding>
@@ -139,23 +111,23 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="setup.cfg" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/setup.cfg">
+      <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="345">
-              <caret line="23" column="14" selection-start-line="23" selection-start-column="14" selection-end-line="23" selection-end-column="14" />
+            <state relative-caret-position="0">
+              <caret line="0" column="38" selection-start-line="0" selection-start-column="38" selection-end-line="0" selection-end-column="38" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="hyperswitch.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/hypernet_agentless/extensions/hyperswitch.py">
+      <file leaf-file-name="aws_impl.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/providers/aws_impl.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="225">
-              <caret line="84" column="51" selection-start-line="84" selection-start-column="51" selection-end-line="84" selection-end-column="51" />
+            <state relative-caret-position="15">
+              <caret line="1" column="0" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
               <folding>
-                <element signature="e#0#10#0" expanded="true" />
+                <element signature="e#1#12#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -174,8 +146,8 @@
         <option value="$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/config.py" />
         <option value="$PROJECT_DIR$/hypernet_agentless/_i18n.py" />
         <option value="$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/hyperswitch.py" />
-        <option value="$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py" />
         <option value="$PROJECT_DIR$/hypernet_agentless/extensions/hyperswitch.py" />
+        <option value="$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py" />
       </list>
     </option>
   </component>
@@ -409,7 +381,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../neutron" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../stevedore" />
   </component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -570,7 +542,7 @@
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32964602" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -602,32 +574,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyper_switch_api.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" column="0" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
-          <folding>
-            <element signature="e#1#35#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/provider_api.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="38" selection-start-line="0" selection-start-column="38" selection-end-line="0" selection-end-column="38" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -646,28 +592,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/_i18n.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="435">
-          <caret line="29" column="0" selection-start-line="29" selection-start-column="0" selection-end-line="29" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/hyperswitch.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/hyperswitch_utils.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="375">
           <caret line="25" column="0" selection-start-line="25" selection-start-column="0" selection-end-line="25" selection-end-column="0" />
           <folding>
-            <element signature="e#0#12#0" expanded="true" />
+            <element signature="e#0#12#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -685,35 +615,7 @@
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#10#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/client_ext/_hyperswitch.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#42#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/client_ext/_agentlessport.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="30">
-          <caret line="2" column="0" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="38" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="585">
-          <caret line="42" column="26" selection-start-line="42" selection-start-column="26" selection-end-line="42" selection-end-column="26" />
-          <folding>
-            <element signature="e#1#59#0" expanded="true" />
+            <element signature="e#0#10#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -726,16 +628,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="555">
-          <caret line="37" column="20" selection-start-line="37" selection-start-column="20" selection-end-line="37" selection-end-column="20" />
-          <folding>
-            <element signature="e#0#38#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/setup.cfg">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="345">
@@ -744,12 +636,126 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/hyperswitch.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="405">
+          <caret line="27" column="43" selection-start-line="27" selection-start-column="43" selection-end-line="27" selection-end-column="43" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/cmd/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/client_ext/_agentlessport.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="30">
+          <caret line="2" column="38" selection-start-line="2" selection-start-column="38" selection-end-line="2" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#42#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/client_ext/_hyperswitch.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="40" selection-start-line="0" selection-start-column="40" selection-end-line="0" selection-end-column="40" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/_i18n.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="435">
+          <caret line="29" column="0" selection-start-line="29" selection-start-column="0" selection-end-line="29" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/providers/aws_impl.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="15">
+          <caret line="1" column="0" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
+          <folding>
+            <element signature="e#1#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/agent/hyperswitch/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="38" selection-start-line="0" selection-start-column="38" selection-end-line="0" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/providers/null_impl.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="6" column="0" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="51" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyper_switch_api.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="15">
+          <caret line="1" column="0" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
+          <folding>
+            <element signature="e#1#35#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/provider_api.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#38#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build/lib.linux-x86_64-2.7/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="15">
+          <caret line="1" column="0" selection-start-line="1" selection-start-column="0" selection-end-line="1" selection-end-column="0" />
+          <folding>
+            <element signature="e#1#59#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/hypernet_agentless/extensions/hyperswitch.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="84" column="51" selection-start-line="84" selection-start-column="51" selection-end-line="84" selection-end-column="51" />
+        <state relative-caret-position="75">
+          <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="44" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hypernet_agentless/services/hyperswitch/hyperswitch_plugin.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-225">
+          <caret line="9" column="44" selection-start-line="9" selection-start-column="44" selection-end-line="9" selection-end-column="44" />
           <folding>
-            <element signature="e#0#10#0" expanded="true" />
+            <element signature="e#1#59#0" expanded="true" />
           </folding>
         </state>
       </provider>
