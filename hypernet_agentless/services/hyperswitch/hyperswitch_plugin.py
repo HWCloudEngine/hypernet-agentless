@@ -2,6 +2,7 @@
 from hypernet_agentless.services.hyperswitch import config
 from hypernet_agentless.services.hyperswitch import hyper_switch_api
 from hypernet_agentless.extensions import hyperswitch
+from hypernet_agentless.services.hyperswitch import providers
 
 from neutron import manager
 
@@ -17,14 +18,11 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
     
     def __init__(self):
         if config.get_provider() == 'aws':
-            from hypernet_agentless.services.hyperswitch.providers import aws_impl
-            self._provider_impl = aws_impl.AWSProvider()
-        elif config.get_provider() == 'openstack':
-            from hypernet_agentless.services.hyperswitch.providers import null_impl
-            self._provider_impl = null_impl.NULLProvider()
+            self._provider_impl = providers.aws_impl.AWSProvider()
+        elif config.get_provider() in ['openstack', 'fs'] :
+            self._provider_impl = providers.fs_impl.FSProvider()
         else:
-            from hypernet_agentless.services.hyperswitch.providers import null_impl
-            self._provider_impl = null_impl.NULLProvider()
+            self._provider_impl = providers.null_impl.NULLProvider()
         self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
         self._vms_subnets = self._provider_impl.get_vms_subnet()
         self._hs_sg, self._vm_sg  = self._provider_impl.get_sgs()
@@ -199,22 +197,27 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
             'network_vms_interface': 'eth2',
         }
 
-        net_list = [
-            {
-                'name': config.get_mgnt_network(),
-                'security_group': config.get_mgnt_security_group()},
-            {
+        net_list = [{
+            'name': config.get_mgnt_network(),
+            'security_group': [config.get_mgnt_security_group()]
+        }]
+        if config.get_data_network() != config.get_mgnt_network():
+            net_list.append({
                 'name': config.get_data_network(),
-                'security_group': config.get_data_security_group()},
-        ]
-        # TODO: use security groups for HSs and VMs
+                'security_group': config.get_data_security_group()
+            })
+        else:
+            net_list[0]['security_group'].append(
+                config.get_data_security_group())
         for vm_subnet in self._vms_subnets:
-            net_list.append(
-                {
+            if vm_subnet != config.get_mgnt_network():
+                net_list.append({
                     'name': vm_subnet,
                     'security_group': self._hs_sg
-                }
-            )
+                })
+            else:
+                net_list[0]['security_group'].append(self._hs_sg)
+
         hs = self._provider_impl.launch_hyperswitch(
             user_data,
             hyperswitch['flavor'],

@@ -44,6 +44,10 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
         inicomment $HYPERSWITCH_CONF_FILE hyperswitch hs_default_flavor
         iniadd $HYPERSWITCH_CONF_FILE hyperswitch provider $HYPERSWITCH_HS_DEFAULT_FLAVOR
     fi
+    inicomment $HYPERSWITCH_CONF_FILE hyperswitch hs_flavor_map
+    if [ "$HYPERSWITCH_HS_FLAVOR_MAP" ]; then
+        iniadd $HYPERSWITCH_CONF_FILE hyperswitch provider $HYPERSWITCH_HS_FLAVOR_MAP
+    fi
     inicomment $HYPERSWITCH_CONF_FILE hyperswitch aws_access_key_id
     if [ "$HYPERSWITCH_AWS_ACCESS_KEY" ]; then
         iniadd $HYPERSWITCH_CONF_FILE hyperswitch provider $HYPERSWITCH_AWS_ACCESS_KEY
@@ -55,10 +59,6 @@ elif [[ "$1" == "stack" && "$2" == "post-config" ]]; then
     inicomment $HYPERSWITCH_CONF_FILE hyperswitch aws_region_name
     if [ "$HYPERSWITCH_AWS_REGION_NAME" ]; then
         iniadd $HYPERSWITCH_CONF_FILE hyperswitch provider $HYPERSWITCH_AWS_REGION_NAME
-    fi
-    inicomment $HYPERSWITCH_CONF_FILE hyperswitch aws_hs_flavor_map
-    if [ "$HYPERSWITCH_AWS_HS_FLAVOR_MAP" ]; then
-        iniadd $HYPERSWITCH_CONF_FILE hyperswitch provider $HYPERSWITCH_AWS_HS_FLAVOR_MAP
     fi
     inicomment $HYPERSWITCH_CONF_FILE hyperswitch aws_vpc
     if [ "$HYPERSWITCH_AWS_VPC" ]; then

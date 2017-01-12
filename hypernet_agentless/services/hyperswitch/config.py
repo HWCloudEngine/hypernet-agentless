@@ -29,19 +29,25 @@ OPTS_HYPERSWITCH = [
                help=_("Provider Security Group Name for agent less NICs.")),
     cfg.StrOpt('default_flavor', default='1G',
                help=_("Default flavor for hyperswitch creation.")),
+    cfg.DictOpt('hs_flavor_map',
+                help=_("HyperSwitch flavor Map")),
     cfg.StrOpt('aws_access_key_id',
                help=_("AWS Access Key Id.")),
     cfg.StrOpt('aws_secret_access_key',
                help=_("AWS Secret Access Key.")),
     cfg.StrOpt('aws_region_name',
                help=_("AWS Region Name.")),
-    cfg.DictOpt('aws_hs_flavor_map',
-                default={'0G': 't2.micro',
-                         '1G': 'c4.large',
-                         '10G': 'c4.xlarge'},
-                help=_("AWS HyperSwitch flavor Map")),
     cfg.StrOpt('aws_vpc',
                help=_("AWS VPC id.")),
+    cfg.StrOpt('null_fake_provider_tenant',
+               default='fake-provider-tenant',
+               help=_("The Fake tenant for the Null driver.")),
+    cfg.StrOpt('fs_username',
+               help=_("The Openstack username.")),
+    cfg.StrOpt('fs_password',
+               help=_("The Openstack Password.")),
+    cfg.StrOpt('fs_endpoint_url',
+               help=_("The Openstack Endpoint Url.")),
 ]
 
 
@@ -108,6 +114,10 @@ def get_default_flavor():
     return cfg.CONF.hyperswitch.default_flavor
 
 
+def get_hs_flavor_map():
+    return cfg.CONF.hyperswitch.hs_flavor_map
+
+
 def get_aws_access_key_id():
     return cfg.CONF.hyperswitch.aws_access_key_id
 
@@ -120,9 +130,21 @@ def get_aws_region_name():
     return cfg.CONF.hyperswitch.aws_region_name
 
 
-def get_aws_hs_flavor_map():
-    return cfg.CONF.hyperswitch.aws_hs_flavor_map
-
-
 def get_aws_vpc():
     return cfg.CONF.hyperswitch.aws_vpc
+
+
+def get_null_fake_provider_tenant():
+    return cfg.CONF.hyperswitch.null_fake_provider_tenant
+
+
+def get_fs_username():
+    return cfg.CONF.hyperswitch.fs_username
+
+
+def get_fs_password():
+    return cfg.CONF.hyperswitch.fs_password
+
+
+def get_fs_endpoint_url():
+    return cfg.CONF.hyperswitch.fs_endpoint_url
