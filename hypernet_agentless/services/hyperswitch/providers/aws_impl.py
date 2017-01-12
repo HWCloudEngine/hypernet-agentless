@@ -247,7 +247,7 @@ class AWSProvider(provider_api.ProviderDriver):
                            hybrid_cloud_tenant_id=None):
         # find the image according to a tag hybrid_cloud_image=hyperswitch
         image_id = self._find_image_id('hybrid_cloud_image', 'hyperswitch')
-        instance_type = config.get_aws_hs_flavor_map()[flavor]
+        instance_type = config.get_hs_flavor_map()[flavor]
         net_interfaces = []
         i = 0
         for net in net_list:
@@ -256,7 +256,7 @@ class AWSProvider(provider_api.ProviderDriver):
                     {
                         'DeviceIndex': i,
                         'SubnetId': net['name'],
-                        'Groups': [net['security_group']],
+                        'Groups': net['security_group'],
                     }
                 )
                 i = i + 1 
