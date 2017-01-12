@@ -1,6 +1,8 @@
 import eventlet
 eventlet.monkey_patch()
 
+import sys
+
 import oslo.messaging as messaging
 
 from hypernet_agentless.agent.hyperswitch import config
@@ -12,7 +14,7 @@ from neutron.openstack.common import log as logging
 
 from neutron import context
 from neutron.common import rpc
-from neutron.i18n import _LI
+from neutron.openstack.common.gettextutils import _LI
 
 
 LOG = logging.getLogger(__name__)

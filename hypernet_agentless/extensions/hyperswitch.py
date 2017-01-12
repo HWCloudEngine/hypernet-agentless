@@ -3,6 +3,7 @@ import abc
 from neutron.api import extensions
 from neutron.api.v2 import attributes
 from neutron.api.v2 import resource_helper
+from neutron.plugins.common import constants
 
 
 RESOURCE_ATTRIBUTE_MAP = {
@@ -71,6 +72,10 @@ class Hyperswitch(extensions.ExtensionDescriptor):
         return "Hyper Switch Management."
 
     @classmethod
+    def get_namespace(cls):
+        return 'https://wiki.openstack.org'
+
+    @classmethod
     def get_updated(cls):
         return '2016-12-01T00:00:00-00:00'
 
@@ -81,7 +86,7 @@ class Hyperswitch(extensions.ExtensionDescriptor):
             {}, RESOURCE_ATTRIBUTE_MAP)
         resources = resource_helper.build_resource_info(plural_mappings,
                                                         RESOURCE_ATTRIBUTE_MAP,
-                                                        'hyperswitch')
+                                                        constants.HYPERSWITCH)
 
         return resources
 
