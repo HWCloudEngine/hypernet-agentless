@@ -57,7 +57,7 @@ class ProviderDriver(object):
     # the other one are optionals
     @abc.abstractmethod
     def get_network_interfaces(self,
-                               context,
+                               context=None,
                                names=None,
                                port_ids=None,
                                device_ids=None,

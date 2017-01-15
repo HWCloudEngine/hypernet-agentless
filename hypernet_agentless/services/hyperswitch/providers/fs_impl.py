@@ -81,16 +81,16 @@ class FSProvider(provider_api.ProviderDriver):
                     'tenant_id': self._cfg.get_fs_tenant_id()
                 }}
             )['security_group']['id']
-            vm_sg = self._neutron_client.create_security_group(
-                {'security_group': {
+            vm_sg = self._neutron_client.create_security_group({
+                'security_group': {
                     'name': self._cfg.get_vm_sg_name(),
                     'description': ('%s security group' %
                                     self._cfg.get_hs_sg_name()),
                     'tenant_id': self._cfg.get_fs_tenant_id()
                 }}
             )['security_group']['id']
-            self._neutron_client.create_security_group_rule(
-                {'security_group_rule': {
+            self._neutron_client.create_security_group_rule({
+                'security_group_rule': {
                     'direction': 'ingress',
                     'ethertype': 'IPv4',
                     'remote_group_id': hs_sg,
@@ -98,8 +98,8 @@ class FSProvider(provider_api.ProviderDriver):
                     'tenant_id': self._cfg.get_fs_tenant_id()
                 }}
             )
-            self._neutron_client.create_security_group_rule(
-                {'security_group_rule': {
+            self._neutron_client.create_security_group_rule({
+                'security_group_rule': {
                     'direction': 'ingress',
                     'ethertype': 'IPv4',
                     'remote_group_id': vm_sg,
@@ -262,6 +262,15 @@ class FSProvider(provider_api.ProviderDriver):
         LOG.debug('hyperswitch to delete: %s.' % (hyperswitch_id))
         self._nova_client_property.servers.delete(hyperswitch_id)
 
+    def _to_net_int(self, port):
+        return {
+               'ip': port['fixed_ips'][0]['ip_address'],
+               'port_id': port['name'],
+               'device_id': None,
+               'tenant_id': None,
+               'index': 0
+        }
+    
     def create_network_interface(
             self,
             port_id,
@@ -272,20 +281,37 @@ class FSProvider(provider_api.ProviderDriver):
             security_group):
         LOG.debug('create net interface (%s, %s, %s, %d, %s, %s).' % (
             port_id, device_id, tenant_id, index, subnet, security_group))
-        return {
-            'ip': 'xxx.xxx.xxx.xxx',
-            'port_id': port_id,
-            'device_id': device_id,
-            'tenant_id': tenant_id,
-            'index': index
-        }
+        ports = self._neutron_client.list_ports(name=[port_id])['ports']
+        if len(ports) == 0 :
+            port = self._neutron_client.create_port({'port': {
+                'name': port_id,
+                'tenant_id': self._cfg.get_fs_tenant_id(),
+                'security_groups': [security_group],
+                'network_id': subnet
+            }})['port']
+        else:
+            if len(ports) != 1:
+                pass #TODO: exception
+            port = ports[0]
+        LOG.debug('port: %s.' % (port))
+        return self._to_net_int(port)
 
     def delete_network_interface(
             self, port_id):
-        pass
+        LOG.debug('delete net interface (%s).' % (port_id))
+        ports = self._neutron_client.list_ports(name=[port_id])['ports']
+        if len(ports) == 0:
+            return False
+        for port in ports:
+            self._neutron_client.delete_port(port['id'])
+        return True
+
+    def _add_net_int(self, ports_res, res):
+        for port in ports_res['ports']:
+            res.append(self._to_net_int(port))
 
     def get_network_interfaces(self,
-                               context,
+                               context=None,
                                names=None,
                                port_ids=None,
                                device_ids=None,
@@ -293,93 +319,24 @@ class FSProvider(provider_api.ProviderDriver):
                                tenant_ids=None,
                                indexes=None):
         res = []
+        has_filter = False
+        if names:
+            self._add_net_int(
+                self._neutron_client.list_ports(name=names), res)
+            has_filter = True
+        if port_ids:
+            self._add_net_int(
+                self._neutron_client.list_ports(name=port_ids), res)
+            has_filter = True
+        if device_ids:
+            pass #TODO: exception
         if private_ips:
-            for provider_ip in private_ips:
-                # TODO: search according to the fictives created subnets
-                p_ports = self._plugin.get_ports(context, filters={
-                    'fixed_ips': {
-                        'ip_address': [provider_ip]
-                    }})
-                LOG.debug('provider port %s' % p_ports)
-                if len(p_ports) != 1:
-                    LOG.warn('%d ports for %s' % (len(p_ports), provider_ip))
-                    return None
-        
-                ports = self._plugin.get_ports(context, filters={
-                    'id': [p_ports[0]['name']]
-                })
-                LOG.debug('hyper port %s' % ports)
-                if len(ports) != 1:
-                    return None
-                port = ports[0]
-                res.append({
-                   'ip': provider_ip,
-                   'port_id': port['id'],
-                   'device_id': port['device_id'],
-                   'tenant_id': port['tenant_id'],
-                   'index': 0
-                })
+            self._add_net_int(
+                self._neutron_client.list_ports(fixed_ips={
+                    'ip_address': private_ips}), res)
+            has_filter = True
+        if indexes:
+            pass #TODO: exception
+        if not has_filter:
+            pass #TODO: exception
         return res
-
-
-
-class StaticConfig(object):
-    
-    def get_mgnt_network(self):
-        return 'private'
-
-    def get_mgnt_security_group(self):
-        return 'default'
-
-    def get_data_network(self):
-        return '3bd592c8-736b-42bb-93ce-d78e72988e78'
-
-    def get_data_security_group(self):
-        return 'default'
-
-    def get_vms_cidr(self):
-        return ['172.20.10.0/24']
-
-    def get_hs_sg_name(self):
-        return 'hyperswitches_security_group'
-
-    def get_vm_sg_name(self):
-        return 'vms_security_group'
-
-    def get_hs_flavor_map(self):
-        return {'0G': 'hs.0G',
-                '1G': 'hs.1G',
-                '10G': 'hs.10G'}
-
-    def get_fs_username(self):
-        return 'vpn'
-
-    def get_fs_password(self):
-        return 'vpn'
-
-    def get_fs_tenant_id(self):
-        return 'b39a38911c934538afefb94594a1b73d'
-
-    def get_fs_auth_url(self):
-        return 'http://10.10.10.88:35357/v2.0/'
-
-    def get_fs_availability_zone(self):
-        return 'nova'
-
-if __name__ == "__main__":
-    provider = FSProvider(StaticConfig())
-    nets = provider.get_vms_subnet()
-    hs_sg, vm_sg = provider.get_sgs()
-    hs = provider.launch_hyperswitch(
-        {'1': '2'},
-        '0G',
-        [{'name': nets[0],
-          'security_group': [vm_sg]}],
-        hybrid_cloud_tenant_id='12345'
-    )
-    print(hs)
-    hss = provider.get_hyperswitchs(tenant_ids=['12345'])
-    print(hss)
-    provider.start_hyperswitchs(hss)
-    for hs in hss:
-        provider.delete_hyperswitch(hs['id'])

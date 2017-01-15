@@ -438,7 +438,7 @@ class AWSProvider(provider_api.ProviderDriver):
                 NetworkInterfaceId=net_int['NetworkInterfaceId'])
 
     def get_network_interfaces(self,
-                               context,
+                               context=None,
                                names=None,
                                port_ids=None,
                                device_ids=None,
