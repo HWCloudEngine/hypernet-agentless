@@ -39,15 +39,17 @@ OPTS_HYPERSWITCH = [
                help=_("AWS Region Name.")),
     cfg.StrOpt('aws_vpc',
                help=_("AWS VPC id.")),
-    cfg.StrOpt('null_fake_provider_tenant',
-               default='fake-provider-tenant',
-               help=_("The Fake tenant for the Null driver.")),
     cfg.StrOpt('fs_username',
                help=_("The Openstack username.")),
     cfg.StrOpt('fs_password',
                help=_("The Openstack Password.")),
-    cfg.StrOpt('fs_endpoint_url',
-               help=_("The Openstack Endpoint Url.")),
+    cfg.StrOpt('fs_tenant_id',
+               help=_("The Openstack Tenant Id.")),
+    cfg.StrOpt('fs_auth_url',
+               help=_("The Openstack Auth Url (keystone).")),
+    cfg.StrOpt('fs_availability_zone',
+               default='nova',
+               help=_("The Openstack Availability zone.")),
 ]
 
 
@@ -134,10 +136,6 @@ def get_aws_vpc():
     return cfg.CONF.hyperswitch.aws_vpc
 
 
-def get_null_fake_provider_tenant():
-    return cfg.CONF.hyperswitch.null_fake_provider_tenant
-
-
 def get_fs_username():
     return cfg.CONF.hyperswitch.fs_username
 
@@ -146,5 +144,13 @@ def get_fs_password():
     return cfg.CONF.hyperswitch.fs_password
 
 
-def get_fs_endpoint_url():
-    return cfg.CONF.hyperswitch.fs_endpoint_url
+def get_fs_tenant_id(self):
+    return cfg.CONF.hyperswitch.fs_tenant_id
+
+
+def get_fs_auth_url(self):
+    return cfg.CONF.hyperswitch.fs_auth_url
+
+
+def get_fs_availability_zone(self):
+    return cfg.CONF.hyperswitch.fs_availability_zone

@@ -1,10 +1,7 @@
 
 from neutron import manager
 
-from hypernet_agentless.services.hyperswitch import config
 from hypernet_agentless.services.hyperswitch import provider_api
-
-from keystoneclient import client
 
 from oslo_log import log as logging
 
@@ -14,8 +11,13 @@ LOG = logging.getLogger(__name__)
 
 class NULLProvider(provider_api.ProviderDriver):
     
-    def __init__(self):
-        # TODO: add fictive tenant, network and subnets according to vms_cidr
+    def __init__(self, cfg=None):
+        if not cfg:
+            from hypernet_agentless.services.hyperswitch import config
+            self._cfg = config
+        else:
+            self._cfg = cfg
+        # TODO: retrieve fake subnets according to vms_cidr
         self._plugin_property = None
 
     @property
@@ -25,12 +27,12 @@ class NULLProvider(provider_api.ProviderDriver):
         return self._plugin_property
 
     def get_sgs(self):
-        return config.get_hs_sg_name(), config.get_vm_sg_name()
+        return self._cfg.get_hs_sg_name(), self._cfg.get_vm_sg_name()
 
     def get_vms_subnet(self):
-        if config.get_vms_networks():
-            return config.get_vms_networks()
-        return config.get_vms_cidr()
+        if self._cfg.get_vms_networks():
+            return self._cfg.get_vms_networks()
+        return self._cfg.get_vms_cidr()
 
     def get_hyperswitch_host_name(self,
                                   hybrid_cloud_device_id=None,
@@ -101,7 +103,7 @@ class NULLProvider(provider_api.ProviderDriver):
         res = []
         if private_ips:
             for provider_ip in private_ips:
-                # TODO: search according to the fictives created subnets
+                # TODO: search according to the fake subnet
                 p_ports = self._plugin.get_ports(context, filters={
                     'fixed_ips': {
                         'ip_address': [provider_ip]

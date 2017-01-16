@@ -142,6 +142,31 @@ class FSProvider(provider_api.ProviderDriver):
                 return flavor
         return None
 
+    def _fs_instance_to_dict(self, fs_instance):
+        LOG.debug('_fs_instance_to_dict %s' % fs_instance)
+        res = {
+            'id': fs_instance.id,
+            'device_id': fs_instance.metadata.get('hybrid_cloud_device_id'),
+            'tenant_id': fs_instance.metadata.get('hybrid_cloud_tenant_id'),
+            'instance_id': fs_instance.id,
+            'instance_type': self._get_flavor_name(fs_instance.flavor['id']),
+        }
+        vm_nets = self.get_vms_subnet()
+        for net_int in fs_instance.networks:
+            if self._net_equal(net_int, self._cfg.get_mgnt_network()):
+                res['mgnt_ip'] = fs_instance.networks[net_int][0]
+            if self._net_equal(net_int, self._cfg.get_data_network()):
+                res['data_ip'] = fs_instance.networks[net_int][0]
+            i = 0
+            for net in vm_nets:
+                if self._net_equal(net_int, net):
+                    res['vms_ip_%d' % i] = fs_instance.networks[net_int][0]
+                i = i + 1
+        if 'mgnt_ip' in res:
+            res['private_ip'] = res['mgnt_ip']
+        
+        return res
+
     def launch_hyperswitch(self,
                            user_data,
                            flavor,
@@ -185,33 +210,7 @@ class FSProvider(provider_api.ProviderDriver):
              nics=nics,
              userdata=user_metadata,
              availability_zone=self._cfg.get_fs_availability_zone())
-        return hs_instance
-
-
-    def _fs_instance_to_dict(self, fs_instance):
-        LOG.debug('_fs_instance_to_dict %s' % fs_instance)
-        res = {
-            'id': fs_instance.id,
-            'device_id': fs_instance.metadata.get('hybrid_cloud_device_id'),
-            'tenant_id': fs_instance.metadata.get('hybrid_cloud_tenant_id'),
-            'instance_id': fs_instance.id,
-            'instance_type': self._get_flavor_name(fs_instance.flavor['id']),
-        }
-        vm_nets = self.get_vms_subnet()
-        for net_int in fs_instance.networks:
-            if self._net_equal(net_int, self._cfg.get_mgnt_network()):
-                res['mgnt_ip'] = fs_instance.networks[net_int][0]
-            if self._net_equal(net_int, self._cfg.get_data_network()):
-                res['data_ip'] = fs_instance.networks[net_int][0]
-            i = 0
-            for net in vm_nets:
-                if self._net_equal(net_int, net):
-                    res['vms_ip_%d' % i] = fs_instance.networks[net_int][0]
-                i = i + 1
-        if 'mgnt_ip' in res:
-            res['private_ip'] = res['mgnt_ip']
-        
-        return res
+        return self._fs_instance_to_dict(hs_instance)
 
     def _get_hyperswitchs(self, name, res):
         for inst in self._nova_client.servers.list(search_opts={'name': name}):
@@ -254,13 +253,13 @@ class FSProvider(provider_api.ProviderDriver):
     def start_hyperswitchs(self, hyperswitchs):
         LOG.debug('start hyperswitchs %s.' % hyperswitchs)
         for hyperswitch in hyperswitchs:
-            hs = self._nova_client_property.servers.get(hyperswitch['id'])
+            hs = self._nova_client.servers.get(hyperswitch['id'])
             if not hs.status in ['ACTIVE', 'BUILD']:
-                self._nova_client_property.servers.start(hyperswitch['id'])
+                self._nova_client.servers.start(hyperswitch['id'])
        
     def delete_hyperswitch(self, hyperswitch_id):
         LOG.debug('hyperswitch to delete: %s.' % (hyperswitch_id))
-        self._nova_client_property.servers.delete(hyperswitch_id)
+        self._nova_client.servers.delete(hyperswitch_id)
 
     def _to_net_int(self, port):
         return {
