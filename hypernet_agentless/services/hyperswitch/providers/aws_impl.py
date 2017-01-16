@@ -4,7 +4,6 @@ import time
 from boto3 import session
 from botocore import exceptions
 
-from hypernet_agentless.services.hyperswitch import config
 from hypernet_agentless.services.hyperswitch import provider_api
 
 from neutron.openstack.common import log as logging
@@ -87,10 +86,15 @@ MAX_NIC = {
 
 class AWSProvider(provider_api.ProviderDriver):
     
-    def __init__(self):
-        self._access_key_id = config.get_aws_access_key_id()
-        self._secret_access_key = config.get_aws_secret_access_key()
-        self._region_name = config.get_aws_region_name()
+    def __init__(self, cfg=None):
+        if not cfg:
+            from hypernet_agentless.services.hyperswitch import config
+            self._cfg = config
+        else:
+            self._cfg = cfg
+        self._access_key_id = self._cfg.get_aws_access_key_id()
+        self._secret_access_key = self._cfg.get_aws_secret_access_key()
+        self._region_name = self._cfg.get_aws_region_name()
         self.session = session.Session(
             aws_access_key_id=self._access_key_id,
             aws_secret_access_key=self._secret_access_key,
@@ -125,23 +129,23 @@ class AWSProvider(provider_api.ProviderDriver):
         hs_sg, vm_sg = None, None
         try:
             resp = self.ec2.describe_security_groups(
-                GroupNames=[config.get_hs_sg_name(), config.get_vm_sg_name()]
+                GroupNames=[self._cfg.get_hs_sg_name(), self._cfg.get_vm_sg_name()]
             )
             for sg in resp['SecurityGroups']:
-                if sg['GroupName'] == config.get_hs_sg_name():
+                if sg['GroupName'] == self._cfg.get_hs_sg_name():
                     hs_sg = sg['GroupId']
-                if sg['GroupName'] == config.get_vm_sg_name():
+                if sg['GroupName'] == self._cfg.get_vm_sg_name():
                     vm_sg = sg['GroupId']
         except exceptions.ClientError:
             hs_sg = self.ec2.create_security_group(
-                GroupName=config.get_hs_sg_name(),
-                Description='%s security group' % config.get_hs_sg_name(),
-                VpcId=config.get_aws_vpc()
+                GroupName=self._cfg.get_hs_sg_name(),
+                Description='%s security group' % self._cfg.get_hs_sg_name(),
+                VpcId=self._cfg.get_aws_vpc()
             )['GroupId']
             vm_sg = self.ec2.create_security_group(
-                GroupName=config.get_vm_sg_name(),
-                Description='%s security group' % config.get_vm_sg_name(),
-                VpcId=config.get_aws_vpc()
+                GroupName=self._cfg.get_vm_sg_name(),
+                Description='%s security group' % self._cfg.get_vm_sg_name(),
+                VpcId=self._cfg.get_aws_vpc()
             )['GroupId']
             self.ec2.authorize_security_group_ingress(
                 GroupId=hs_sg,
@@ -164,10 +168,10 @@ class AWSProvider(provider_api.ProviderDriver):
         return hs_sg, vm_sg
 
     def get_vms_subnet(self):
-        vpc = self.ec2_resource.Vpc(config.get_aws_vpc())
+        vpc = self.ec2_resource.Vpc(self._cfg.get_aws_vpc())
         subnets_id = []
         tag_name = 'Name'
-        for cidr in config.get_vms_cidr():
+        for cidr in self._cfg.get_vms_cidr():
             tag_val = 'vms_%s' % cidr
             subnets = self._find_subnets(vpc, tag_name, tag_val)
             subnet_id = None
@@ -175,7 +179,7 @@ class AWSProvider(provider_api.ProviderDriver):
                 subnet_id = subnet.id
             if not subnet_id:
                 subnet = self.ec2.create_subnet(
-                    VpcId=config.get_aws_vpc(),
+                    VpcId=self._cfg.get_aws_vpc(),
                     CidrBlock=cidr
                 )
                 subnet_id = subnet['Subnet']['SubnetId']
@@ -247,7 +251,7 @@ class AWSProvider(provider_api.ProviderDriver):
                            hybrid_cloud_tenant_id=None):
         # find the image according to a tag hybrid_cloud_image=hyperswitch
         image_id = self._find_image_id('hybrid_cloud_image', 'hyperswitch')
-        instance_type = config.get_hs_flavor_map()[flavor]
+        instance_type = self._cfg.get_hs_flavor_map()[flavor]
         net_interfaces = []
         i = 0
         for net in net_list:
@@ -438,7 +442,7 @@ class AWSProvider(provider_api.ProviderDriver):
                 NetworkInterfaceId=net_int['NetworkInterfaceId'])
 
     def get_network_interfaces(self,
-                               context,
+                               context=None,
                                names=None,
                                port_ids=None,
                                device_ids=None,
