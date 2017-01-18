@@ -5,9 +5,8 @@ import os
 from oslo_concurrency import processutils
 from oslo.config import cfg
 
-from oslo_utils import importutils, strutils
-
 from neutron.openstack.common import log as logging
+from neutron.openstack.common import importutils, strutils
 
 eventlet = importutils.try_import('eventlet')
 if eventlet and eventlet.patcher.is_monkey_patched(time):
@@ -50,7 +49,7 @@ def launch(*cmd, **kwargs):
     except OSError as err:
         f = _('Got an OSError\ncommand: %(cmd)r\n'
                    'errno: %(errno)r')
-        sanitized_cmd = strutils.mask_password(' '.join(cmd))
+        sanitized_cmd = logging.mask_password(' '.join(cmd))
         LOG.error(f, {"cmd": sanitized_cmd, "errno": err.errno})
     finally:
         time.sleep(0)
