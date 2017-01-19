@@ -3,8 +3,10 @@ import abc
 from neutron.api import extensions
 from neutron.api.v2 import attributes
 from neutron.api.v2 import resource_helper
-from neutron.plugins.common import constants
 
+from hypernet_agentless import extensions as hypernet_agentless_extensions
+
+extensions.append_api_extensions_path(hypernet_agentless_extensions.__path__)
 
 RESOURCE_ATTRIBUTE_MAP = {
     'agentlessports': {
@@ -84,9 +86,10 @@ class Hyperswitch(extensions.ExtensionDescriptor):
         """Returns Ext Resources."""
         plural_mappings = resource_helper.build_plural_mappings(
             {}, RESOURCE_ATTRIBUTE_MAP)
+        attributes.PLURALS.update(plural_mappings)
         resources = resource_helper.build_resource_info(plural_mappings,
                                                         RESOURCE_ATTRIBUTE_MAP,
-                                                        constants.HYPERSWITCH)
+                                                        '')
 
         return resources
 

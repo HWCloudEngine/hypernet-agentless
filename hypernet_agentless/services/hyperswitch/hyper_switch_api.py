@@ -1,5 +1,5 @@
 
-import oslo.messaging as messaging
+from oslo import messaging
 
 from neutron import manager
 from neutron.common import rpc

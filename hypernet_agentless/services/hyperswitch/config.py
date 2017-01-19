@@ -27,7 +27,7 @@ OPTS_HYPERSWITCH = [
     cfg.StrOpt('vm_sg_name',
                default='vm_sg_vms_123456',
                help=_("Provider Security Group Name for agent less NICs.")),
-    cfg.StrOpt('default_flavor', default='1G',
+    cfg.StrOpt('hs_default_flavor', default='1G',
                help=_("Default flavor for hyperswitch creation.")),
     cfg.DictOpt('hs_flavor_map',
                 help=_("HyperSwitch flavor Map")),
@@ -112,8 +112,8 @@ def get_vm_sg_name():
     return cfg.CONF.hyperswitch.vm_sg_name
 
 
-def get_default_flavor():
-    return cfg.CONF.hyperswitch.default_flavor
+def get_hs_default_flavor():
+    return cfg.CONF.hyperswitch.hs_default_flavor
 
 
 def get_hs_flavor_map():
@@ -144,13 +144,13 @@ def get_fs_password():
     return cfg.CONF.hyperswitch.fs_password
 
 
-def get_fs_tenant_id(self):
+def get_fs_tenant_id():
     return cfg.CONF.hyperswitch.fs_tenant_id
 
 
-def get_fs_auth_url(self):
+def get_fs_auth_url():
     return cfg.CONF.hyperswitch.fs_auth_url
 
 
-def get_fs_availability_zone(self):
+def get_fs_availability_zone():
     return cfg.CONF.hyperswitch.fs_availability_zone

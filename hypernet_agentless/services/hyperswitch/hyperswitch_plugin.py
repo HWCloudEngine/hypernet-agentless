@@ -6,7 +6,6 @@ from hypernet_agentless.services.hyperswitch import providers
 
 from neutron import manager
 from neutron.openstack.common import log as logging
-from neutron.plugins.common import constants
 
 
 LOG = logging.getLogger(__name__)
@@ -18,9 +17,11 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
     
     def __init__(self):
         if config.get_provider() == 'aws':
-            self._provider_impl = providers.aws_impl.AWSProvider()
-        elif config.get_provider() in ['openstack', 'fs'] :
-            self._provider_impl = providers.fs_impl.FSProvider()
+            from providers import aws_impl
+            self._provider_impl = aws_impl.AWSProvider()
+        elif config.get_provider() in ['openstack', 'fs']:
+            from providers import fs_impl
+            self._provider_impl = fs_impl.FSProvider()
         else:
             self._provider_impl = providers.null_impl.NULLProvider()
         self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
@@ -33,11 +34,11 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
 
     def get_plugin_name(self):
         """Get name of the plugin."""
-        return constants.HYPERSWITCH
+        return 'hyperswitch'
 
     def get_plugin_type(self):
         """Get type of the plugin."""
-        return constants.HYPERSWITCH
+        return 'hyperswitch'
 
     def get_plugin_description(self):
         """Get description of the plugin."""
@@ -92,7 +93,7 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
         tenant_id = neutron_port['tenant_id']
         flavor = port.get('flavor')
         if not flavor:
-            flavor = config.get_default_flavor()
+            flavor = config.get_hs_default_flavor()
         net_int = self._provider_impl.create_network_interface(
             port_id,
             device_id,

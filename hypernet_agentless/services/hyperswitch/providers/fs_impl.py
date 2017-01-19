@@ -5,7 +5,7 @@ from neutronclient.v2_0 import client as neutron_client
 
 from novaclient.v1_1 import client as nova_client
 
-from oslo_log import log as logging
+from neutron.openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)
