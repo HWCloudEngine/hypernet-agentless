@@ -2,11 +2,10 @@ import shlex
 import time
 import os
 
-from oslo_concurrency import processutils
 from oslo.config import cfg
 
 from neutron.openstack.common import log as logging
-from neutron.openstack.common import importutils, strutils
+from neutron.openstack.common import importutils, processutils
 
 eventlet = importutils.try_import('eventlet')
 if eventlet and eventlet.patcher.is_monkey_patched(time):

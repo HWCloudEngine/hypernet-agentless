@@ -5,7 +5,6 @@ import threading
 
 from oslo.config import cfg
 
-
 from hypernet_agentless.agent.hyperswitch import hyperswitch_utils as hu
 from hypernet_agentless.agent.hyperswitch import vif_driver
 
@@ -22,7 +21,7 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ipv4
 from ryu.ofproto import ether
 from ryu.ofproto import inet
-from ryu.ofproto import ofproto_v1_3
+from ryu.ofproto import ofproto_v1_0
 
 
 hyper_swith_agent_opts = [
@@ -69,9 +68,11 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         self.vm_nic = cfg.CONF.hyperswitch.network_vms_interface
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
         # retrieve the vms nic cidr
-        lease_file = None
-        for name in glob.glob('/var/lib/*/*%s.lease' % self.vm_nic):
-            lease_file = name
+        leases = glob.glob('/var/lib/*/*%s.leases' % self.vm_nic)
+        if len(leases) == 0:
+            leases = glob.glob('/var/lib/*/*%s.lease' % self.vm_nic)
+        #TODO: exception if not find lease file
+        lease_file = leases[0]
         mask = None
         ip = None
         self.routers = None
@@ -184,7 +185,7 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
 
 
 class VPNBridgeHandler(ofp_handler.OFPHandler):
-    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
+    OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
         super(VPNBridgeHandler, self).__init__(*args, **kwargs)
@@ -198,7 +199,6 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
     def mod_flow(self,
                  datapath,
                  cookie=0,
-                 cookie_mask=0,
                  idle_timeout=0,
                  match=None,
                  actions=None,
@@ -206,12 +206,9 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
-                                             actions)]
         mod = parser.OFPFlowMod(datapath=datapath, cookie=cookie,
-                                idle_timeout=idle_timeout,
-                                cookie_mask=cookie_mask, priority=priority,
-                                match=match, instructions=inst,
+                                idle_timeout=idle_timeout, priority=priority,
+                                match=match, actions=actions,
                                 flags=ofproto.OFPFF_SEND_FLOW_REM)
         datapath.send_msg(mod)
 
@@ -227,8 +224,7 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         n = 1
         for driver in self._drivers:
             match = driver.to_controller_match(parser)
-            actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                              ofproto.OFPCML_NO_BUFFER)]
+            actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER)]
             self.mod_flow(datapath=datapath,
                           cookie=n,
                           match=match,
@@ -306,10 +302,10 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         msg = ev.msg
         LOG.info('_flow_removed_handler msg= %s' % msg)
         provider_ip = None
-        if 'ipv4_dst' in msg.match:
-            provider_ip = msg.match['ipv4_dst']
-        if 'ipv4_src' in msg.match:
-            provider_ip = msg.match['ipv4_src']
+        if 'nw_dst' in msg.match:
+            provider_ip = msg.match['nw_dst']
+        if 'nw_src' in msg.match:
+            provider_ip = msg.match['nw_src']
         vpn_driver = self._drivers[msg.cookie - 1]
         if not provider_ip:
             return
@@ -384,24 +380,24 @@ class OpenVPNTCP(VPNDriver):
         self.proto = 'tcp'
 
     def to_controller_match(self, parser):
-        return parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
-                               ip_proto=inet.IPPROTO_TCP,
-                               tcp_dst=1194)
+        return parser.OFPMatch(dl_type=ether.ETH_TYPE_IP,
+                               nw_proto=inet.IPPROTO_TCP,
+                               tp_dst=1194)
 
     def intercept_vpn_packets(self, parser, ofproto, provider_ip):
-        return (parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
-                                ip_proto=inet.IPPROTO_TCP,
-                                tcp_dst=1194,
-                                ipv4_src=provider_ip),
-                [parser.OFPActionSetField(tcp_dst=self.cur_port), 
+        return (parser.OFPMatch(dl_type=ether.ETH_TYPE_IP,
+                                nw_proto=inet.IPPROTO_TCP,
+                                tp_dst=1194,
+                                nw_src=provider_ip),
+                [parser.OFPActionSetField(tp_dst=self.cur_port), 
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
     def return_vpn_packets(self, parser, ofproto, provider_ip):
-        return (parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
-                                ip_proto=inet.IPPROTO_TCP,
-                                ipv4_dst=provider_ip,
-                                tcp_src=self.cur_port),
-                [parser.OFPActionSetField(tcp_src=1194), 
+        return (parser.OFPMatch(dl_type=ether.ETH_TYPE_IP,
+                                nw_proto=inet.IPPROTO_TCP,
+                                nw_dst=provider_ip,
+                                tp_src=self.cur_port),
+                [parser.OFPActionSetField(tp_src=1194), 
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
     def start_vpn(self, tap, br, vpn_nic_ip, mac):
@@ -452,23 +448,23 @@ class OpenVPNUDP(OpenVPNTCP):
         self.proto = 'udp'
 
     def to_controller_match(self, parser):
-        return parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
-                               ip_proto=inet.IPPROTO_UDP,
-                               udp_dst=1194)
+        return parser.OFPMatch(dl_type=ether.ETH_TYPE_IP,
+                               nw_proto=inet.IPPROTO_UDP,
+                               tp_dst=1194)
 
     def intercept_vpn_packets(self, parser, ofproto, provider_ip):
-        return (parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
-                                ip_proto=inet.IPPROTO_UDP,
-                                udp_dst=1194,
-                                ipv4_src=provider_ip),
-                [parser.OFPActionSetField(udp_dst=self.cur_port), 
+        return (parser.OFPMatch(dl_type=ether.ETH_TYPE_IP,
+                                nw_proto=inet.IPPROTO_UDP,
+                                tp_dst=1194,
+                                nw_src=provider_ip),
+                [parser.OFPActionSetField(tp_dst=self.cur_port), 
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
     def return_vpn_packets(self, parser, ofproto, provider_ip):
-        return (parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
-                                ip_proto=inet.IPPROTO_UDP,
-                                ipv4_dst=provider_ip,
-                                udp_src=self.cur_port),
-                [parser.OFPActionSetField(udp_src=1194), 
+        return (parser.OFPMatch(dl_type=ether.ETH_TYPE_IP,
+                                nw_proto=inet.IPPROTO_UDP,
+                                nw_dst=provider_ip,
+                                tp_src=self.cur_port),
+                [parser.OFPActionSetField(tp_src=1194), 
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 

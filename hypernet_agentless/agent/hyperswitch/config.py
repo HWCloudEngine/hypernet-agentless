@@ -4,7 +4,7 @@ from oslo.config import cfg
 from neutron.common import rpc
 from neutron.openstack.common import log as logging
 
-import oslo as messaging
+from oslo import messaging
 
 from hypernet_agentless import version
 
