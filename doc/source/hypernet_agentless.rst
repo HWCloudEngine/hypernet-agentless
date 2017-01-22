@@ -4,21 +4,21 @@ HyperNet Agentless
 
 Hyper Network Background
 ========================
+Hybrid cloud architecture depicts an openstack managment instance (called jacket, Embedded Openstack or Cascaded) that translates the openstack APIs and entities to the provider APIs and entities.
 
-In the current hybrid cloud solution, a cloud provider is managed by an openstack instance (called jacket, Embedded Openstack or Cascaded) that translates the openstack APIs and entities to the provider APIs and entities.
+Utilizing openstack neutron the soultoing use:
+Hyper Network, Hyper Port,  and Hyper Security Group as cascaded neutron entities.
 
-The Hyper Network, Hyper Port, Hyper Security Group are cascaded neutron entities.
+The Virtual Machines, Provider Networks and Provider Security groups are provided by the underline cloud provider (AWS or openstack)
 
-The provider Virtual Machines, Provider Networks and Provider Security groups are provided by the cloud provider (AWS or openstack)
+The requirements for an agent less solution is to connect a custumers workload using native provider's Virtual Machine with minimal changes in this virtual machine, which use standrd software packages, and some changes to the hyper network implementing the cascaded neutron functionalities (L2: Hyper IP and Network, L3: Hyper Subnet, Hyper SG etc...)
 
-The requirements for an agent less solution is to connect a Provider Virtual Machine with small and standard changes in this virtual machine to the hyper network implementing the cascaded neutron functionalities (L2: Hyper IP and Network, L3: Hyper Subnet, Hyper SG etc...)
-
-The challenge is that the cloud provider does not provide the whole neutron functionality and should be implemented by agents or extra provider virtual machine.
+The challenge with that kind of changes, is that the cloud provider does not provide whole of  neutron functionality, which should be implemented by agents and extra provider's virtual machine.
 
 Solution:
 =========
 
-The presented solution for the data path is based on a standard VPN client installed in the Provider VM. This VPN connects to a VPN server installed on an extra Provider Virtual Machine. This Provider Virtual Machine is called 'hyperswith' (the entry point of the Hyper Network) and implement all the Neutron functionalities. The VPN client receives the Hyper IP with DHCP protocol on the VPN termination and replace the network routes the the hyper network one.
+The presented solution for the data path is based on a standard VPN client installed in the Provider VM. This VPN connects to a VPN server installed on a dedicated Provider's Virtual Machine. This Provider Virtual Machine is called 'hyperswith' (which provides the entry point to the Hyper Network) and provides all the neutron functionalities. The VPN client receives the Hyper IP with DHCP protocol on the VPN termination and replace the network routes the the hyper network one.
 
 Data Path Diagram::
 
@@ -38,7 +38,7 @@ Data Path Diagram::
                                | Jacket |
                                +--------+
 
-The implementation is based on a Neutron extension and plugin in the jacket and an agent installed in the extra hyperswitch VM. The hypernet agent less Neutron plugin implements: 
+The implementation is based on a neutron extension and plugin in the jacket and an agent installed in the hyperswitch VM. The hypernet agent less neutron plugin implements: 
    - hyperswitch APIs to manage the extra provider virtual machine (hyperswitches)
    - agentlessport APIs to define a hyper port as an agent less port
    - Messaging supplementary API for the hyperswitch agent control communication.
@@ -65,7 +65,7 @@ Control Path Diagram::
 The First implementation supports AWS EC2 and Openstack providers.
 
 
-hypernet agent less Neutron Extension
+hypernet agent-less Neutron Extension
 =====================================
 
 This extension defined two new entities:
@@ -94,7 +94,7 @@ This extension defined two new entities:
       - vms_ip_2: The Hyperswitch Server VPN for index 2 IP
 
 
-These 2 entities are not kept in the Neutron DB but only as provider entities:
+These 2 entities are not kept in the neutron DB but only as provider entities:
   - Interface Network TAGS and VM TAGs for Hyperswitch VM in AWS
   - Openstack Port fields and VM Metadata for Hyperswitch VM in Openstack
 
@@ -104,7 +104,7 @@ Management APIs
 Create agentlessport
 --------------------
 
-It Must be call during the jacket nova driver Plug vif:
+It Must be called on the jacket nova driver "Plug vif" call:
   - Create a provider port/Network Interface
   - Create an hyperswitch if not exist for this agent less port according the the default hyperswitch flavor (0G, 1G or 10G) and level (per vm or tenant):
 
