@@ -4,21 +4,22 @@ HyperNet Agentless
 
 Hyper Network Background
 ========================
-Hybrid cloud architecture depicts an openstack managment instance (called jacket, Embedded Openstack or Cascaded) that translates the openstack APIs and entities to the provider APIs and entities.
 
-Utilizing openstack neutron the soultoing use:
-Hyper Network, Hyper Port,  and Hyper Security Group as cascaded neutron entities.
+Hybrid cloud architecture is based on an openstack managment instance (called jacket, Embedded Openstack or Cascaded) that translates the openstack APIs and entities to the provider APIs and entities.
 
-The Virtual Machines, Provider Networks and Provider Security groups are provided by the underline cloud provider (AWS or openstack)
+Utilizing openstack neutron the solution implements Hyper Network, Hyper Port, and Hyper Security Group as cascaded neutron entities.
 
-The requirements for an agent less solution is to connect a custumers workload using native provider's Virtual Machine with minimal changes in this virtual machine, which use standrd software packages, and some changes to the hyper network implementing the cascaded neutron functionalities (L2: Hyper IP and Network, L3: Hyper Subnet, Hyper SG etc...)
+The Virtual Machines, Provider Networks and Provider Security groups are provided by the underline cloud provider (AWS or openstack).
 
-The challenge with that kind of changes, is that the cloud provider does not provide whole of  neutron functionality, which should be implemented by agents and extra provider's virtual machine.
+The requirements for an agent less solution is to connect a custumers workload using native provider's Virtual Machine with minimal changes in this virtual machine; i.e.: using standard software packages in the customer workload.
+Any changes to the hyper network implemented by the cascaded neutron functionalities (L2: Hyper IP and Network, L3: Hyper Subnet, Hyper SG etc...) are preferred than changes in the VM customer workload.
 
-Solution:
-=========
+The challenge with that kind of changes, is that the cloud provider does not provide all neutron functionalities, which should be implemented by agents and extra provider's virtual machine.
 
-The presented solution for the data path is based on a standard VPN client installed in the Provider VM. This VPN connects to a VPN server installed on a dedicated Provider's Virtual Machine. This Provider Virtual Machine is called 'hyperswith' (which provides the entry point to the Hyper Network) and provides all the neutron functionalities. The VPN client receives the Hyper IP with DHCP protocol on the VPN termination and replace the network routes the the hyper network one.
+Data Path Solution
+==================
+
+The presented solution for the data path is based on a standard VPN client installed in the Provider VM. This VPN connects to a VPN server installed on dedicated Provider's Virtual Machines. These Provider Virtual Machines are called 'hyperswith' (which provides the entry point to the Hyper Network) and provides all the neutron functionalities. The VPN client receives the Hyper IP with DHCP protocol on the VPN termination and replace the network routes the the hyper network one.
 
 Data Path Diagram::
 
@@ -38,12 +39,16 @@ Data Path Diagram::
                                | Jacket |
                                +--------+
 
-The implementation is based on a neutron extension and plugin in the jacket and an agent installed in the hyperswitch VM. The hypernet agent less neutron plugin implements: 
+
+Control Path Solution
+=====================
+
+The Control Path implementation is based on a neutron extension, a plugin in the jacket and an agent installed in the hyperswitch VM. The hypernet agentless neutron plugin implements: 
    - hyperswitch APIs to manage the extra provider virtual machine (hyperswitches)
    - agentlessport APIs to define a hyper port as an agent less port
    - Messaging supplementary API for the hyperswitch agent control communication.
 
-Control Path Diagram::
+Control Path - High Level Modules::
 
   +------------------------+                     +------------------------+
   + VM with OpenVPN client +       ....          + VM with OpenVPN client +
@@ -62,11 +67,73 @@ Control Path Diagram::
                                +--------+
 
 
+Deep-depth diagram::
+
+
+                 +---------------------------+
+                 |       Windows VM          |
+                 |                           |
+                 |   +----------------+      |
+                 |   | OpenVPN client |      |
+                 |   +----------+-----+      |
+                 +--------------|------------+
+                                |
+                                |
+               +----------------|----------------------------------------------------------+
+               | Hyperswitch    |                                                          |
+               |     +----------|--------+                                                 |
+               |     | br-vpn   |        |                                                 |
+               |     |       +--+---+    |   +----------------+                            |
+               |     |       | ethX |    +---+ HS Controller  |                            |
+               |     |       +--+---+    |   +--------------+-+                            |
+               |     +----------|--------+                  |                              |
+               |                |                           |                              |
+               |      +---------+-------+                   |                              |
+               |      | OpenVPN Server  |                   |                              |
+               |      +---------+-------+                   |                              |
+               |                |                           |   +-------------------+      |
+               |             +--+---+                       | +-+ neutron ovs agent |      |
+               |             | tap  | - SG iptables         | | +-------------------+      |
+               |             +--+---+                       | |                            |
+               |                |                           | | +-------------------+      |
+               |     +----------|--------+                  | +-+ neutron l3 agent  |      |
+               |     | br-int   |        |                  | | +-------------------+      |
+               |     |       +--+---+    |                  | |                            |
+               |     |       | qvo  |    |                  | | +------------------------+ |
+               |     |       +------+    |  +-----------+   | +-+ neutron metadata agent | |
+               |     |                   |  |qbr        |   | | +------------------------+ |
+               |     |       +------+    |  | +------+  |   | |                            |
+               |     |       | xxxx +---------+ xxxx |  |   | |                            |
+               |     |       +------+    |  | +------+  |   | |                            |
+               |     |       +------+    |  | +------+  |   | |                            |
+               |     |       | xxxx +---------+ xxxx |  |   | |                            |
+               |     |       +------+    |  | +------+  |   | |                            |
+               |     +-------------------+  +-----------+   | |                            | 
+               +--------------------------------------------|-|----------------------------+
+                                                            | |
+               +--------------------------------------------|-|-----+
+               | Jacket                                     | |     |
+               |  +-----------------------------------------|-+---+ |
+               |  | Neutron Server               +----------+---+ | |
+               |  |                              | HS Agent API | | |
+               |  |                              +--------------+ | |
+               |  |   +--------------+                            | |
+               |  |   | HS Plugin    |                            | |
+               |  |   +----+---------+                            | |
+               |  +--------|--------------------------------------+ |
+               +-----------|----------------------------------------+
+                           |
+                           | Rest agentlessport/hyperswtich APIs
+                           |
+               +-----------+-------------+
+               | extended neutron client |
+               +-------------------------+
+
 The First implementation supports AWS EC2 and Openstack providers.
 
 
-hypernet agent-less Neutron Extension
-=====================================
+Hypernet Agentless Neutron Extension
+====================================
 
 This extension defined two new entities:
    - agentlessport: This entity defines the parameters of neutron port than can be connected by OpenVPN
@@ -287,9 +354,7 @@ Neutron Metadata Agent
 Standard Neutron Metadata agent necessary on each compute node for DVR deployment that should match with the cascaded openstack version.
 
 Hyperswitch Local Controller Agent
------------------------------------
-TODO: Local Controller for br-vpn diagram::
-   -
+----------------------------------
 
 TODO: Lazy plug vif diagram and flow diagram::
    -
