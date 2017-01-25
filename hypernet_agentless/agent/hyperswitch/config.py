@@ -6,9 +6,9 @@ from neutron.openstack.common import log as logging
 
 from oslo import messaging
 
-from hypernet_agentless import version
+from hypernet_agentless import version, hs_constants
 
-messaging.set_transport_defaults(control_exchange='hyperswitch')
+messaging.set_transport_defaults(control_exchange=hs_constants.HYPERSWITCH)
 
 LOG = logging.getLogger(__name__)
 

@@ -4,6 +4,7 @@ import time
 from boto3 import session
 from botocore import exceptions
 
+from hypernet_agentless import hs_constants
 from hypernet_agentless.services.hyperswitch import provider_api
 
 from neutron.openstack.common import log as logging
@@ -250,7 +251,8 @@ class AWSProvider(provider_api.ProviderDriver):
                            hybrid_cloud_device_id=None,
                            hybrid_cloud_tenant_id=None):
         # find the image according to a tag hybrid_cloud_image=hyperswitch
-        image_id = self._find_image_id('hybrid_cloud_image', 'hyperswitch')
+        image_id = self._find_image_id('hybrid_cloud_image',
+                                       hs_constants.HYPERSWITCH)
         instance_type = self._cfg.get_hs_flavor_map()[flavor]
         net_interfaces = []
         i = 0
@@ -284,7 +286,7 @@ class AWSProvider(provider_api.ProviderDriver):
         tags = [{'Key': 'hybrid_cloud_tenant_id',
                  'Value': hybrid_cloud_tenant_id},
                 {'Key': 'hybrid_cloud_type',
-                 'Value': 'hyperswitch'},
+                 'Value': hs_constants.HYPERSWITCH},
                 {'Key': 'Name',
                  'Value': host}]
         if hybrid_cloud_device_id:
@@ -318,7 +320,9 @@ class AWSProvider(provider_api.ProviderDriver):
 
         if (not names and not hyperswitch_ids
                 and not device_ids and not tenant_ids):
-            self._add_vms_from_tags('hybrid_cloud_type', ['hyperswitch'], res)
+            self._add_vms_from_tags('hybrid_cloud_type',
+                                    [hs_constants.HYPERSWITCH],
+                                    res)
 
         LOG.debug('found hyperswitchs for (%s, %s, %s) = %s.' % (
             hyperswitch_ids, device_ids, tenant_ids, res))

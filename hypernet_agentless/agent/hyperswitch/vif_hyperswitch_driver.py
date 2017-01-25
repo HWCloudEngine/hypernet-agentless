@@ -5,6 +5,7 @@ import threading
 
 from oslo.config import cfg
 
+from hypernet_agentless import hs_constants
 from hypernet_agentless.agent.hyperswitch import hyperswitch_utils as hu
 from hypernet_agentless.agent.hyperswitch import vif_driver
 
@@ -43,7 +44,7 @@ hyper_swith_agent_opts = [
 ]
 
 
-cfg.CONF.register_opts(hyper_swith_agent_opts, 'hyperswitch')
+cfg.CONF.register_opts(hyper_swith_agent_opts, hs_constants.HYPERSWITCH)
 
 
 LOG = logging.getLogger(__name__)

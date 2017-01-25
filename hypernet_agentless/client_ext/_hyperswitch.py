@@ -1,9 +1,12 @@
+
 from neutronclient.common import extension
+
+from hypernet_agentless import hs_constants
 from hypernet_agentless._i18n import _
 
 
 class HyperSwitch(extension.NeutronClientExtension):
-    resource = 'hyperswitch'
+    resource = hs_constants.HYPERSWITCH
     resource_plural = '%ss' % resource
     object_path = '/%s' % resource_plural
     resource_path = '/%s/%%s' % resource_plural
@@ -24,11 +27,11 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
             help=_('Deivce ID if created for one device.'))
 
     def args2body(self, parsed_args):
-        body = {'hyperswitch': {'flavor': parsed_args.flavor}, }
+        body = {hs_constants.HYPERSWITCH: {'flavor': parsed_args.flavor}, }
         if parsed_args.tenant_id:
-            body['hyperswitch']['tenant_id'] = parsed_args.tenant_id
+            body[hs_constants.HYPERSWITCH]['tenant_id'] = parsed_args.tenant_id
         if parsed_args.device_id:
-            body['hyperswitch']['device_id'] = parsed_args.device_id
+            body[hs_constants.HYPERSWITCH]['device_id'] = parsed_args.device_id
         return body
 
 

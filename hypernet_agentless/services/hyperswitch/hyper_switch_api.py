@@ -6,6 +6,7 @@ from neutron.common import rpc
 from neutron.openstack.common import log as logging
 from neutron.plugins.common import constants as p_const
 
+from hypernet_agentless import hs_constants
 from hypernet_agentless.services.hyperswitch import config
 
 
@@ -21,9 +22,9 @@ class HyperswitchCallback(object):
 
     def __init__(self):
         endpoints = [self]
-        target = messaging.Target(topic='hyperswitch-callback',
+        target = messaging.Target(topic=hs_constants.HYPERSWITCH_CALLBACK,
                                   version='1.0',
-                                  exchange='hyperswitch',
+                                  exchange=hs_constants.HYPERSWITCH,
                                   server=config.get_host())
         self.server = rpc.get_server(target, endpoints)
         self.server.start()
@@ -51,7 +52,7 @@ class HyperswitchCallback(object):
         if self._hyperswitch_plugin_property is None:
             self._hyperswitch_plugin_property = (
                 manager.NeutronManager.get_service_plugins().get(
-                    'hyperswitch'))
+                    hs_constants.HYPERSWITCH))
         return self._hyperswitch_plugin_property
 
     def get_vif_for_provider_ip(self, context, **kwargs):
@@ -110,9 +111,9 @@ class HyperswitchAPI(object):
     """
 
     def __init__(self):
-        target = messaging.Target(topic='hyperswitch-update',
+        target = messaging.Target(topic=hyperswitch.HYPERSWITCH_UPDATE,
                                   version='1.0',
-                                  exchange='hyperswitch')
+                                  exchange=hyperswitch.HYPERSWITCH)
         self.client = rpc.get_client(target)
         self.call_back = HyperswitchCallback()
         super(HyperswitchAPI, self).__init__()

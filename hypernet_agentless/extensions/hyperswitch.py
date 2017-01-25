@@ -3,10 +3,22 @@ import abc
 from neutron.api import extensions
 from neutron.api.v2 import attributes
 from neutron.api.v2 import resource_helper
+from neutron.openstack.common import log as logging
+from neutron.plugins.common import constants
+from neutron.services import service_base
 
 from hypernet_agentless import extensions as hypernet_agentless_extensions
+from hypernet_agentless import hs_constants
+
 
 extensions.append_api_extensions_path(hypernet_agentless_extensions.__path__)
+
+constants.COMMON_PREFIXES[hs_constants.HYPERSWITCH] = '/'
+constants.ALLOWED_SERVICES.append(hs_constants.HYPERSWITCH)
+
+
+LOG = logging.getLogger(__name__)
+
 
 RESOURCE_ATTRIBUTE_MAP = {
     'agentlessports': {
@@ -67,7 +79,7 @@ class Hyperswitch(extensions.ExtensionDescriptor):
 
     @classmethod
     def get_alias(cls):
-        return 'hyperswitch'
+        return hs_constants.HYPERSWITCH
 
     @classmethod
     def get_description(cls):
@@ -87,10 +99,10 @@ class Hyperswitch(extensions.ExtensionDescriptor):
         plural_mappings = resource_helper.build_plural_mappings(
             {}, RESOURCE_ATTRIBUTE_MAP)
         attributes.PLURALS.update(plural_mappings)
-        resources = resource_helper.build_resource_info(plural_mappings,
-                                                        RESOURCE_ATTRIBUTE_MAP,
-                                                        '')
-
+        resources = resource_helper.build_resource_info(
+            plural_mappings,
+            RESOURCE_ATTRIBUTE_MAP,
+            hs_constants.HYPERSWITCH)
         return resources
 
     def get_extended_resources(self, version):
@@ -100,7 +112,19 @@ class Hyperswitch(extensions.ExtensionDescriptor):
             return {}
 
 
-class HyperswitchPluginBase(object):
+class HyperswitchPluginBase(service_base.ServicePluginBase):
+
+    def get_plugin_type(self):
+        """Get type of the plugin."""
+        return hs_constants.HYPERSWITCH
+
+    def get_plugin_name(self):
+        """Get name of the plugin."""
+        return hs_constants.HYPERSWITCH
+
+    def get_plugin_description(self):
+        """Get description of the plugin."""
+        return "Hyperswitch Management Plugin"
 
     @abc.abstractmethod
     def create_agentlessport(self, context, agentlessport):

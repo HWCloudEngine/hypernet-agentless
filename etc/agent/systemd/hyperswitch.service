@@ -9,7 +9,7 @@ Type=simple
 User=root
 PermissionsStartOnly=true
 ExecStartPre=/usr/bin/echo "hyperswitch pre-start" && /usr/bin/mkdir -p /var/run/hyperswitch && /usr/bin/chown neutron:root /var/run/hyperswitch
-ExecStart=/usr/bin/hyperswitch --config-file=/etc/hyperswitch/hyperswitch.conf --log-file=/var/log/hyperswitch/hyperswitch.log
+ExecStart=/usr/bin/hyperswitch_agent --config-file=/etc/hyperswitch/hyperswitch.conf --log-file=/var/log/hyperswitch/hyperswitch.log
 PrivateTmp=true
 KillMode=process
 

@@ -1,4 +1,7 @@
 
+import time
+
+from hypernet_agentless import hs_constants
 from hypernet_agentless.services.hyperswitch import provider_api
 
 from neutronclient.v2_0 import client as neutron_client
@@ -10,6 +13,7 @@ from neutron.openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
+HS_START_NAME = '%s-' % hs_constants.HYPERSWITCH
 
 class FSProvider(provider_api.ProviderDriver):
     
@@ -124,9 +128,9 @@ class FSProvider(provider_api.ProviderDriver):
                                   hybrid_cloud_device_id=None,
                                   hybrid_cloud_tenant_id=None):
         if hybrid_cloud_device_id:
-            host = 'hs####dev####%s' % hybrid_cloud_device_id
+            host = '%sdevice%s' % (HS_START_NAME, hybrid_cloud_device_id)
         else:
-            host = 'hs####tenant####%s' % hybrid_cloud_tenant_id
+            host = '%stenant%s' % (HS_START_NAME, hybrid_cloud_tenant_id)
         return host
 
     def _find_image(self, key, value):
@@ -144,6 +148,7 @@ class FSProvider(provider_api.ProviderDriver):
 
     def _fs_instance_to_dict(self, fs_instance):
         LOG.debug('_fs_instance_to_dict %s' % fs_instance)
+        LOG.debug('_fs_instance_to_dict networks %s' % fs_instance.networks)
         res = {
             'id': fs_instance.id,
             'device_id': fs_instance.metadata.get('hybrid_cloud_device_id'),
@@ -152,6 +157,7 @@ class FSProvider(provider_api.ProviderDriver):
             'instance_type': self._get_flavor_name(fs_instance.flavor['id']),
         }
         vm_nets = self.get_vms_subnet()
+        LOG.debug('_fs_instance_to_dict vm_nets %s' % vm_nets)
         for net_int in fs_instance.networks:
             if self._net_equal(net_int, self._cfg.get_mgnt_network()):
                 res['mgnt_ip'] = fs_instance.networks[net_int][0]
@@ -180,7 +186,8 @@ class FSProvider(provider_api.ProviderDriver):
             hybrid_cloud_device_id,
             hybrid_cloud_tenant_id
         )
-        hs_img = self._find_image('hybrid_cloud_image', 'hyperswitch')
+        hs_img = self._find_image('hybrid_cloud_image',
+                                  hs_constants.HYPERSWITCH)
         hs_flavor = self._find_flavor(self._cfg.get_hs_flavor_map()[flavor])
         user_metadata = ''
         for k, v in user_data.iteritems():
@@ -198,7 +205,7 @@ class FSProvider(provider_api.ProviderDriver):
         
         meta = {
             'hybrid_cloud_tenant_id': hybrid_cloud_tenant_id,
-            'hybrid_cloud_type': 'hyperswitch'
+            'hybrid_cloud_type': hs_constants.HYPERSWITCH
         }
         if hybrid_cloud_device_id:
             meta['hybrid_cloud_device_id'] = hybrid_cloud_device_id
@@ -210,15 +217,29 @@ class FSProvider(provider_api.ProviderDriver):
              nics=nics,
              userdata=user_metadata,
              availability_zone=self._cfg.get_fs_availability_zone())
+        while len(hs_instance.networks) == 0:
+            time.sleep(1)
+            for inst in self._nova_client.servers.list(
+                search_opts={'name': hs_name}):
+                hs_instance = inst
         return self._fs_instance_to_dict(hs_instance)
 
-    def _get_hyperswitchs(self, name, res):
+    def _get_hyperswitchs_by_name(self, name, res):
         for inst in self._nova_client.servers.list(search_opts={'name': name}):
             res.append(self._fs_instance_to_dict(inst))
         return res
 
+    def _get_hyperswitchs_by_id(self, ident, res):
+        for inst in self._nova_client.servers.list(search_opts={'id': ident}):
+            res.append(self._fs_instance_to_dict(inst))
+        return res
+
     def _get_flavor_name(self, flavor_id):
-        return self._nova_client.flavors.get(flavor_id).name
+        LOG.debug('flavor_id %s' % flavor_id)
+        try:
+            return self._nova_client.flavors.get(flavor_id).name
+        except:
+            return flavor_id
 
     def get_hyperswitchs(self,
                          names=None,
@@ -231,22 +252,24 @@ class FSProvider(provider_api.ProviderDriver):
         has_filter = False
         if names:
             for name in names:
-                self._get_hyperswitchs(name, res)
+                self._get_hyperswitchs_by_name(name, res)
             has_filter = True
         if hyperswitch_ids:
             for hyperswitch_id in hyperswitch_ids:
-                self._get_hyperswitchs(hyperswitch_id, res)
+                self._get_hyperswitchs_by_id(hyperswitch_id, res)
             has_filter = True
         if device_ids:
             for device_id in device_ids:
-                self._get_hyperswitchs('hs####dev####%s' % device_id, res)
+                self._get_hyperswitchs_by_name(
+                    '%sdevice%s' % (HS_START_NAME, device_id), res)
             has_filter = True
         if tenant_ids:
             for tenant_id in tenant_ids:
-                self._get_hyperswitchs('hs####tenant####%s' % tenant_id, res)
+                self._get_hyperswitchs_by_name(
+                    '%stenant%s' % (HS_START_NAME, tenant_id), res)
             has_filter = True
         if not has_filter:
-            self._get_hyperswitchs('hs####*', res)
+            self._get_hyperswitchs_by_name('%s*' % HS_START_NAME, res)
         return res 
             
 

@@ -7,6 +7,7 @@ from oslo import messaging
 
 from hypernet_agentless.agent.hyperswitch import config
 from hypernet_agentless.agent.hyperswitch import vif_hyperswitch_driver
+from hypernet_agentless import hs_constants
 
 from oslo.config import cfg
 
@@ -26,9 +27,9 @@ class HyperSwitchAgentCallback(object):
     RPC_API_VERSION = '1.0'
 
     def __init__(self):
-        target = messaging.Target(topic='hyperswitch-callback',
+        target = messaging.Target(topic=hs_constants.HYPERSWITCH_CALLBACK,
                                   version='1.0',
-                                  exchange='hyperswitch')
+                                  exchange=hs_constants.HYPERSWITCH)
         self.client = rpc.get_client(target)
         self.context = context.get_admin_context()
         super(HyperSwitchAgentCallback, self).__init__()
@@ -49,9 +50,9 @@ class HyperSwitchAgent(object):
 
         # the queue client for plug/unplug calls from nova driver
         endpoints = [self]
-        target = messaging.Target(topic='hyperswitch-update',
+        target = messaging.Target(topic=hs_constants.HYPERSWITCH_UPDATE,
                                   version='1.0',
-                                  exchange='hyperswitch',
+                                  exchange=hs_constants.HYPERSWITCH,
                                   server=cfg.CONF.host)
         self.server = rpc.get_server(target, endpoints)
 

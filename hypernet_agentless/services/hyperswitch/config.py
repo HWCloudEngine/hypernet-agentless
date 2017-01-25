@@ -1,4 +1,7 @@
+
+from hypernet_agentless import hs_constants
 from hypernet_agentless._i18n import _
+
 from oslo.config import cfg
 
 OPTS_HYPERSWITCH = [
@@ -53,7 +56,7 @@ OPTS_HYPERSWITCH = [
 ]
 
 
-cfg.CONF.register_opts(OPTS_HYPERSWITCH, 'hyperswitch')
+cfg.CONF.register_opts(OPTS_HYPERSWITCH, hs_constants.HYPERSWITCH)
 
 
 def get_host():
@@ -61,15 +64,15 @@ def get_host():
 
 
 def get_rabbit_hosts():
-    return cfg.CONF.oslo_messaging_rabbit.rabbit_hosts
+    return cfg.CONF.rabbit_hosts
 
 
 def get_rabbit_userid():
-    return cfg.CONF.oslo_messaging_rabbit.rabbit_userid
+    return cfg.CONF.rabbit_userid
 
 
 def get_rabbit_password():
-    return cfg.CONF.oslo_messaging_rabbit.rabbit_password
+    return cfg.CONF.rabbit_password
 
 
 def get_provider():

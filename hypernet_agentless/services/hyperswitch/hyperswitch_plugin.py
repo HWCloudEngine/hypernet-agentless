@@ -1,4 +1,5 @@
 
+from hypernet_agentless import hs_constants
 from hypernet_agentless.services.hyperswitch import config
 from hypernet_agentless.services.hyperswitch import hyper_switch_api
 from hypernet_agentless.extensions import hyperswitch
@@ -13,7 +14,7 @@ LOG = logging.getLogger(__name__)
 
 class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
 
-    supported_extension_aliases = ["hyperswitch"]
+    supported_extension_aliases = [hs_constants.HYPERSWITCH]
     
     def __init__(self):
         if config.get_provider() == 'aws':
@@ -31,18 +32,6 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
     @property
     def _core_plugin(self):
         return manager.NeutronManager.get_plugin()
-
-    def get_plugin_name(self):
-        """Get name of the plugin."""
-        return 'hyperswitch'
-
-    def get_plugin_type(self):
-        """Get type of the plugin."""
-        return 'hyperswitch'
-
-    def get_plugin_description(self):
-        """Get description of the plugin."""
-        return "Hyperswitch Management Plugin"
 
     def _make_agentlessport_dict(self, port, net_int, hsservers):
         LOG.debug('_make_agentlessport_dict %s, %s, %s' % (
@@ -107,7 +96,7 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
                 device_ids=[device_id])
             if not hsservers or len(hsservers) == 0:
                 hsservers = [self.create_hyperswitch(context, {
-                    'hyperswitch': {
+                    hs_constants.HYPERSWITCH: {
                         'device_id': device_id,
                         'flavor': flavor
                     }
@@ -117,7 +106,7 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
                 tenant_ids=[tenant_id])
             if not hsservers or len(hsservers) == 0:
                 hsservers = [self.create_hyperswitch(context, {
-                    'hyperswitch': {
+                    hs_constants.HYPERSWITCH: {
                         'tenant_id': tenant_id,
                         'flavor': flavor
                     }
@@ -182,7 +171,7 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
 
     def create_hyperswitch(self, context, hyperswitch):
         LOG.debug('hyperswitch %s to create.' % hyperswitch)
-        hyperswitch = hyperswitch['hyperswitch']
+        hyperswitch = hyperswitch[hyperswitch.HYPERSWITCH]
         rabbit_hosts = None
         for rabbit_host in config.get_rabbit_hosts():
             if rabbit_hosts:
