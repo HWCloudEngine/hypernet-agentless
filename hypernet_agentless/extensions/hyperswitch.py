@@ -55,6 +55,8 @@ RESOURCE_ATTRIBUTE_MAP = {
                           'is_visible': True},
         'private_ip': {'allow_post': False, 'allow_put': False,
                        'is_visible': True},
+        'host': {'allow_post': False, 'allow_put': False,
+                    'is_visible': True},
         'mgnt_ip': {'allow_post': False, 'allow_put': False,
                     'is_visible': True},
         'data_ip': {'allow_post': False, 'allow_put': False,

@@ -149,8 +149,12 @@ class FSProvider(provider_api.ProviderDriver):
     def _fs_instance_to_dict(self, fs_instance):
         LOG.debug('_fs_instance_to_dict %s' % fs_instance)
         LOG.debug('_fs_instance_to_dict networks %s' % fs_instance.networks)
+        host = self.get_hyperswitch_host_name(
+            fs_instance.metadata.get('hybrid_cloud_device_id'),
+            fs_instance.metadata.get('hybrid_cloud_tenant_id'))
         res = {
             'id': fs_instance.id,
+            'host': host,
             'device_id': fs_instance.metadata.get('hybrid_cloud_device_id'),
             'tenant_id': fs_instance.metadata.get('hybrid_cloud_tenant_id'),
             'instance_id': fs_instance.id,
@@ -230,8 +234,8 @@ class FSProvider(provider_api.ProviderDriver):
         return res
 
     def _get_hyperswitchs_by_id(self, ident, res):
-        for inst in self._nova_client.servers.list(search_opts={'id': ident}):
-            res.append(self._fs_instance_to_dict(inst))
+        res.append(
+            self._fs_instance_to_dict(self._nova_client.servers.get(ident)))
         return res
 
     def _get_flavor_name(self, flavor_id):
@@ -246,8 +250,9 @@ class FSProvider(provider_api.ProviderDriver):
                          hyperswitch_ids=None,
                          device_ids=None,
                          tenant_ids=None):
-        LOG.debug('get hyperswitch for (%s, %s, %s, %s).' % (
-            names, hyperswitch_ids, device_ids, tenant_ids))
+        LOG.debug('get hyperswitch for (names=%s, hyperswitch_ids=%s, '
+                  'device_ids=%s, tenant_ids=%s).' % (
+                      names, hyperswitch_ids, device_ids, tenant_ids))
         res = []
         has_filter = False
         if names:
@@ -270,6 +275,7 @@ class FSProvider(provider_api.ProviderDriver):
             has_filter = True
         if not has_filter:
             self._get_hyperswitchs_by_name('%s*' % HS_START_NAME, res)
+        LOG.debug('result %s.' % res)
         return res 
             
 

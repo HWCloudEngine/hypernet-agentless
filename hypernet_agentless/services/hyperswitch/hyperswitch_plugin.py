@@ -171,7 +171,7 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
 
     def create_hyperswitch(self, context, hyperswitch):
         LOG.debug('hyperswitch %s to create.' % hyperswitch)
-        hyperswitch = hyperswitch[hyperswitch.HYPERSWITCH]
+        hyperswitch = hyperswitch[hs_constants.HYPERSWITCH]
         rabbit_hosts = None
         for rabbit_host in config.get_rabbit_hosts():
             if rabbit_hosts:
@@ -187,10 +187,7 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
             'rabbit_hosts': rabbit_hosts,
             'host': host,
             'network_mngt_interface': 'eth0',
-            'network_data_interface': 'eth1',
-            'network_vms_interface': 'eth2',
         }
-
         net_list = [{
             'name': config.get_mgnt_network(),
             'security_group': [config.get_mgnt_security_group()]
@@ -200,16 +197,20 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
                 'name': config.get_data_network(),
                 'security_group': config.get_data_security_group()
             })
+            user_data['network_data_interface'] = 'eth1'
         else:
             net_list[0]['security_group'].append(
                 config.get_data_security_group())
+            user_data['network_data_interface'] = 'eth0'
         for vm_subnet in self._vms_subnets:
             if vm_subnet != config.get_mgnt_network():
+                user_data['network_vms_interface'] = 'eth2'
                 net_list.append({
                     'name': vm_subnet,
                     'security_group': self._hs_sg
                 })
             else:
+                user_data['network_vms_interface'] = 'eth0'
                 net_list[0]['security_group'].append(self._hs_sg)
 
         hs = self._provider_impl.launch_hyperswitch(
@@ -225,7 +226,7 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
     def get_hyperswitch(self, context, hyperswitch_id, fields=None):
         LOG.debug('hyperswitch %s to show.' % hyperswitch_id)
         hs = self._provider_impl.get_hyperswitchs(
-            [hyperswitch_id]
+            hyperswitch_ids=[hyperswitch_id]
         )
         LOG.debug('%d hyperswitch found for %s: %s.' % (
             len(hs), hyperswitch_id, hs))
@@ -236,10 +237,14 @@ class HyperswitchPlugin(hyperswitch.HyperswitchPluginBase):
 
     def delete_hyperswitch(self, context, hyperswitch_id):
         LOG.debug('hyperswitch %s to delete.' % hyperswitch_id)
+        hss = self._provider_impl.get_hyperswitchs(
+            hyperswitch_ids=[hyperswitch_id])
+        if len(hss) != 1:
+            pass # TODO: throw exception NotExist
         self._provider_impl.delete_hyperswitch(hyperswitch_id)
         agents = self._core_plugin.get_agents(
             context,
-            filters={'host': [hyperswitch_id]})
+            filters={'host': [hss[0]['host']]})
         LOG.debug('agents to delete: %s' % agents)
         for agent in agents:
             self._core_plugin.delete_agent(context, agent.get('id'))

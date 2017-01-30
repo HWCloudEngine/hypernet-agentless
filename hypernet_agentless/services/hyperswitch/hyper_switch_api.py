@@ -111,9 +111,9 @@ class HyperswitchAPI(object):
     """
 
     def __init__(self):
-        target = messaging.Target(topic=hyperswitch.HYPERSWITCH_UPDATE,
+        target = messaging.Target(topic=hs_constants.HYPERSWITCH_UPDATE,
                                   version='1.0',
-                                  exchange=hyperswitch.HYPERSWITCH)
+                                  exchange=hs_constants.HYPERSWITCH)
         self.client = rpc.get_client(target)
         self.call_back = HyperswitchCallback()
         super(HyperswitchAPI, self).__init__()
