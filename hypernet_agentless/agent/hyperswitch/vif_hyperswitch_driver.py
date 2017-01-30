@@ -22,7 +22,7 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ipv4
 from ryu.ofproto import ether
 from ryu.ofproto import inet
-from ryu.ofproto import ofproto_v1_0
+from ryu.ofproto import ofproto_v1_3
 
 
 hyper_swith_agent_opts = [
