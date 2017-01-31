@@ -194,23 +194,6 @@ class AWSProvider(provider_api.ProviderDriver):
             subnets_id.append(subnet_id)
         return subnets_id
 
-    def get_hyperswitch_host_name(self,
-                                  hybrid_cloud_device_id=None,
-                                  hybrid_cloud_tenant_id=None):
-        if hybrid_cloud_device_id:
-            vms = self._find_vms(
-                'hybrid_cloud_device_id',
-                [hybrid_cloud_device_id])
-            size = sum(1 for _ in vms)
-            host = 'vm-%s-%d' % (hybrid_cloud_device_id, size)
-        else:
-            vms = self._find_vms(
-                'hybrid_cloud_tenant_id',
-                [hybrid_cloud_tenant_id])
-            size = sum(1 for _ in vms)
-            host = 'tenant-%s-%d' % (hybrid_cloud_tenant_id, size)
-        return host
-
     def _aws_instance_to_dict(self, aws_instance):
         LOG.debug('_aws_instance_to_dict %s' % aws_instance)
         host = None

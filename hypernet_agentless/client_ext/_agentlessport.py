@@ -23,6 +23,9 @@ class AgentlessportCreate(extension.ClientExtensionCreate, Agentlessport):
 
     def add_known_arguments(self, parser):
         parser.add_argument(
+            '--name', dest='name',
+            help=_('OPtional port name.'))
+        parser.add_argument(
             '--flavor', dest='flavor',
             help=_('Network Flavor for the VM: 0G, 1G or 10G.'))
         parser.add_argument(

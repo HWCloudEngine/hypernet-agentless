@@ -3,6 +3,7 @@ import abc
 from neutron.api import extensions
 from neutron.api.v2 import attributes
 from neutron.api.v2 import resource_helper
+from neutron.common import exceptions
 from neutron.openstack.common import log as logging
 from neutron.plugins.common import constants
 from neutron.services import service_base
@@ -24,6 +25,8 @@ RESOURCE_ATTRIBUTE_MAP = {
     'agentlessports': {
         'id': {'allow_post': False, 'allow_put': False,
                'is_visible': True},
+        'name': {'allow_post': True, 'allow_put': False,
+                 'is_visible': True},
         'port_id': {'allow_post': True, 'allow_put': False,
                     'is_visible': True, 'required': True},
         'flavor': {'allow_post': True, 'allow_put': False,
@@ -35,37 +38,34 @@ RESOURCE_ATTRIBUTE_MAP = {
                       'is_visible': True, 'default': None},
         'index': {'allow_post': True, 'allow_put': False,
                   'is_visible': True, 'convert_to': attributes.convert_to_int,
-                  'type:values': [0, 1, 2, 3],
+                  'type:values': [0, 1, 2, 3], 'default': 0,
                   'required': True},
         'user_data': {'allow_post': False, 'allow_put': False,
                       'is_visible': True},
+        'provider': {'allow_post': False, 'allow_put': False,
+                     'is_visible': True},
     },
     'hyperswitchs': {
         'id': {'allow_post': False, 'allow_put': False,
                'is_visible': True},
-        'flavor': {'allow_post': True, 'allow_put': False,
-                   'is_visible': True, 'required': True},
-        'device_id': {'allow_post': True, 'allow_put': False,
-                      'is_visible': True, 'default': None},
         'tenant_id': {'allow_post': True, 'allow_put': False,
                       'is_visible': True, 'required': True},
-        'instance_id': {'allow_post': False, 'allow_put': False,
-                        'is_visible': True},
-        'instance_type': {'allow_post': False, 'allow_put': False,
-                          'is_visible': True},
-        'private_ip': {'allow_post': False, 'allow_put': False,
-                       'is_visible': True},
-        'host': {'allow_post': False, 'allow_put': False,
-                    'is_visible': True},
-        'mgnt_ip': {'allow_post': False, 'allow_put': False,
-                    'is_visible': True},
-        'data_ip': {'allow_post': False, 'allow_put': False,
-                    'is_visible': True},
-        'vms_ip_0': {'allow_post': False, 'allow_put': False,
-                     'is_visible': True},
-        'vms_ip_1': {'allow_post': False, 'allow_put': False,
-                     'is_visible': True},
-        'vms_ip_2': {'allow_post': False, 'allow_put': False,
+        'device_id': {'allow_post': True, 'allow_put': False,
+                      'is_visible': True, 'default': None},
+        'flavor': {'allow_post': True, 'allow_put': False,
+                   'is_visible': True, 'default': None},
+        'instance_id': {'allow_post': True, 'allow_put': False,
+                        'is_visible': True, 'default': None},
+        'instance_type': {'allow_post': True, 'allow_put': False,
+                          'is_visible': True, 'default': None},
+        'mgnt_ip': {'allow_post': True, 'allow_put': False,
+                    'is_visible': True, 'default': None},
+        'data_ip': {'allow_post': True, 'allow_put': False,
+                    'is_visible': True, 'default': None},
+        'vms_ips': {'allow_post': True, 'allow_put': False,
+                   'convert_to': attributes.convert_none_to_empty_list,
+                   'default': None, 'is_visible': True},
+        'provider': {'allow_post': False, 'allow_put': False,
                      'is_visible': True},
     },
 }
@@ -163,3 +163,34 @@ class HyperswitchPluginBase(service_base.ServicePluginBase):
                          sorts=None, limit=None, marker=None,
                          page_reverse=False):
         pass
+
+
+class HyperswitchNotFound(exceptions.NotFound):
+    message = _('Hyperswitch %(hyperswitch_id)s could not be found.')
+
+
+class HyperswitchProviderMultipleFound(exceptions.Conflict):
+    message = _('Multiple hyper switches '
+                '%(hyperswitch_id)s found in provider.')
+
+
+class AgentlessPortNotFound(exceptions.NotFound):
+    message = _('Agent less Port %(agentlessport_id)s could not be found.')
+
+
+class AgentlessPortNeutronPortNotFound(exceptions.NotFound):
+    message = _('Neutron port %(agentlessport_id)s found.')
+
+
+class AgentlessPortNeutronPortMultipleFound(exceptions.Conflict):
+    message = _('Multiple neutron ports for Agent less Port '
+                '%(agentlessport_id)s found.')
+
+class AgentlessPortProviderPortMultipleFound(exceptions.Conflict):
+    message = _('Multiple provider ports for Agent less Port '
+                '%(agentlessport_id)s found.')
+
+
+class AgentlessPortBadDeviceId(exceptions.Conflict):
+    message = _('Device id not match (received: %(device_id)s, '
+                'neutron port: %(neutron_device_id)s).')

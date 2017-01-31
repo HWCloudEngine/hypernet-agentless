@@ -2,6 +2,7 @@
 import time
 
 from hypernet_agentless import hs_constants
+from hypernet_agentless.extensions import hyperswitch
 from hypernet_agentless.services.hyperswitch import provider_api
 
 from neutronclient.v2_0 import client as neutron_client
@@ -65,6 +66,53 @@ class FSProvider(provider_api.ProviderDriver):
     def _net_equal(self, net1, net2):
         return self._get_net_id(net1) == self._get_net_id(net2) 
 
+    def _find_image(self, key, value):
+        images = self._nova_client.images.list()
+        for image in images:
+            if key in image.metadata and image.metadata[key] == value:
+                return image
+        return None
+
+    def _find_flavor(self, name):
+        for flavor in self._nova_client.flavors.list():
+            if flavor.name == name:
+                return flavor
+        return None
+
+    def _fs_instance_to_dict(self, fs_instance):
+        LOG.debug('_fs_instance_to_dict %s' % fs_instance)
+        LOG.debug('_fs_instance_to_dict networks %s' % fs_instance.networks)
+        res = {
+            'id': fs_instance.id,
+            'name': fs_instance.name,
+            'instance_type': self._get_flavor_name(fs_instance.flavor['id']),
+        }
+        vm_nets = self.get_vms_subnet()
+        vms_ips = []
+        LOG.debug('_fs_instance_to_dict vm_nets %s' % vm_nets)
+        for net_int in fs_instance.networks:
+            if self._net_equal(net_int, self._cfg.get_mgnt_network()):
+                res['mgnt_ip'] = fs_instance.networks[net_int][0]
+            if self._net_equal(net_int, self._cfg.get_data_network()):
+                res['data_ip'] = fs_instance.networks[net_int][0]
+            i = 0
+            for net in vm_nets:
+                if self._net_equal(net_int, net):
+                    vms_ips.append({
+                        'vms_ip': fs_instance.networks[net_int][0],
+                        'index': i
+                    })
+                i = i + 1
+        res['vms_ips'] = vms_ips
+        return res
+
+    def _get_flavor_name(self, flavor_id):
+        LOG.debug('flavor_id %s' % flavor_id)
+        try:
+            return self._nova_client.flavors.get(flavor_id).name
+        except:
+            return flavor_id
+
     def get_sgs(self):
         hs_sg, vm_sg = None, None
         security_groups = self._neutron_client.list_security_groups(
@@ -124,78 +172,25 @@ class FSProvider(provider_api.ProviderDriver):
             subnets_id.append(net['network_id'])
         return subnets_id
 
-    def get_hyperswitch_host_name(self,
-                                  hybrid_cloud_device_id=None,
-                                  hybrid_cloud_tenant_id=None):
-        if hybrid_cloud_device_id:
-            host = '%sdevice%s' % (HS_START_NAME, hybrid_cloud_device_id)
-        else:
-            host = '%stenant%s' % (HS_START_NAME, hybrid_cloud_tenant_id)
-        return host
-
-    def _find_image(self, key, value):
-        images = self._nova_client.images.list()
-        for image in images:
-            if key in image.metadata and image.metadata[key] == value:
-                return image
-        return None
-
-    def _find_flavor(self, name):
-        for flavor in self._nova_client.flavors.list():
-            if flavor.name == name:
-                return flavor
-        return None
-
-    def _fs_instance_to_dict(self, fs_instance):
-        LOG.debug('_fs_instance_to_dict %s' % fs_instance)
-        LOG.debug('_fs_instance_to_dict networks %s' % fs_instance.networks)
-        host = self.get_hyperswitch_host_name(
-            fs_instance.metadata.get('hybrid_cloud_device_id'),
-            fs_instance.metadata.get('hybrid_cloud_tenant_id'))
-        res = {
-            'id': fs_instance.id,
-            'host': host,
-            'device_id': fs_instance.metadata.get('hybrid_cloud_device_id'),
-            'tenant_id': fs_instance.metadata.get('hybrid_cloud_tenant_id'),
-            'instance_id': fs_instance.id,
-            'instance_type': self._get_flavor_name(fs_instance.flavor['id']),
-        }
-        vm_nets = self.get_vms_subnet()
-        LOG.debug('_fs_instance_to_dict vm_nets %s' % vm_nets)
-        for net_int in fs_instance.networks:
-            if self._net_equal(net_int, self._cfg.get_mgnt_network()):
-                res['mgnt_ip'] = fs_instance.networks[net_int][0]
-            if self._net_equal(net_int, self._cfg.get_data_network()):
-                res['data_ip'] = fs_instance.networks[net_int][0]
-            i = 0
-            for net in vm_nets:
-                if self._net_equal(net_int, net):
-                    res['vms_ip_%d' % i] = fs_instance.networks[net_int][0]
-                i = i + 1
-        if 'mgnt_ip' in res:
-            res['private_ip'] = res['mgnt_ip']
-        
-        return res
-
-    def launch_hyperswitch(self,
+    def create_hyperswitch(self,
                            user_data,
                            flavor,
                            net_list,
-                           hybrid_cloud_device_id=None,
-                           hybrid_cloud_tenant_id=None):
-        LOG.debug('launch hyperswitch %s, %s, %s, %s, %s' % (
-            user_data, flavor, net_list,
-            hybrid_cloud_device_id, hybrid_cloud_tenant_id))
-        hs_name = self.get_hyperswitch_host_name(
-            hybrid_cloud_device_id,
-            hybrid_cloud_tenant_id
-        )
+                           hyperswitch_id):
+        LOG.debug('create hyper switch %s, %s, %s, %s' % (
+            user_data, flavor, net_list, hyperswitch_id))
+        hs_instance = self._get_hyperswitch_by_id(hyperswitch_id)
+        if hs_instance:
+            return hs_instance
+
         hs_img = self._find_image('hybrid_cloud_image',
                                   hs_constants.HYPERSWITCH)
         hs_flavor = self._find_flavor(self._cfg.get_hs_flavor_map()[flavor])
-        user_metadata = ''
-        for k, v in user_data.iteritems():
-            user_metadata = '%s\n%s=%s' % (user_metadata, k, v)
+        user_metadata = None
+        if user_data:
+            user_metadata = ''
+            for k, v in user_data.iteritems():
+                user_metadata = '%s\n%s=%s' % (user_metadata, k, v)
 
         nics = []
         for net in net_list:
@@ -208,13 +203,10 @@ class FSProvider(provider_api.ProviderDriver):
             nics.append({'port-id': port['id']})
         
         meta = {
-            'hybrid_cloud_tenant_id': hybrid_cloud_tenant_id,
             'hybrid_cloud_type': hs_constants.HYPERSWITCH
         }
-        if hybrid_cloud_device_id:
-            meta['hybrid_cloud_device_id'] = hybrid_cloud_device_id
         hs_instance = self._nova_client.servers.create(
-             hs_name,
+             hyperswitch_id,
              hs_img,
              hs_flavor,
              meta=meta,
@@ -224,91 +216,63 @@ class FSProvider(provider_api.ProviderDriver):
         while len(hs_instance.networks) == 0:
             time.sleep(1)
             for inst in self._nova_client.servers.list(
-                search_opts={'name': hs_name}):
+                search_opts={'name': hyperswitch_id}):
                 hs_instance = inst
         return self._fs_instance_to_dict(hs_instance)
 
-    def _get_hyperswitchs_by_name(self, name, res):
-        for inst in self._nova_client.servers.list(search_opts={'name': name}):
-            res.append(self._fs_instance_to_dict(inst))
+    def get_hyperswitch(self, hyperswitch_id):
+        LOG.debug('get hyperswitch %s.' % hyperswitch_id)
+        i = 0
+        res = None
+        hyperswitchs = self._nova_client.servers.list(
+            search_opts={'name': hyperswitch_id})
+        for hyperswitch in hyperswitchs:
+            if i != 0:
+                raise hyperswitch.HyperswitchProviderMultipleFound(
+                    hyperswitch_id=hyperswitch_id)
+            res = self._fs_instance_to_dict(hyperswitch)
+            i = i + 1
+        LOG.debug('get hyperswitch %s result %s.' % (hyperswitch_id, res))
         return res
-
-    def _get_hyperswitchs_by_id(self, ident, res):
-        res.append(
-            self._fs_instance_to_dict(self._nova_client.servers.get(ident)))
-        return res
-
-    def _get_flavor_name(self, flavor_id):
-        LOG.debug('flavor_id %s' % flavor_id)
-        try:
-            return self._nova_client.flavors.get(flavor_id).name
-        except:
-            return flavor_id
-
-    def get_hyperswitchs(self,
-                         names=None,
-                         hyperswitch_ids=None,
-                         device_ids=None,
-                         tenant_ids=None):
-        LOG.debug('get hyperswitch for (names=%s, hyperswitch_ids=%s, '
-                  'device_ids=%s, tenant_ids=%s).' % (
-                      names, hyperswitch_ids, device_ids, tenant_ids))
-        res = []
-        has_filter = False
-        if names:
-            for name in names:
-                self._get_hyperswitchs_by_name(name, res)
-            has_filter = True
-        if hyperswitch_ids:
-            for hyperswitch_id in hyperswitch_ids:
-                self._get_hyperswitchs_by_id(hyperswitch_id, res)
-            has_filter = True
-        if device_ids:
-            for device_id in device_ids:
-                self._get_hyperswitchs_by_name(
-                    '%sdevice%s' % (HS_START_NAME, device_id), res)
-            has_filter = True
-        if tenant_ids:
-            for tenant_id in tenant_ids:
-                self._get_hyperswitchs_by_name(
-                    '%stenant%s' % (HS_START_NAME, tenant_id), res)
-            has_filter = True
-        if not has_filter:
-            self._get_hyperswitchs_by_name('%s*' % HS_START_NAME, res)
-        LOG.debug('result %s.' % res)
-        return res 
             
-
-    def start_hyperswitchs(self, hyperswitchs):
-        LOG.debug('start hyperswitchs %s.' % hyperswitchs)
+    def start_hyperswitch(self, hyperswitch_id):
+        LOG.debug('start hyperswitchs %s.' % hyperswitch_id)
+        hyperswitchs = self._nova_client.servers.list(
+            search_opts={'name': hyperswitch_id})
         for hyperswitch in hyperswitchs:
             hs = self._nova_client.servers.get(hyperswitch['id'])
             if not hs.status in ['ACTIVE', 'BUILD']:
                 self._nova_client.servers.start(hyperswitch['id'])
        
+    def stop_hyperswitch(self, hyperswitch_id):
+        LOG.debug('stop hyperswitch %s.' % hyperswitch_id)
+        hyperswitchs = self._nova_client.servers.list(
+            search_opts={'name': hyperswitch_id})
+        for hyperswitch in hyperswitchs:
+            hs = self._nova_client.servers.get(hyperswitch['id'])
+            if hs.status in ['ACTIVE']:
+                self._nova_client.servers.stop(hyperswitch['id'])
+
     def delete_hyperswitch(self, hyperswitch_id):
         LOG.debug('hyperswitch to delete: %s.' % (hyperswitch_id))
-        self._nova_client.servers.delete(hyperswitch_id)
+        hyperswitchs = self._nova_client.servers.list(
+            search_opts={'name': hyperswitch_id})
+        for hyperswitch in hyperswitchs:
+            self._nova_client.servers.delete(hyperswitch['id'])
 
     def _to_net_int(self, port):
         return {
-               'ip': port['fixed_ips'][0]['ip_address'],
-               'port_id': port['name'],
-               'device_id': None,
-               'tenant_id': None,
-               'index': 0
+           'id': port['id'],
+           'ip': port['fixed_ips'][0]['ip_address'],
+           'name': port['name'],
         }
     
-    def create_network_interface(
-            self,
-            port_id,
-            device_id,
-            tenant_id,
-            index,
-            subnet,
-            security_group):
-        LOG.debug('create net interface (%s, %s, %s, %d, %s, %s).' % (
-            port_id, device_id, tenant_id, index, subnet, security_group))
+    def create_network_interface(self,
+                                 port_id,
+                                 subnet,
+                                 security_group):
+        LOG.debug('create net interface (%s, %s, %s).' % (
+            port_id, subnet, security_group))
         ports = self._neutron_client.list_ports(name=[port_id])['ports']
         if len(ports) == 0 :
             port = self._neutron_client.create_port({'port': {
@@ -319,52 +283,32 @@ class FSProvider(provider_api.ProviderDriver):
             }})['port']
         else:
             if len(ports) != 1:
-                pass #TODO: exception
+                raise hyperswitch.AgentlessPortProviderPortMultipleFound(
+                    agentlessport_id=port_id)
             port = ports[0]
         LOG.debug('port: %s.' % (port))
         return self._to_net_int(port)
 
-    def delete_network_interface(
-            self, port_id):
+    def delete_network_interface(self, port_id):
         LOG.debug('delete net interface (%s).' % (port_id))
         ports = self._neutron_client.list_ports(name=[port_id])['ports']
-        if len(ports) == 0:
-            return False
         for port in ports:
             self._neutron_client.delete_port(port['id'])
-        return True
 
     def _add_net_int(self, ports_res, res):
         for port in ports_res['ports']:
             res.append(self._to_net_int(port))
 
-    def get_network_interfaces(self,
-                               context=None,
-                               names=None,
-                               port_ids=None,
-                               device_ids=None,
-                               private_ips=None,
-                               tenant_ids=None,
-                               indexes=None):
-        res = []
-        has_filter = False
-        if names:
-            self._add_net_int(
-                self._neutron_client.list_ports(name=names), res)
-            has_filter = True
-        if port_ids:
-            self._add_net_int(
-                self._neutron_client.list_ports(name=port_ids), res)
-            has_filter = True
-        if device_ids:
-            pass #TODO: exception
-        if private_ips:
-            self._add_net_int(
-                self._neutron_client.list_ports(fixed_ips={
-                    'ip_address': private_ips}), res)
-            has_filter = True
-        if indexes:
-            pass #TODO: exception
-        if not has_filter:
-            pass #TODO: exception
+    def get_network_interface(self, port_id):
+        LOG.debug('get network interface %s.' % port_id)
+        i = 0
+        res = None
+        ports = self._neutron_client.list_ports(name=[port_id])['ports']
+        for port in ports:
+            if i != 0:
+                raise hyperswitch.AgentlessPortProviderPortMultipleFound(
+                    agentlessport_id=port_id)
+            res = self._to_net_int(port)
+            i = i + 1
+        LOG.debug('get network interface %s result = %s.' % (port_id, res))
         return res

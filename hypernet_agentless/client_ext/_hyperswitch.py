@@ -20,11 +20,31 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
 
     def add_known_arguments(self, parser):
         parser.add_argument(
+            '--device-id', dest='device_id',
+            help=_('Device ID if created for one device.'))
+        parser.add_argument(
+            '--instance-id', dest='instance_id',
+            help=_('Optional Instance ID (when not managed by '
+                   'the provider driver).'))
+        parser.add_argument(
+            '--instance-type', dest='instance_type',
+            help=_('Optional Instance Type (when not managed by '
+                   'the provider driver).'))
+        parser.add_argument(
+            '--mgnt-ip', dest='mgnt_ip',
+            help=_('Optional Management IP (when not managed by '
+                   'the provider driver).'))
+        parser.add_argument(
+            '--data-ip', dest='data_ip',
+            help=_('Optional Data IP (when not managed by '
+                   'the provider driver).'))
+        parser.add_argument(
+            '--vms_ip', dest='vms_ips', action='append',
+            help=_('Optional VMs IP (when not managed by '
+                   'the provider driver).'))
+        parser.add_argument(
             'flavor', metavar='<FLAVOR>',
             help=_('VM network flavor: 0G, 1G or 10G.'))
-        parser.add_argument(
-            '--device-id', dest='device_id',
-            help=_('Deivce ID if created for one device.'))
 
     def args2body(self, parsed_args):
         body = {hs_constants.HYPERSWITCH: {'flavor': parsed_args.flavor}, }
