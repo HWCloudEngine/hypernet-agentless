@@ -29,7 +29,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             from providers import aws_impl
             self._provider_impl = aws_impl.AWSProvider()
         else:
-            self._provider_impl = providers.null_impl.NULLProvider()
+            from providers import null_impl
+            self._provider_impl = null_impl.NULLProvider()
         self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
         self._vms_subnets = self._provider_impl.get_vms_subnet()
         self._hs_sg, self._vm_sg  = self._provider_impl.get_sgs()
@@ -123,7 +124,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                         if hs_provider.get('vms_ips')
                         else hs.get('vms_ips'))
             for vms_ip in i_vms_ips:
-                vms_ips.append(hyperswitch_db.HyperSwitchVmIp(
+                vms_ips.append(hyperswitch_db.HyperSwitchVmsIp(
                     hyperswitch_id=host,
                     vms_ip=vms_ip['vms_ip'],
                     index=vms_ip['index']))

@@ -1,8 +1,8 @@
-import oslo_i18n
+from oslo import i18n
 
 DOMAIN = "hypernet_agentless"
 
-_translators = oslo_i18n.TranslatorFactory(domain=DOMAIN)
+_translators = i18n.TranslatorFactory(domain=DOMAIN)
 
 # The primary translation function using the well-known name "_"
 _ = _translators.primary
@@ -25,5 +25,5 @@ _LC = _translators.log_critical
 
 
 def get_available_languages():
-    return oslo_i18n.get_available_languages(DOMAIN)
+    return i18n.get_available_languages(DOMAIN)
 

@@ -44,7 +44,7 @@ def upgrade():
         sa.PrimaryKeyConstraint('id'))
 
     op.create_table(
-        'hyperswitchvmips',
+        'hyperswitchvmsips',
         sa.Column('hyperswitch_id',
                   sa.String(length=36),
                   nullable=False,
@@ -62,5 +62,5 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('hyperswitchvmips')
+    op.drop_table('hyperswitchvmsips')
     op.drop_table('hyperswitchs')

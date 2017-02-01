@@ -17,11 +17,12 @@ class HyperSwitch(model_base.BASEV2, models_v2.HasId, models_v2.HasTenant):
     data_ip = sa.Column(sa.String(length=64), nullable=True),
 
 
-class HyperSwitchVmIp(model_base.BASEV2):
+class HyperSwitchVmsIp(model_base.BASEV2):
     """Define an hyper switch VM IP."""
 
     hyperswitch_id = sa.Column(
         sa.String(length=36),
+        sa.ForeignKey('hyperswitchs.id'),
         nullable=False,
         primary_key=True)
     vms_ip = sa.Column(
@@ -32,7 +33,7 @@ class HyperSwitchVmIp(model_base.BASEV2):
     hyperswitch = orm.relationship(
         HyperSwitch,
         backref=orm.backref('vms_ips', cascade='all,delete', lazy='joined'),
-        primaryjoin='HyperSwitch.id==HyperSwitchVmIp.hyperswitch_id')
+        primaryjoin='HyperSwitch.id==HyperSwitchVmsIp.hyperswitch_id')
 
 
 class AgentlessPort(model_base.BASEV2, models_v2.HasId, models_v2.HasTenant):
