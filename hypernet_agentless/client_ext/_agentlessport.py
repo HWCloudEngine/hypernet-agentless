@@ -25,7 +25,7 @@ class AgentlessportCreate(extension.ClientExtensionCreate, Agentlessport):
     def add_known_arguments(self, parser):
         parser.add_argument(
             '--name', dest='name',
-            help=_('OPtional port name.'))
+            help=_('Optional port name.'))
         parser.add_argument(
             '--flavor', dest='flavor',
             help=_('Network Flavor for the VM: 0G, 1G or 10G.'))
@@ -33,6 +33,9 @@ class AgentlessportCreate(extension.ClientExtensionCreate, Agentlessport):
             '--device-id', dest='device_id',
             help=_('Optional Device ID of the port to create a '
                    'dedicated hyperswitch for this device.'))
+        parser.add_argument(
+            '--provider-ip', dest='provider_ip',
+            help=_('Optional Provider IP for Null provider.'))
         parser.add_argument(
             'port_id', metavar='<NEUTRON_PORT_ID>',
             help=_('Neutron Port ID.'))
@@ -53,6 +56,8 @@ class AgentlessportCreate(extension.ClientExtensionCreate, Agentlessport):
             body['agentlessport']['flavor'] = parsed_args.flavor
         if parsed_args.device_id:
             body['agentlessport']['device_id'] = parsed_args.device_id
+        if parsed_args.provider_ip:
+            body['agentlessport']['provider_ip'] = parsed_args.provider_ip
         return body
 
 

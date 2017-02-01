@@ -18,6 +18,9 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
 
     def add_known_arguments(self, parser):
         parser.add_argument(
+            '--name', dest='name',
+            help=_('Optional Hyperswitch name.'))
+        parser.add_argument(
             '--device-id', dest='device_id',
             help=_('Device ID if created for one device.'))
         parser.add_argument(
@@ -50,6 +53,8 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
         body = {'hyperswitch': {'flavor': parsed_args.flavor}, }
         if parsed_args.tenant_id:
             body['hyperswitch']['tenant_id'] = parsed_args.tenant_id
+        if parsed_args.name:
+            body['hyperswitch']['name'] = parsed_args.name
         if parsed_args.device_id:
             body['hyperswitch']['device_id'] = parsed_args.device_id
         if parsed_args.instance_type:

@@ -9,12 +9,13 @@ from sqlalchemy import orm
 class HyperSwitch(model_base.BASEV2, models_v2.HasId, models_v2.HasTenant):
     """Define an hyper switch."""
 
+    name = sa.Column(sa.String(length=255), nullable=True)
     device_id = sa.Column(sa.String(length=255), nullable=True)
     flavor = sa.Column(sa.String(length=255), nullable=True)
-    instance_id = sa.Column(sa.String(length=255), nullable=True),
-    instance_type = sa.Column(sa.String(length=255), nullable=True),
-    mgnt_ip = sa.Column(sa.String(length=64), nullable=True),
-    data_ip = sa.Column(sa.String(length=64), nullable=True),
+    instance_id = sa.Column(sa.String(length=255), nullable=True)
+    instance_type = sa.Column(sa.String(length=255), nullable=True)
+    mgnt_ip = sa.Column(sa.String(length=64), nullable=True)
+    data_ip = sa.Column(sa.String(length=64), nullable=True)
 
 
 class HyperSwitchVmsIp(model_base.BASEV2):

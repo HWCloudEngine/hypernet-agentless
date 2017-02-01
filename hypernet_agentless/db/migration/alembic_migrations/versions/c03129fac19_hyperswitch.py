@@ -35,6 +35,7 @@ def upgrade():
         'hyperswitchs',
         sa.Column('id', sa.String(length=36), nullable=False),
         sa.Column('tenant_id', sa.String(length=255), nullable=False),
+        sa.Column('name', sa.String(length=255), nullable=True),
         sa.Column('device_id', sa.String(length=255), nullable=True),
         sa.Column('flavor', sa.String(length=255), nullable=True),
         sa.Column('instance_id', sa.String(length=255), nullable=True),

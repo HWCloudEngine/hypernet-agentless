@@ -51,25 +51,25 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 'index': vms_ip.index
             })
         res = {
-            'id': hs_db['id'],
-            'tenant_id': hs_db['tenant_id'],
-            'device_id': hs_db.get('device_id'),
-            'flavor': hs_db.get('flavor'),
-            'instance_id': hs_db.get('instance_id'),
-            'instance_type': hs_db.get('instance_type'),
-            'mgnt_ip': hs_db.get('mgnt_ip'),
-            'data_ip': hs_db.get('data_ip'),
-            'flavor': hs_db.get('flavor'),
+            'id': hs_db.id,
+            'name': hs_db.name,
+            'tenant_id': hs_db.tenant_id,
+            'device_id': hs_db.device_id,
+            'flavor': hs_db.flavor,
+            'instance_id': hs_db.instance_id,
+            'instance_type': hs_db.instance_type,
+            'mgnt_ip': hs_db.mgnt_ip,
+            'data_ip': hs_db.data_ip,
             'vms_ips': vms_ips,
             'provider': hs_provider,
         }
         LOG.debug('_make_hyperswitch_dict result: %s' % res)
         return res
 
-    def _get_attr(self, hs_provider, hs, attr):
-        if not hs_provider or not attr in hs_provider:
-            return hs.get(attr)
-        return hs.get(attr)
+    def _get_attr(self, provider_obj, param_obj, attr):
+        if provider_obj and attr in provider_obj:
+            return provider_obj[attr]
+        return param_obj.get(attr)
 
     def create_hyperswitch(self, context, hyperswitch):
         LOG.debug('hyper switch %s to create.' % hyperswitch)
@@ -125,14 +125,17 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 host
             )
             vms_ips = []
-            for vms_ip in self._get_attr(hs_provider, hs, 'vms_ips'):
-                vms_ips.append(hyperswitch_db.HyperSwitchVmsIp(
-                    hyperswitch_id=host,
-                    vms_ip=vms_ip['vms_ip'],
-                    index=vms_ip['index']))
+            i_vms_ips = self._get_attr(hs_provider, hs, 'vms_ips')
+            if i_vms_ips:
+                for vms_ip in i_vms_ips:
+                    vms_ips.append(hyperswitch_db.HyperSwitchVmsIp(
+                        hyperswitch_id=host,
+                        vms_ip=vms_ip['vms_ip'],
+                        index=vms_ip['index']))
             hs_db = hyperswitch_db.HyperSwitch(
                 id=host,
                 tenant_id=hs.get('tenant_id'),
+                name=hs.get('name'),
                 device_id=hs.get('device_id'),
                 flavor=self._get_attr(hs_provider, hs, 'flavor'),
                 instance_id=self._get_attr(hs_provider, hs, 'instance_id'),
@@ -142,8 +145,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 vms_ips=vms_ips
             )
             context.session.add(hs_db)
-            hs =  self._make_hyperswitch_dict(hs_db, hs_provider)
-            return hs
+            return self._make_hyperswitch_dict(hs_db, hs_provider)
 
     def get_hyperswitch(self, context, hyperswitch_id, fields=None):
         LOG.debug('hyperswitch %s to show.' % hyperswitch_id)
@@ -176,13 +178,13 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         self._provider_impl.delete_hyperswitch(hyperswitch_id)
 
         # remove agents
-        if hs_db.get('host'):
-            agents = self._core_plugin.get_agents(
-                context,
-                filters={'host': [hs_db.get('host')]})
-            LOG.debug('agents to delete: %s' % agents)
-            for agent in agents:
-                self._core_plugin.delete_agent(context, agent.get('id'))
+        agents = self._core_plugin.get_agents(
+            context,
+            filters={'host': [hs_db.id]}
+        )
+        LOG.debug('agents to delete: %s' % agents)
+        for agent in agents:
+            self._core_plugin.delete_agent(context, agent.get('id'))
 
     def get_hyperswitchs(self, context, filters=None, fields=None,
                          sorts=None, limit=None, marker=None,
@@ -208,26 +210,30 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                                  hsservers=None):
         LOG.debug('_make_agentlessport_dict %s, %s, %s, %s' % (
             agentlessport_db, neutron_port, provider_net_int, hsservers))
-        index = agentlessport_db['index']
+        index = agentlessport_db.index
         mac_address = None
         if neutron_port:
             mac_address = neutron_port['mac_address']
         hsservers_ip = None
         if hsservers:
             for hsserver in hsservers:
-                if hsservers_ip:
-                    hsservers_ip = '%s, %s' % (
-                        hsservers_ip, hsserver['vms_ip_%d' % index])
-                else:
-                    hsservers_ip = '%s' % hsserver['vms_ip_%d' % index]
+                vms_ips = hsserver.get('vms_ips')
+                if vms_ips:
+                    for vms_ip in vms_ips:
+                        if vms_ip['index'] == index: 
+                            if hsservers_ip:
+                                hsservers_ip = '%s, %s' % (
+                                    hsservers_ip, vms_ip['vms_ip'])
+                            else:
+                                hsservers_ip = '%s' % vms_ip['vms_ip']
         res = {
-            'id': agentlessport_db['id'],
-            'tenant_id': agentlessport_db['tenant_id'],
-            'device_id': agentlessport_db.get('device_id'),
-            'port_id': agentlessport_db['id'],
-            'name': agentlessport_db.get('name'),
+            'id': agentlessport_db.id,
+            'tenant_id': agentlessport_db.tenant_id,
+            'device_id': agentlessport_db.device_id,
+            'port_id': agentlessport_db.id,
+            'name': agentlessport_db.name,
             'index': index,
-            'flavor': agentlessport_db.get('flavor'),
+            'flavor': agentlessport_db.flavor,
             'user_data': 'mac%d = %s\nhsservers%d = %s' % (
                 index, mac_address, index, hsservers_ip),
             'provider': provider_net_int,
@@ -277,7 +283,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 tenant_id=tenant_id,
                 device_id=al_device_id,
                 name=al_port.get('name'),
-                provider_ip=net_int_provider['ip'],
+                provider_ip=self._get_attr(
+                    net_int_provider, al_port, 'provider_ip'),
                 flavor=flavor,
                 index=index)
             context.session.add(agentlessport_db)
@@ -286,7 +293,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         if config.get_level() == 'vm' or al_device_id:
             hsservers = self.get_hyperswitchs(
                 context,
-                filter={'device_id': [device_id]}
+                filters={'device_id': [device_id]}
             )
             if not hsservers or len(hsservers) == 0:
                 hsservers = [self.create_hyperswitch(context, {
@@ -298,7 +305,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         else:
             hsservers = self.get_hyperswitchs(
                 context,
-                filter={'tenant_id': [tenant_id]})
+                filters={'tenant_id': [tenant_id]})
             if not hsservers or len(hsservers) == 0:
                 hsservers = [self.create_hyperswitch(context, {
                     hs_constants.HYPERSWITCH: {
@@ -329,12 +336,12 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
     def _get_provider_hyperswitch_server(self, context, device_id, tenant_id):
         hsservers = self.get_hyperswitchs(
             context,
-            filter={'device_id': [device_id]}
+            filters={'device_id': [device_id]}
         )
         if not hsservers or len(hsservers) == 0:
             hsservers = self.get_hyperswitchs(
                 context,
-                filter={'tenant_id': [tenant_id]}
+                filters={'tenant_id': [tenant_id]}
             )
         return hsservers
 
@@ -357,7 +364,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
         # hyperswitch for this agent less port
         hsservers = self._get_provider_hyperswitch_server(
-            neutron_port['device_id'], neutron_port['tenant_id']) 
+            context, neutron_port['device_id'], neutron_port['tenant_id']) 
 
         return self._make_agentlessport_dict(
             agentlessport_db, neutron_port, provider_net_int, hsservers)
@@ -392,7 +399,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             provider_net_int = self._get_provider_net_int(
                 context, port_id)
             hsservers = self._get_provider_hyperswitch_server(
-                neutron_port['device_id'], neutron_port['tenant_id']) 
+                context, neutron_port['device_id'], neutron_port['tenant_id']) 
             res.append(self._make_agentlessport_dict(
                 agentlessport_db, neutron_port, provider_net_int, hsservers))
         return res

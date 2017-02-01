@@ -83,7 +83,7 @@ class FSProvider(provider_api.ProviderDriver):
         LOG.debug('_fs_instance_to_dict %s' % fs_instance)
         LOG.debug('_fs_instance_to_dict networks %s' % fs_instance.networks)
         res = {
-            'id': fs_instance.id,
+            'instance_id': fs_instance.id,
             'name': fs_instance.name,
             'instance_type': self._get_flavor_name(fs_instance.flavor['id']),
         }
@@ -104,6 +104,7 @@ class FSProvider(provider_api.ProviderDriver):
                     })
                 i = i + 1
         res['vms_ips'] = vms_ips
+        LOG.debug('_fs_instance_to_dict result %s' % res)
         return res
 
     def _get_flavor_name(self, flavor_id):
@@ -179,7 +180,7 @@ class FSProvider(provider_api.ProviderDriver):
                            hyperswitch_id):
         LOG.debug('create hyper switch %s, %s, %s, %s' % (
             user_data, flavor, net_list, hyperswitch_id))
-        hs_instance = self._get_hyperswitch_by_id(hyperswitch_id)
+        hs_instance = self.get_hyperswitch(hyperswitch_id)
         if hs_instance:
             return hs_instance
 
@@ -224,46 +225,44 @@ class FSProvider(provider_api.ProviderDriver):
         LOG.debug('get hyperswitch %s.' % hyperswitch_id)
         i = 0
         res = None
-        hyperswitchs = self._nova_client.servers.list(
+        hss = self._nova_client.servers.list(
             search_opts={'name': hyperswitch_id})
-        for hyperswitch in hyperswitchs:
+        for hs in hss:
             if i != 0:
                 raise hyperswitch.HyperswitchProviderMultipleFound(
                     hyperswitch_id=hyperswitch_id)
-            res = self._fs_instance_to_dict(hyperswitch)
+            res = self._fs_instance_to_dict(hs)
             i = i + 1
         LOG.debug('get hyperswitch %s result %s.' % (hyperswitch_id, res))
         return res
             
     def start_hyperswitch(self, hyperswitch_id):
         LOG.debug('start hyperswitchs %s.' % hyperswitch_id)
-        hyperswitchs = self._nova_client.servers.list(
+        hss = self._nova_client.servers.list(
             search_opts={'name': hyperswitch_id})
-        for hyperswitch in hyperswitchs:
-            hs = self._nova_client.servers.get(hyperswitch['id'])
+        for hs in hss:
             if not hs.status in ['ACTIVE', 'BUILD']:
-                self._nova_client.servers.start(hyperswitch['id'])
+                self._nova_client.servers.start(hs.id)
        
     def stop_hyperswitch(self, hyperswitch_id):
         LOG.debug('stop hyperswitch %s.' % hyperswitch_id)
-        hyperswitchs = self._nova_client.servers.list(
+        hss = self._nova_client.servers.list(
             search_opts={'name': hyperswitch_id})
-        for hyperswitch in hyperswitchs:
-            hs = self._nova_client.servers.get(hyperswitch['id'])
+        for hs in hss:
             if hs.status in ['ACTIVE']:
-                self._nova_client.servers.stop(hyperswitch['id'])
+                self._nova_client.servers.stop(hs.id)
 
     def delete_hyperswitch(self, hyperswitch_id):
         LOG.debug('hyperswitch to delete: %s.' % (hyperswitch_id))
-        hyperswitchs = self._nova_client.servers.list(
+        hss = self._nova_client.servers.list(
             search_opts={'name': hyperswitch_id})
-        for hyperswitch in hyperswitchs:
-            self._nova_client.servers.delete(hyperswitch['id'])
+        for hs in hss:
+            self._nova_client.servers.delete(hs.id)
 
     def _to_net_int(self, port):
         return {
            'id': port['id'],
-           'ip': port['fixed_ips'][0]['ip_address'],
+           'provider_ip': port['fixed_ips'][0]['ip_address'],
            'name': port['name'],
         }
     
