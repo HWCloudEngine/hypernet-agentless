@@ -37,7 +37,7 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
             help=_('Optional Data IP (when not managed by '
                    'the provider driver).'))
         parser.add_argument(
-            '--vms_ip', dest='vms_ips', action='append',
+            '--vms-ip', dest='vms_ips', action='append',
             help=_('Optional VMs IP (when not managed by '
                    'the provider driver).'))
         parser.add_argument(
