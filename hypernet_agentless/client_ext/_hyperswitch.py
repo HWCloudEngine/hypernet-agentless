@@ -1,8 +1,8 @@
 
+from neutronclient._i18n import _
 from neutronclient.common import extension
 
 from hypernet_agentless import hs_constants
-from hypernet_agentless._i18n import _
 
 
 class HyperSwitch(extension.NeutronClientExtension):

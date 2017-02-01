@@ -1,6 +1,7 @@
+
+from neutronclient._i18n import _
 from neutronclient.common import extension
 from neutronclient.neutron.v2_0 import NeutronCommand
-from hypernet_agentless._i18n import _
 
 
 class Agentlessport(extension.NeutronClientExtension):

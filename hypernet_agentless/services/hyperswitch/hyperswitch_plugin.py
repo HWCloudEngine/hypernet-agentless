@@ -196,7 +196,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                          sorts=None, limit=None, marker=None,
                          page_reverse=False):
         LOG.debug('get hyperswitch %s.' % filters)
-        hyperswitchs_db = self._get_collection(
+        hss_db = self._get_collection(
             context,
             hyperswitch_db.HyperSwitch,
             self._make_hyperswitch_dict,
@@ -204,10 +204,10 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             sorts=sorts,
             limit=limit,
             page_reverse=page_reverse)
-        for hyperswitch_db in hyperswitchs_db:
-            hyperswitch_db['provider'] = self._provider_impl.get_hyperswitch(
-                hyperswitch_db['id'])
-        return hyperswitchs_db
+        for hs_db in hss_db:
+            hs_db['provider'] = self._provider_impl.get_hyperswitch(
+                hs_db['id'])
+        return hss_db
 
     def _make_agentlessport_dict(self,
                                  agentlessport_db,
