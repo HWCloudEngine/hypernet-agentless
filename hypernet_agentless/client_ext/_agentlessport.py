@@ -47,6 +47,8 @@ class AgentlessportCreate(extension.ClientExtensionCreate, Agentlessport):
                 'index': parsed_args.index,
             }
         }
+        if parsed_args.name:
+            body['agentlessport']['name'] = parsed_args.name
         if parsed_args.flavor:
             body['agentlessport']['flavor'] = parsed_args.flavor
         if parsed_args.device_id:

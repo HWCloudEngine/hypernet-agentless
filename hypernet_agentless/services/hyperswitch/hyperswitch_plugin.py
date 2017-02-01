@@ -60,11 +60,16 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'mgnt_ip': hs_db.get('mgnt_ip'),
             'data_ip': hs_db.get('data_ip'),
             'flavor': hs_db.get('flavor'),
-            'vms_ips': vms_ip,
+            'vms_ips': vms_ips,
             'provider': hs_provider,
         }
         LOG.debug('_make_hyperswitch_dict result: %s' % res)
         return res
+
+    def _get_attr(self, hs_provider, hs, attr):
+        if not hs_provider or not attr in hs_provider:
+            return hs.get(attr)
+        return hs.get(attr)
 
     def create_hyperswitch(self, context, hyperswitch):
         LOG.debug('hyper switch %s to create.' % hyperswitch)
@@ -120,10 +125,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 host
             )
             vms_ips = []
-            i_vms_ips = (hs_provider.get('vms_ips')
-                        if hs_provider.get('vms_ips')
-                        else hs.get('vms_ips'))
-            for vms_ip in i_vms_ips:
+            for vms_ip in self._get_attr(hs_provider, hs, 'vms_ips'):
                 vms_ips.append(hyperswitch_db.HyperSwitchVmsIp(
                     hyperswitch_id=host,
                     vms_ip=vms_ip['vms_ip'],
@@ -132,21 +134,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 id=host,
                 tenant_id=hs.get('tenant_id'),
                 device_id=hs.get('device_id'),
-                flavor=(hs_provider.get('flavor')
-                        if hs_provider.get('flavor')
-                        else hs.get('flavor')),
-                instance_id=(hs_provider.get('instance_id')
-                             if hs_provider.get('instance_id')
-                             else hs.get('instance_id')),
-                instance_type=(hs_provider.get('instance_type')
-                               if hs_provider.get('instance_type')
-                               else hs.get('instance_type')),
-                mgnt_ip=(hs_provider.get('mgnt_ip')
-                         if hs_provider.get('mgnt_ip')
-                         else hs.get('mgnt_ip')),
-                data_ip=(hs_provider.get('data_ip')
-                         if hs_provider.get('data_ip')
-                         else hs.get('data_ip')),
+                flavor=self._get_attr(hs_provider, hs, 'flavor'),
+                instance_id=self._get_attr(hs_provider, hs, 'instance_id'),
+                instance_type=self._get_attr(hs_provider, hs, 'instance_type'),
+                mgnt_ip=self._get_attr(hs_provider, hs, 'mgnt_ip'),
+                data_ip=self._get_attr(hs_provider, hs, 'data_ip'),
                 vms_ips=vms_ips
             )
             context.session.add(hs_db)

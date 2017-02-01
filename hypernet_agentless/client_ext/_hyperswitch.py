@@ -2,11 +2,9 @@
 from neutronclient._i18n import _
 from neutronclient.common import extension
 
-from hypernet_agentless import hs_constants
-
 
 class HyperSwitch(extension.NeutronClientExtension):
-    resource = hs_constants.HYPERSWITCH
+    resource = 'hyperswitch'
     resource_plural = '%ss' % resource
     object_path = '/%s' % resource_plural
     resource_path = '/%s/%%s' % resource_plural
@@ -47,11 +45,19 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
             help=_('VM network flavor: 0G, 1G or 10G.'))
 
     def args2body(self, parsed_args):
-        body = {hs_constants.HYPERSWITCH: {'flavor': parsed_args.flavor}, }
+        body = {'hyperswitch': {'flavor': parsed_args.flavor}, }
         if parsed_args.tenant_id:
-            body[hs_constants.HYPERSWITCH]['tenant_id'] = parsed_args.tenant_id
+            body['hyperswitch']['tenant_id'] = parsed_args.tenant_id
         if parsed_args.device_id:
-            body[hs_constants.HYPERSWITCH]['device_id'] = parsed_args.device_id
+            body['hyperswitch']['device_id'] = parsed_args.device_id
+        if parsed_args.instance_type:
+            body['hyperswitch']['instance_type'] = parsed_args.instance_type
+        if parsed_args.mgnt_ip:
+            body['hyperswitch']['mgnt_ip'] = parsed_args.mgnt_ip
+        if parsed_args.data_ip:
+            body['hyperswitch']['data_ip'] = parsed_args.data_ip
+        if parsed_args.vms_ips:
+            body['hyperswitch']['vms_ips'] = parsed_args.vms_ips
         return body
 
 
