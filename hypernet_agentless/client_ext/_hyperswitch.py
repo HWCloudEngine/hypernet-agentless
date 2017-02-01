@@ -1,7 +1,7 @@
 
 from neutronclient._i18n import _
 from neutronclient.common import extension
-
+from neutronclient.common import utils
 
 class HyperSwitch(extension.NeutronClientExtension):
     resource = 'hyperswitch'
@@ -37,7 +37,9 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
             help=_('Optional Data IP (when not managed by '
                    'the provider driver).'))
         parser.add_argument(
-            '--vms-ip', dest='vms_ips', action='append',
+            '--vms-ip', metavar='vms_ip=VMS_IP,index=INDEX',
+            dest='vms_ips', action='append',
+            type=utils.str2dict_type(required_keys=['vms_ip', 'index']),
             help=_('Optional VMs IP (when not managed by '
                    'the provider driver).'))
         parser.add_argument(
