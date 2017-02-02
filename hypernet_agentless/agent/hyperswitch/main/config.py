@@ -15,7 +15,7 @@ class Config(object):
         'neutron-plugin-openvswitch-agent',
         'hyperswitch-cleanup',
         'hyperswitch',
-        'hyperswitch-config',
+#        'hyperswitch-config',
     ]
 
     def _write_file(self, file_name, content):
