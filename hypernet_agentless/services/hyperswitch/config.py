@@ -1,3 +1,4 @@
+import socket
 
 from hypernet_agentless import hs_constants
 from hypernet_agentless._i18n import _
@@ -64,7 +65,25 @@ def get_host():
 
 
 def get_rabbit_hosts():
-    return cfg.CONF.rabbit_hosts
+    rabbit_hosts = None
+    for rabbit_host in cfg.CONF.rabbit_hosts:
+        # translate to ip
+        if ':' in rabbit_host:
+            a = rabbit_host.split(':')
+            h = a[0]
+            p = a[1]
+        else:
+            h = rabbit_host
+        h = socket.gethostbyname_ex(h)[2][0]
+        if ':' in rabbit_host:
+            rabbit_host = '%s:%s' % (h, p)
+        else:
+            rabbit_host = h
+        if rabbit_hosts:
+            rabbit_hosts = '%s, %s' % (rabbit_hosts, rabbit_host)
+        else:
+            rabbit_hosts = rabbit_host
+    return rabbit_hosts
 
 
 def get_rabbit_userid():

@@ -99,18 +99,12 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         LOG.debug('hyper switch %s to create.' % hyperswitch)
         hs = hyperswitch[hs_constants.HYPERSWITCH]
 
-        rabbit_hosts = None
-        for rabbit_host in config.get_rabbit_hosts():
-            if rabbit_hosts:
-                rabbit_hosts = '%s, %s' % (rabbit_hosts, rabbit_host)
-            else:
-                rabbit_hosts = rabbit_host
         hyperswitch_id = uuidutils.generate_uuid()
 
         user_data = {
             'rabbit_userid': config.get_rabbit_userid(),
             'rabbit_password': config.get_rabbit_password(),
-            'rabbit_hosts': rabbit_hosts,
+            'rabbit_hosts': config.get_rabbit_hosts(),
             'host': hyperswitch_id,
             'network_mngt_interface': 'eth0',
         }
