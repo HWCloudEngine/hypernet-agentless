@@ -1,16 +1,13 @@
-import glob
 import json
+import os
 import SocketServer
 import subprocess
 
 
-class Config(object):
-    _CONF_PATHS = [
-        '/etc/neutron/*.tmpl',
-        '/etc/neutron/plugins/ml2/*.tmpl',
-        '/etc/hyperswitch/*.tmpl',
-    ]
+MNGT_IP_FILE = '/etc/hyperswitch/mngt_ip'
 
+
+class Config(object):
     _SERVICES = [
         'neutron-ovs-cleanup',
         'neutron-l3-agent',
@@ -18,27 +15,41 @@ class Config(object):
         'neutron-plugin-openvswitch-agent',
         'hyperswitch-cleanup',
         'hyperswitch',
+        'hyperswitch-config',
     ]
-    
+
+    def _write_file(self, file_name, content):
+        with open(file_name, 'w') as dest:
+            if isinstance(content, str):
+                dest.write(content)
+            else:
+                for line in content:
+                    dest.write(line)
+
     def apply(self, params):
-        for conf_path in self._CONF_PATHS:
-            for file_conf in glob.glob(conf_path):
-                with open(file_conf, 'r') as source:
-                    lines = source.readlines()                
-                for i in range(len(lines)):
-                    for key, value in params.iteritems():
-                        lines[i] = lines[i].replace('##%s##' % key, value)
-                with open(file_conf[0:file_conf.rfind('.')], 'w') as dest:
-                    for line in lines:
-                        dest.write(line)
+        proc = subprocess.Popen(
+            ['find', '/etc', '-name', '*.tmpl'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, _ = proc.communicate()
+        for file_conf in stdout.split():
+            with open(file_conf, 'r') as source:
+                lines = source.readlines()                
+            for i in range(len(lines)):
+                for key, value in params.iteritems():
+                    lines[i] = lines[i].replace('##%s##' % key, value)
+            self._write_file(
+                file_conf[0:file_conf.rfind('.')], lines)
         if 'host' in params:
             subprocess.call(['hostname', params['host']]) 
-            with open('/etc/hostname', 'w') as dest:
-                dest.write(params['host'])
+            self._write_file('/etc/hostname', params['host'])
+        if 'mngt_ip' in params:
+            self._write_file(MNGT_IP_FILE, params['mngt_ip'])
         for service in self._SERVICES:
             subprocess.call(['service', service, 'stop']) 
             subprocess.call(['service', service, 'start']) 
-            
+
 
 class ConfigTCPHandler(SocketServer.StreamRequestHandler):
 
@@ -48,11 +59,14 @@ class ConfigTCPHandler(SocketServer.StreamRequestHandler):
         print('received %s from %s' % (data, self.client_address[0]))
         config.apply(data)
         self.wfile.write("OK")
-        
+
 
 def main():
-    HOST, PORT = "0.0.0.0", 8080
-
+    HOST = '0.0.0.0'
+    PORT = 8080
+    if os.path.exists(MNGT_IP_FILE):
+        with open(MNGT_IP_FILE, 'r') as source:
+            HOST = source.readline()                
     server = SocketServer.TCPServer((HOST, PORT), ConfigTCPHandler)
     print('Started config tcp server on %s:%s ' % (HOST, PORT))
 
