@@ -34,6 +34,7 @@ class Config(object):
         )
         stdout, _ = proc.communicate()
         for file_conf in stdout.split():
+            print('file configuration %s' % file_conf)
             with open(file_conf, 'r') as source:
                 lines = source.readlines()                
             for i in range(len(lines)):
@@ -47,8 +48,7 @@ class Config(object):
         if 'mngt_ip' in params:
             self._write_file(MNGT_IP_FILE, params['mngt_ip'])
         for service in self._SERVICES:
-            subprocess.call(['service', service, 'stop']) 
-            subprocess.call(['service', service, 'start']) 
+            subprocess.call(['service', service, 'restart']) 
 
 
 class ConfigTCPHandler(SocketServer.StreamRequestHandler):
