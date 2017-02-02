@@ -10,7 +10,7 @@ class Config(object):
         '/etc/neutron/plugins/ml2/*.tmpl',
         '/etc/hyperswitch/*.tmpl',
     ]
-    
+
     _SERVICES = [
         'neutron-ovs-cleanup',
         'neutron-l3-agent',
@@ -46,9 +46,9 @@ class ConfigTCPHandler(SocketServer.StreamRequestHandler):
         self.config = Config()
 
     def handle(self):
-        self.data = json.decoder.JSONDecoder().decode( 
-            self.rfile.readline().strip())
-        self.config.apply(self.data)
+        data = json.decoder.JSONDecoder().decode(self.rfile.readline().strip())
+        print('received %s from %s' % (data, self.client_address[0]))
+        self.config.apply(data)
         self.wfile.write("OK")
         
 
