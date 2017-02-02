@@ -31,10 +31,14 @@ class Config(object):
                 with open(file_conf[0:file_conf.rfind('.')], 'w') as dest:
                     for line in lines:
                         dest.write(line)
+        if 'host' in params:
+            subprocess.call(['hostname', params['host']]) 
+            with open('/etc/hostname', 'w') as dest:
+                dest.write(params['host'])
         for service in self._SERVICES:
             subprocess.call(['service', service, 'stop']) 
             subprocess.call(['service', service, 'start']) 
-
+            
 
 class ConfigTCPHandler(SocketServer.StreamRequestHandler):
 

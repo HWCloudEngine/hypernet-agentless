@@ -171,7 +171,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     vms_ips=vms_ips
                 )
                 context.session.add(hs_db)
-                self._send()
+                if 'mgnt_ip' in hs_provider:
+                    self._send(
+                        hs_provider['mgnt_ip'], 8080, user_data)
                 return self._make_hyperswitch_dict(hs_db, hs_provider)
             except:
                 self._provider_impl.delete_hyperswitch(hyperswitch_id)
