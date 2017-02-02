@@ -42,13 +42,11 @@ class Config(object):
 
 class ConfigTCPHandler(SocketServer.StreamRequestHandler):
 
-    def __init__(self):
-        self.config = Config()
-
     def handle(self):
+        config = Config()
         data = json.decoder.JSONDecoder().decode(self.rfile.readline().strip())
         print('received %s from %s' % (data, self.client_address[0]))
-        self.config.apply(data)
+        config.apply(data)
         self.wfile.write("OK")
         
 

@@ -1,5 +1,6 @@
 import json
 import socket
+import sys
 import time
 
 from hypernet_agentless import hs_constants
@@ -76,20 +77,22 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
     def _send(self, host, port, data):
         retry = 0
+        data = json.encoder.JSONEncoder().encode((data))
         while True:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                LOG.debug('%d: try to send to %s:%s (%s)' % (
+                    retry, host, port, data))
                 sock.connect((host, port))
-                sock.sendall(
-                    json.encoder.JSONEncoder().encode((data)) + "\n")
-                sock.sendall(".\n")
+                sock.sendall(data + "\n.\n")
                 received = sock.recv(1024)
                 if received == 'OK' or retry == 20:
                     break;
             except:
+                LOG.error('%s' % sys.exc_info()[0])
                 time.sleep(5)
-                retry = retry + 1
             finally:
+                retry = retry + 1
                 sock.close()
 
     def create_hyperswitch(self, context, hyperswitch):
