@@ -5,7 +5,7 @@ import sys
 
 from oslo import messaging
 
-from hypernet_agentless.agent.hyperswitch import config
+from hypernet_agentless.agent.hyperswitch.main import config
 from hypernet_agentless.agent.hyperswitch import vif_hyperswitch_driver
 from hypernet_agentless import hs_constants
 
