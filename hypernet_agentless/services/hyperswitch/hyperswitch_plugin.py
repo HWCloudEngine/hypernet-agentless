@@ -95,12 +95,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 retry = retry + 1
                 sock.close()
 
-    def create_hyperswitch(self, context, hyperswitch):
-        LOG.debug('hyper switch %s to create.' % hyperswitch)
-        hs = hyperswitch[hs_constants.HYPERSWITCH]
-
-        hyperswitch_id = uuidutils.generate_uuid()
-
+    def _get_userdata_net_list(self, hyperswitch_id):
         user_data = {
             'rabbit_userid': config.get_rabbit_userid(),
             'rabbit_password': config.get_rabbit_password(),
@@ -134,6 +129,15 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             else:
                 user_data['network_vms_interface'] = 'eth0'
                 net_list[0]['security_group'].append(self._hs_sg)
+        return user_data, net_list
+
+    def create_hyperswitch(self, context, hyperswitch):
+        LOG.debug('hyper switch %s to create.' % hyperswitch)
+        hs = hyperswitch[hs_constants.HYPERSWITCH]
+
+        hyperswitch_id = uuidutils.generate_uuid()
+
+        user_data, net_list = self._get_userdata_net_list(hyperswitch_id)
 
         with context.session.begin(subtransactions=True):
             hs_provider = self._provider_impl.create_hyperswitch(
@@ -193,6 +197,19 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
 
         return self._make_hyperswitch_dict(hs_db, hs_provider)
+
+    def update_hyperswitch(self,
+                           context,
+                           hyperswitch_id,
+                           hyperswitch):
+        LOG.debug('hyperswitch %s (%s) to update.' % (
+            hyperswitch_id, hyperswitch))
+        hs_db = self._get_by_id(
+            context, hyperswitch_db.HyperSwitch, hyperswitch_id)
+        user_data, _ = self._get_userdata_net_list(hyperswitch_id)
+        user_data['mgnt_ip'] = hs_db.mgnt_ip
+        user_data['data_ip'] = hs_db.data_ip
+        self._send(hs_db.mgnt_ip, 8080, user_data)
 
     def delete_hyperswitch(self, context, hyperswitch_id):
         LOG.debug('hyperswitch %s to delete.' % hyperswitch_id)

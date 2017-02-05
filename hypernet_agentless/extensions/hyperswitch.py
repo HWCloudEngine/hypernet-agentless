@@ -159,6 +159,13 @@ class HyperswitchPluginBase(service_base.ServicePluginBase):
         pass
 
     @abc.abstractmethod
+    def update_hyperswitch(self,
+                           context,
+                           hyperswitch_id,
+                           hyperswitch):
+        pass
+
+    @abc.abstractmethod
     def delete_hyperswitch(self, context, hyperswitch_id):
         pass
 

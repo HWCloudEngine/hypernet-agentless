@@ -87,3 +87,9 @@ class HyperSwitchDelete(extension.ClientExtensionDelete, HyperSwitch):
     """Delete a given hyperswitch."""
 
     shell_command = 'hyperswitch-delete'
+
+
+class HyperSwitchUpdate(extension.ClientExtensionUpdate, HyperSwitch):
+    """Update a given hyperswitch."""
+
+    shell_command = 'hyperswitch-update'
