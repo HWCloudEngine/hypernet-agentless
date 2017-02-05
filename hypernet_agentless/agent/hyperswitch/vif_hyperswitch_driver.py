@@ -63,8 +63,6 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
 
     def __init__(self, *args, **kwargs):
         super(HyperSwitchVIFDriver, self).__init__()
-        self.call_back = kwargs.get('call_back')
-        self.device_id = kwargs.get('device_id')
         self.mgnt_nic = cfg.CONF.hyperswitch.network_mngt_interface
         self.vm_nic = cfg.CONF.hyperswitch.network_vms_interface
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
@@ -260,7 +258,9 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         vpn_driver = self._drivers[msg.cookie - 1]
         provider_ip = pkt_ipv4.src
         with LocalLock():
-            if vpn_driver.add(provider_ip):
+            if not vpn_driver.add(provider_ip):
+                return
+            try:
                 result = self._vif_driver.call_back.get_vif_for_provider_ip(
                     provider_ip=provider_ip,
                     host_id=cfg.CONF.host,
@@ -272,6 +272,11 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
                 device_id = result['device_id']
                 vif_id = result['vif_id']
                 mac = result['mac']
+                if not device_id or not vif_id or not mac:
+                    err_message = ('device_id: %s, vif_id:%s, mac:%s '
+                        'not well defined' % (device_id, vif_id, mac))
+                    LOG.error(err_message)
+                    raise Exception(err_message)
 
                 # - call plug: create the tap/bridge/...
                 # - create the bridge/br-int entry....
@@ -302,6 +307,9 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
                               match=match,
                               actions=actions,
                               priority=100)
+            except:
+                LOG.exception('exception occurred')
+                vpn_driver.remove(provider_ip)
 
     @set_ev_cls(ofp_event.EventOFPFlowRemoved, MAIN_DISPATCHER)
     def _flow_removed_handler(self, ev):

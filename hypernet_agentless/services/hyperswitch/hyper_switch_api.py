@@ -65,7 +65,7 @@ class HyperswitchCallback(object):
         LOG.debug('get_vif_for_provider_ip %s' % provider_ip)
         
         p_ports = self._hyperswitch_plugin.get_agentlessports(
-            context, filters={'private_ip': [provider_ip]})
+            context, filters={'provider_ip': [provider_ip]})
         LOG.debug('provider ports for %s: %s' % (
             provider_ip, p_ports))
         if len(p_ports) != 1:
