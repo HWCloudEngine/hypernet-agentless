@@ -52,7 +52,7 @@ RESOURCE_ATTRIBUTE_MAP = {
                'is_visible': True},
         'tenant_id': {'allow_post': True, 'allow_put': False,
                       'is_visible': True, 'required': True},
-        'name': {'allow_post': True, 'allow_put': False,
+        'name': {'allow_post': True, 'allow_put': True,
                  'is_visible': True},
         'device_id': {'allow_post': True, 'allow_put': False,
                       'is_visible': True, 'default': None},

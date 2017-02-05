@@ -206,10 +206,19 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             hyperswitch_id, hyperswitch))
         hs_db = self._get_by_id(
             context, hyperswitch_db.HyperSwitch, hyperswitch_id)
-        user_data, _ = self._get_userdata_net_list(hyperswitch_id)
-        user_data['mgnt_ip'] = hs_db.mgnt_ip
-        user_data['data_ip'] = hs_db.data_ip
-        self._send(hs_db.mgnt_ip, 8080, user_data)
+
+        hs = hyperswitch[hs_constants.HYPERSWITCH]
+        with context.session.begin(subtransactions=True):
+            hs_db.update(hs)
+            
+        # hyperswitch provider
+        hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
+        if hs_provider:
+            user_data, _ = self._get_userdata_net_list(hyperswitch_id)
+            user_data['mgnt_ip'] = hs_provider['mgnt_ip']
+            user_data['data_ip'] = hs_provider['data_ip']
+            self._send(hs_db.mgnt_ip, 8080, user_data)
+        return self._make_hyperswitch_dict(hs_db, hs_provider)
 
     def delete_hyperswitch(self, context, hyperswitch_id):
         LOG.debug('hyperswitch %s to delete.' % hyperswitch_id)

@@ -63,6 +63,8 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
 
     def __init__(self, *args, **kwargs):
         super(HyperSwitchVIFDriver, self).__init__()
+        self.call_back = kwargs.get('call_back')
+        self.device_id = kwargs.get('device_id')
         self.mgnt_nic = cfg.CONF.hyperswitch.network_mngt_interface
         self.vm_nic = cfg.CONF.hyperswitch.network_vms_interface
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
