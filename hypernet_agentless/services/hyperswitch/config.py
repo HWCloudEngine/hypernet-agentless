@@ -58,8 +58,18 @@ OPTS_HYPERSWITCH = [
                help=_("the controller ip.")),
     cfg.StrOpt('controller_name',
                help=_("a controller name.")),
-    cfg.StrOpt('metadata_proxy_shared_secret',
+    cfg.StrOpt('meta_auth_region',
+               help=_("The auth Region for metadata agent.")),
+    cfg.StrOpt('meta_metadata_proxy_shared_secret',
                help=_("the metadata proxy share secret.")),
+    cfg.StrOpt('meta_auth_uri',
+               help=_("the metadata auth_uri.")),
+    cfg.StrOpt('meta_admin_tenant_name',
+               help=_("the metadata admin_tenant_name.")),
+    cfg.StrOpt('meta_admin_user',
+               help=_("the metadata admin_user.")),
+    cfg.StrOpt('meta_admin_password',
+               help=_("the metadata admin_password.")),
 ]
 
 
@@ -196,32 +206,42 @@ def controller_name():
 
 def controller_host():
     if cfg.CONF.hyperswitch.controller_name:
-        return '%s     %s' (
+        return '%s     %s' % (
             cfg.CONF.hyperswitch.controller_ip,
             cfg.CONF.hyperswitch.controller_name
         )
     return ''
 
 
-def metadata_proxy_shared_secret():
-    return cfg.CONF.hyperswitch.metadata_proxy_shared_secret
+def meta_auth_region():
+    if cfg.CONF.hyperswitch.meta_auth_region:
+        return cfg.CONF.hyperswitch.meta_auth_region
+    return cfg.CONF.nova_region_name
 
 
-def auth_uri():
+def meta_metadata_proxy_shared_secret():
+    return cfg.CONF.hyperswitch.meta_metadata_proxy_shared_secret
+
+
+def meta_auth_uri():
+    if cfg.CONF.hyperswitch.meta_auth_uri:
+        return cfg.CONF.hyperswitch.meta_auth_uri
     return cfg.CONF.keystone_authtoken.auth_uri
 
 
-def auth_region():
-    return cfg.CONF.keystone_authtoken.auth_region
-
-
-def admin_tenant_name():
+def meta_admin_tenant_name():
+    if cfg.CONF.hyperswitch.meta_admin_tenant_name:
+        return cfg.CONF.hyperswitch.meta_admin_tenant_name
     return cfg.CONF.keystone_authtoken.admin_tenant_name
 
 
-def admin_user():
+def meta_admin_user():
+    if cfg.CONF.hyperswitch.meta_admin_user:
+        return cfg.CONF.hyperswitch.meta_admin_user
     return cfg.CONF.keystone_authtoken.admin_user
 
 
-def admin_password():
+def meta_admin_password():
+    if cfg.CONF.hyperswitch.meta_admin_password:
+        return cfg.CONF.hyperswitch.meta_admin_password
     return cfg.CONF.keystone_authtoken.admin_password

@@ -102,17 +102,18 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'rabbit_hosts': config.rabbit_hosts(),
             'host': hyperswitch_id,
             'network_mngt_interface': 'eth0',
-            'auth_uri': config.auth_uri(),
-            'auth_url': config.auth_uri(),
-            'auth_region': config.auth_region(),
-            'admin_tenant_name': config.admin_tenant_name(),
-            'admin_user': config.admin_user(),
-            'admin_password': config.admin_password(),
+            'auth_uri': config.meta_auth_uri(),
+            'auth_url': config.meta_auth_uri(),
+            'auth_region': config.meta_auth_region(),
+            'admin_tenant_name': config.meta_admin_tenant_name(),
+            'admin_user': config.meta_admin_user(),
+            'admin_password': config.meta_admin_password(),
             'nova_metadata_ip': config.controller_name(),
             'controller_ip': config.controller_ip(),
             'controller_name': config.controller_name(),
             'controller_host': config.controller_host(),
-            'metadata_proxy_shared_secret': config.metadata_proxy_shared_secret()
+            'metadata_proxy_shared_secret': (
+                config.meta_metadata_proxy_shared_secret())
         }
 
         net_list = [{
