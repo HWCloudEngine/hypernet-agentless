@@ -93,9 +93,9 @@ class AWSProvider(provider_api.ProviderDriver):
             self._cfg = config
         else:
             self._cfg = cfg
-        self._access_key_id = self._cfg.get_aws_access_key_id()
-        self._secret_access_key = self._cfg.get_aws_secret_access_key()
-        self._region_name = self._cfg.get_aws_region_name()
+        self._access_key_id = self._cfg.aws_access_key_id()
+        self._secret_access_key = self._cfg.aws_secret_access_key()
+        self._region_name = self._cfg.aws_region_name()
         self.session = session.Session(
             aws_access_key_id=self._access_key_id,
             aws_secret_access_key=self._secret_access_key,
@@ -130,23 +130,23 @@ class AWSProvider(provider_api.ProviderDriver):
         hs_sg, vm_sg = None, None
         try:
             resp = self.ec2.describe_security_groups(
-                GroupNames=[self._cfg.get_hs_sg_name(), self._cfg.get_vm_sg_name()]
+                GroupNames=[self._cfg.hs_sg_name(), self._cfg.vm_sg_name()]
             )
             for sg in resp['SecurityGroups']:
-                if sg['GroupName'] == self._cfg.get_hs_sg_name():
+                if sg['GroupName'] == self._cfg.hs_sg_name():
                     hs_sg = sg['GroupId']
-                if sg['GroupName'] == self._cfg.get_vm_sg_name():
+                if sg['GroupName'] == self._cfg.vm_sg_name():
                     vm_sg = sg['GroupId']
         except exceptions.ClientError:
             hs_sg = self.ec2.create_security_group(
-                GroupName=self._cfg.get_hs_sg_name(),
-                Description='%s security group' % self._cfg.get_hs_sg_name(),
-                VpcId=self._cfg.get_aws_vpc()
+                GroupName=self._cfg.hs_sg_name(),
+                Description='%s security group' % self._cfg.hs_sg_name(),
+                VpcId=self._cfg.aws_vpc()
             )['GroupId']
             vm_sg = self.ec2.create_security_group(
-                GroupName=self._cfg.get_vm_sg_name(),
-                Description='%s security group' % self._cfg.get_vm_sg_name(),
-                VpcId=self._cfg.get_aws_vpc()
+                GroupName=self._cfg.vm_sg_name(),
+                Description='%s security group' % self._cfg.vm_sg_name(),
+                VpcId=self._cfg.aws_vpc()
             )['GroupId']
             self.ec2.authorize_security_group_ingress(
                 GroupId=hs_sg,
@@ -169,10 +169,10 @@ class AWSProvider(provider_api.ProviderDriver):
         return hs_sg, vm_sg
 
     def get_vms_subnet(self):
-        vpc = self.ec2_resource.Vpc(self._cfg.get_aws_vpc())
+        vpc = self.ec2_resource.Vpc(self._cfg.aws_vpc())
         subnets_id = []
         tag_name = 'Name'
-        for cidr in self._cfg.get_vms_cidr():
+        for cidr in self._cfg.vms_cidr():
             tag_val = 'vms_%s' % cidr
             subnets = self._find_subnets(vpc, tag_name, tag_val)
             subnet_id = None
@@ -180,7 +180,7 @@ class AWSProvider(provider_api.ProviderDriver):
                 subnet_id = subnet.id
             if not subnet_id:
                 subnet = self.ec2.create_subnet(
-                    VpcId=self._cfg.get_aws_vpc(),
+                    VpcId=self._cfg.aws_vpc(),
                     CidrBlock=cidr
                 )
                 subnet_id = subnet['Subnet']['SubnetId']
@@ -236,7 +236,7 @@ class AWSProvider(provider_api.ProviderDriver):
         # find the image according to a tag hybrid_cloud_image=hyperswitch
         image_id = self._find_image_id('hybrid_cloud_image',
                                        hs_constants.HYPERSWITCH)
-        instance_type = self._cfg.get_hs_flavor_map()[flavor]
+        instance_type = self._cfg.hs_flavor_map()[flavor]
         net_interfaces = []
         i = 0
         for net in net_list:

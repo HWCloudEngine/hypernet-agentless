@@ -54,17 +54,23 @@ OPTS_HYPERSWITCH = [
     cfg.StrOpt('fs_availability_zone',
                default='nova',
                help=_("The Openstack Availability zone.")),
+    cfg.StrOpt('controller_ip',
+               help=_("the controller ip.")),
+    cfg.StrOpt('controller_name',
+               help=_("a controller name.")),
+    cfg.StrOpt('metadata_proxy_shared_secret',
+               help=_("the metadata proxy share secret.")),
 ]
 
 
 cfg.CONF.register_opts(OPTS_HYPERSWITCH, hs_constants.HYPERSWITCH)
 
 
-def get_host():
+def host():
     return cfg.CONF.host
 
 
-def get_rabbit_hosts():
+def rabbit_hosts():
     rabbit_hosts = None
     for rabbit_host in cfg.CONF.rabbit_hosts:
         # translate to ip
@@ -86,93 +92,136 @@ def get_rabbit_hosts():
     return rabbit_hosts
 
 
-def get_rabbit_userid():
+def rabbit_userid():
     return cfg.CONF.rabbit_userid
 
 
-def get_rabbit_password():
+def rabbit_password():
     return cfg.CONF.rabbit_password
 
 
-def get_provider():
+def provider():
     return cfg.CONF.hyperswitch.provider
 
 
-def get_level():
+def level():
     return cfg.CONF.hyperswitch.level
 
 
-def get_mgnt_network():
+def mgnt_network():
     return cfg.CONF.hyperswitch.mgnt_network
 
 
-def get_mgnt_security_group():
+def mgnt_security_group():
     return cfg.CONF.hyperswitch.mgnt_security_group
 
 
-def get_data_network():
+def data_network():
     return cfg.CONF.hyperswitch.data_network
 
 
-def get_data_security_group():
+def data_security_group():
     return cfg.CONF.hyperswitch.data_security_group
 
 
-def get_vms_networks():
+def vms_networks():
     return cfg.CONF.hyperswitch.vms_networks
 
 
-def get_vms_cidr():
+def vms_cidr():
     return cfg.CONF.hyperswitch.vms_cidr
 
 
-def get_hs_sg_name():
+def hs_sg_name():
     return cfg.CONF.hyperswitch.hs_sg_name
 
 
-def get_vm_sg_name():
+def vm_sg_name():
     return cfg.CONF.hyperswitch.vm_sg_name
 
 
-def get_hs_default_flavor():
+def hs_default_flavor():
     return cfg.CONF.hyperswitch.hs_default_flavor
 
 
-def get_hs_flavor_map():
+def hs_flavor_map():
     return cfg.CONF.hyperswitch.hs_flavor_map
 
 
-def get_aws_access_key_id():
+def aws_access_key_id():
     return cfg.CONF.hyperswitch.aws_access_key_id
 
 
-def get_aws_secret_access_key():
+def aws_secret_access_key():
     return cfg.CONF.hyperswitch.aws_secret_access_key
 
 
-def get_aws_region_name():
+def aws_region_name():
     return cfg.CONF.hyperswitch.aws_region_name
 
 
-def get_aws_vpc():
+def aws_vpc():
     return cfg.CONF.hyperswitch.aws_vpc
 
 
-def get_fs_username():
+def fs_username():
     return cfg.CONF.hyperswitch.fs_username
 
 
-def get_fs_password():
+def fs_password():
     return cfg.CONF.hyperswitch.fs_password
 
 
-def get_fs_tenant_id():
+def fs_tenant_id():
     return cfg.CONF.hyperswitch.fs_tenant_id
 
 
-def get_fs_auth_url():
+def fs_auth_url():
     return cfg.CONF.hyperswitch.fs_auth_url
 
 
-def get_fs_availability_zone():
+def fs_availability_zone():
     return cfg.CONF.hyperswitch.fs_availability_zone
+
+
+def controller_ip():
+    return cfg.CONF.hyperswitch.controller_ip
+
+
+def controller_name():
+    if cfg.CONF.hyperswitch.controller_name:
+        return cfg.CONF.hyperswitch.controller_name
+    return cfg.CONF.hyperswitch.controller_ip
+
+
+def controller_host():
+    if cfg.CONF.hyperswitch.controller_name:
+        return '%s     %s' (
+            cfg.CONF.hyperswitch.controller_ip,
+            cfg.CONF.hyperswitch.controller_name
+        )
+    return ''
+
+
+def metadata_proxy_shared_secret():
+    return cfg.CONF.hyperswitch.metadata_proxy_shared_secret
+
+
+def auth_uri():
+    return cfg.CONF.keystone_authtoken.auth_uri
+
+
+def auth_region():
+    return cfg.CONF.keystone_authtoken.auth_region
+
+
+def admin_tenant_name():
+    return cfg.CONF.keystone_authtoken.admin_tenant_name
+
+
+def admin_user():
+    return cfg.CONF.keystone_authtoken.admin_user
+
+
+def admin_password():
+    return cfg.CONF.keystone_authtoken.admin_password

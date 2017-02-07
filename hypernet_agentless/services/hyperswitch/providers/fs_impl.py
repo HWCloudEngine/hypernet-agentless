@@ -33,20 +33,20 @@ class FSProvider(provider_api.ProviderDriver):
     def _neutron_client(self):
         if self._neutron_client_property is None:
             self._neutron_client_property = neutron_client.Client(
-                username=self._cfg.get_fs_username(),
-                password=self._cfg.get_fs_password(),
-                tenant_id=self._cfg.get_fs_tenant_id(),
-                auth_url=self._cfg.get_fs_auth_url())
+                username=self._cfg.fs_username(),
+                password=self._cfg.fs_password(),
+                tenant_id=self._cfg.fs_tenant_id(),
+                auth_url=self._cfg.fs_auth_url())
         return self._neutron_client_property
 
     @property
     def _nova_client(self):
         if self._nova_client_property is None:
             self._nova_client_property = nova_client.Client(
-                username=self._cfg.get_fs_username(),
-                api_key=self._cfg.get_fs_password(),
-                tenant_id=self._cfg.get_fs_tenant_id(),
-                auth_url=self._cfg.get_fs_auth_url())
+                username=self._cfg.fs_username(),
+                api_key=self._cfg.fs_password(),
+                tenant_id=self._cfg.fs_tenant_id(),
+                auth_url=self._cfg.fs_auth_url())
         return self._nova_client_property
 
     def _get_net_id(self, id_or_name):
@@ -91,9 +91,9 @@ class FSProvider(provider_api.ProviderDriver):
         vms_ips = []
         LOG.debug('_fs_instance_to_dict vm_nets %s' % vm_nets)
         for net_int in fs_instance.networks:
-            if self._net_equal(net_int, self._cfg.get_mgnt_network()):
+            if self._net_equal(net_int, self._cfg.mgnt_network()):
                 res['mgnt_ip'] = fs_instance.networks[net_int][0]
-            if self._net_equal(net_int, self._cfg.get_data_network()):
+            if self._net_equal(net_int, self._cfg.data_network()):
                 res['data_ip'] = fs_instance.networks[net_int][0]
             i = 0
             for net in vm_nets:
@@ -117,29 +117,29 @@ class FSProvider(provider_api.ProviderDriver):
     def get_sgs(self):
         hs_sg, vm_sg = None, None
         security_groups = self._neutron_client.list_security_groups(
-            name=[self._cfg.get_hs_sg_name(), self._cfg.get_vm_sg_name()]
+            name=[self._cfg.hs_sg_name(), self._cfg.vm_sg_name()]
         )['security_groups']
         if len(security_groups) > 0:
             for sg in security_groups:
-                if sg['name'] == self._cfg.get_hs_sg_name():
+                if sg['name'] == self._cfg.hs_sg_name():
                     hs_sg = sg['id']
-                if sg['name'] == self._cfg.get_vm_sg_name():
+                if sg['name'] == self._cfg.vm_sg_name():
                     vm_sg = sg['id']
         else:
             hs_sg = self._neutron_client.create_security_group(
                 {'security_group': {
-                    'name': self._cfg.get_hs_sg_name(),
+                    'name': self._cfg.hs_sg_name(),
                     'description': ('%s security group' %
-                                    self._cfg.get_hs_sg_name()),
-                    'tenant_id': self._cfg.get_fs_tenant_id()
+                                    self._cfg.hs_sg_name()),
+                    'tenant_id': self._cfg.fs_tenant_id()
                 }}
             )['security_group']['id']
             vm_sg = self._neutron_client.create_security_group({
                 'security_group': {
-                    'name': self._cfg.get_vm_sg_name(),
+                    'name': self._cfg.vm_sg_name(),
                     'description': ('%s security group' %
-                                    self._cfg.get_hs_sg_name()),
-                    'tenant_id': self._cfg.get_fs_tenant_id()
+                                    self._cfg.hs_sg_name()),
+                    'tenant_id': self._cfg.fs_tenant_id()
                 }}
             )['security_group']['id']
             self._neutron_client.create_security_group_rule({
@@ -148,7 +148,7 @@ class FSProvider(provider_api.ProviderDriver):
                     'ethertype': 'IPv4',
                     'remote_group_id': hs_sg,
                     'security_group_id': vm_sg,
-                    'tenant_id': self._cfg.get_fs_tenant_id()
+                    'tenant_id': self._cfg.fs_tenant_id()
                 }}
             )
             self._neutron_client.create_security_group_rule({
@@ -157,14 +157,14 @@ class FSProvider(provider_api.ProviderDriver):
                     'ethertype': 'IPv4',
                     'remote_group_id': vm_sg,
                     'security_group_id': hs_sg,
-                    'tenant_id': self._cfg.get_fs_tenant_id()
+                    'tenant_id': self._cfg.fs_tenant_id()
                 }}
             )
         return hs_sg, vm_sg
 
     def get_vms_subnet(self):
-        if len(self._vm_nets) != len(self._cfg.get_vms_cidr()):
-            for cidr in self._cfg.get_vms_cidr():
+        if len(self._vm_nets) != len(self._cfg.vms_cidr()):
+            for cidr in self._cfg.vms_cidr():
                 snets = self._neutron_client.list_subnets(cidr=cidr)['subnets']
                 if len(snets) > 0:
                     self._vm_nets = self._vm_nets + snets
@@ -186,7 +186,7 @@ class FSProvider(provider_api.ProviderDriver):
 
         hs_img = self._find_image('hybrid_cloud_image',
                                   hs_constants.HYPERSWITCH)
-        hs_flavor = self._find_flavor(self._cfg.get_hs_flavor_map()[flavor])
+        hs_flavor = self._find_flavor(self._cfg.hs_flavor_map()[flavor])
         user_metadata = None
         if user_data:
             user_metadata = ''
@@ -198,7 +198,7 @@ class FSProvider(provider_api.ProviderDriver):
             port = self._neutron_client.create_port({
                 'port': {
                     'security_groups': net['security_group'],
-                    'tenant_id': self._cfg.get_fs_tenant_id(),
+                    'tenant_id': self._cfg.fs_tenant_id(),
                     'network_id': net['name']
             }})['port']
             nics.append({'port-id': port['id']})
@@ -213,7 +213,7 @@ class FSProvider(provider_api.ProviderDriver):
              meta=meta,
              nics=nics,
              userdata=user_metadata,
-             availability_zone=self._cfg.get_fs_availability_zone())
+             availability_zone=self._cfg.fs_availability_zone())
         while len(hs_instance.networks) == 0:
             time.sleep(1)
             for inst in self._nova_client.servers.list(
@@ -276,7 +276,7 @@ class FSProvider(provider_api.ProviderDriver):
         if len(ports) == 0 :
             port = self._neutron_client.create_port({'port': {
                 'name': port_id,
-                'tenant_id': self._cfg.get_fs_tenant_id(),
+                'tenant_id': self._cfg.fs_tenant_id(),
                 'security_groups': [security_group],
                 'network_id': subnet
             }})['port']

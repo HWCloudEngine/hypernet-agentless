@@ -25,7 +25,7 @@ class HyperswitchCallback(object):
         target = messaging.Target(topic=hs_constants.HYPERSWITCH_CALLBACK,
                                   version='1.0',
                                   exchange=hs_constants.HYPERSWITCH,
-                                  server=config.get_host())
+                                  server=config.host())
         self.server = rpc.get_server(target, endpoints)
         self.server.start()
         self._plugin_property = None

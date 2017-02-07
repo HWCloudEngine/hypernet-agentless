@@ -26,10 +26,10 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
     supported_extension_aliases = [hs_constants.HYPERSWITCH]
     
     def __init__(self):
-        if config.get_provider() in ['openstack', 'fs']:
+        if config.provider() in ['openstack', 'fs']:
             from providers import fs_impl
             self._provider_impl = fs_impl.FSProvider()
-        elif config.get_provider() == 'aws':
+        elif config.provider() == 'aws':
             from providers import aws_impl
             self._provider_impl = aws_impl.AWSProvider()
         else:
@@ -97,30 +97,41 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
     def _get_userdata_net_list(self, hyperswitch_id):
         user_data = {
-            'rabbit_userid': config.get_rabbit_userid(),
-            'rabbit_password': config.get_rabbit_password(),
-            'rabbit_hosts': config.get_rabbit_hosts(),
+            'rabbit_userid': config.rabbit_userid(),
+            'rabbit_password': config.rabbit_password(),
+            'rabbit_hosts': config.rabbit_hosts(),
             'host': hyperswitch_id,
             'network_mngt_interface': 'eth0',
+            'auth_uri': config.auth_uri(),
+            'auth_url': config.auth_uri(),
+            'auth_region': config.auth_region(),
+            'admin_tenant_name': config.admin_tenant_name(),
+            'admin_user': config.admin_user(),
+            'admin_password': config.admin_password(),
+            'nova_metadata_ip': config.controller_name(),
+            'controller_ip': config.controller_ip(),
+            'controller_name': config.controller_name(),
+            'controller_host': config.controller_host(),
+            'metadata_proxy_shared_secret': config.metadata_proxy_shared_secret()
         }
 
         net_list = [{
-            'name': config.get_mgnt_network(),
-            'security_group': [config.get_mgnt_security_group()]
+            'name': config.mgnt_network(),
+            'security_group': [config.mgnt_security_group()]
         }]
-        if config.get_data_network() != config.get_mgnt_network():
+        if config.data_network() != config.mgnt_network():
             net_list.append({
-                'name': config.get_data_network(),
-                'security_group': config.get_data_security_group()
+                'name': config.data_network(),
+                'security_group': config.data_security_group()
             })
             user_data['network_data_interface'] = 'eth1'
         else:
             net_list[0]['security_group'].append(
-                config.get_data_security_group())
+                config.data_security_group())
             user_data['network_data_interface'] = 'eth0'
 
         for vm_subnet in self._vms_subnets:
-            if vm_subnet != config.get_mgnt_network():
+            if vm_subnet != config.mgnt_network():
                 user_data['network_vms_interface'] = 'eth2'
                 net_list.append({
                     'name': vm_subnet,
@@ -321,7 +332,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         tenant_id = neutron_port['tenant_id']
         flavor = al_port.get('flavor')
         if not flavor:
-            flavor = config.get_hs_default_flavor()
+            flavor = config.hs_default_flavor()
 
         al_device_id = al_port.get('device_id')
         if al_device_id and al_device_id != device_id:
@@ -351,7 +362,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 raise
 
         # retrieve the hyperswitchs to connect
-        if config.get_level() == 'vm' or al_device_id:
+        if config.level() == 'vm' or al_device_id:
             hsservers = self.get_hyperswitchs(
                 context,
                 filters={'device_id': [device_id]}

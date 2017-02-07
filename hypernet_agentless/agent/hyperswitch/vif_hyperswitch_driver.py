@@ -448,7 +448,6 @@ class OpenVPNTCP(VPNDriver):
                   '--cipher', 'none',
                   '--status', '/var/log/openvpn-status-%s.log' % tap,
                   '--verb', '4',
-                  'push', 'redirect-gateway',
                   run_as_root=True)
 
     def stop_vpn(self, tap):
