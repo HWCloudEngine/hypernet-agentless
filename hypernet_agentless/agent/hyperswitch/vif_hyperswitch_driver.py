@@ -62,7 +62,6 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
     """VIF driver for hyperswitch networking."""
 
     def _get_cidr_router(self, nic):
-        nic = nic.strip()
         leases = glob.glob('/var/lib/*/*%s.leases' % nic)
         if len(leases) == 0:
             leases = glob.glob('/var/lib/*/*%s.lease' % nic)
@@ -86,7 +85,9 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         self.call_back = kwargs.get('call_back')
         self.device_id = kwargs.get('device_id')
         self.mgnt_nic = cfg.CONF.hyperswitch.network_mngt_interface
-        self.vms_nics = cfg.CONF.hyperswitch.network_vms_interface.split[',']
+        self.vms_nics = list()
+        for nic in cfg.CONF.hyperswitch.network_vms_interface.split(','):
+            self.vms_nics.append(nic.strip())
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
 
         _, self.routers = self._get_cidr_router(self.mgnt_nic)

@@ -68,7 +68,7 @@ def process_exist(words):
 
 
 def get_mac(nic):
-    r = execute('cat', '/sys/class/net/%s/address' % nic)
+    r = execute('cat', '/sys/class/net/%s/address' % nic.strip())
     return r[0].strip()
 
 
@@ -185,7 +185,7 @@ def add_ovs_port(bridge, dev):
 
 
 def add_ovs_patch_port(bridge, dev, peer):
-    ovs_vsctl(bridge, dev)
+    add_ovs_port(bridge, dev)
     ovs_vsctl(['set', 'interface', dev, 'type=patch'])
     ovs_vsctl(['set', 'interface', dev, 'options:peer=%s' % peer])
 

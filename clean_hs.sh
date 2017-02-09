@@ -5,6 +5,12 @@ rm -rf /usr/local/lib/python2.7/dist-packages/hypernet*
 rm -rf /usr/local/bin/hyperswitch*
 
 ovs-vsctl del-br br-vpn
+ovs-vsctl del-br br-eth0
+ovs-vsctl del-br br-eth1
+ovs-vsctl del-br br-eth2
+ovs-vsctl del-br br-eth3
+ovs-vsctl del-br br-eth4
+ovs-vsctl del-br br-eth5
 ovs-vsctl del-br br-int
 ovs-vsctl del-br br-ex
 ovs-vsctl add-br br-ex
