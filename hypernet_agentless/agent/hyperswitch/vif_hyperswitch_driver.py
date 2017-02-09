@@ -35,9 +35,6 @@ hyper_swith_agent_opts = [
     cfg.StrOpt('network_vms_interface',
                default='eth2',
                help='the VM network interface'),
-    cfg.StrOpt('vpn_bridge_name',
-               default='br-vpn',
-               help='The VPN bridge name'),
     cfg.IntOpt('idle_timeout',
                default=90,
                help='The flow iddle timeout in seconds'),
@@ -91,7 +88,6 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
 
         _, self.routers = self._get_cidr_router(self.mgnt_nic)
-        self.br_vpn = cfg.CONF.hyperswitch.vpn_bridge_name
 
     def get_br_name(self, iface_id):
         return ("qbr" + iface_id)[:NIC_NAME_LEN]
@@ -141,8 +137,14 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         return self.get_tap_name(vif_id)
 
     def startup_init(self):
-        # create the br-vpn bridge
-        hu.add_ovs_bridge(self.br_vpn)
+        # run the ryu appllication VPNBridgeHandler
+        app_mgr = app_manager.AppManager.get_instance()
+        self.open_flow_app = app_mgr.instantiate(VPNBridgeHandler,
+                                                 vif_hypervm_driver=self)
+        self.open_flow_app.start()
+
+        # set the controller as local controller
+        mgnt_cidr, _ = self._get_cidr_router(self.mgnt_nic)
 
         # prepare all the nic bridges
         for nic in self.vms_nics:
@@ -162,36 +164,17 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
             # add the vm interface to the bridge
             hu.add_ovs_port(br_nic, nic)
 
-            # create the patch
-            hu.add_ovs_patch_port(
-                self.br_vpn,
-                'patchvpn-%s' % nic,
-                br_nic
-            )
-            hu.add_ovs_patch_port(
-                br_nic,
-                'patch%s-vpn' % nic,
-                self.br_vpn
-            )
+            hu.execute('ovs-vsctl',
+                       'set-controller',
+                       br_nic,
+                       'tcp:%s:6633' % mgnt_cidr.split('/')[0],
+                       run_as_root=True)
 
         if self.routers:
             hu.execute('ip', 'route', 'add', 'default', 'via', self.routers,
                        run_as_root=True)
 
-        # set the controller as local controller
-        mgnt_ip, _ = self._get_cidr_router(self.mgnt_nic)
 
-        hu.execute('ovs-vsctl',
-                   'set-controller',
-                   self.br_vpn,
-                   'tcp:%s:6633' % mgnt_ip,
-                   run_as_root=True)
-
-        # run the ryu appllication VPNBridgeHandler
-        app_mgr = app_manager.AppManager.get_instance()
-        self.open_flow_app = app_mgr.instantiate(VPNBridgeHandler,
-                                                 vif_hypervm_driver=self)
-        self.open_flow_app.start()
 
     def plug(self, device_id, hyper_vif):
         pass
@@ -213,7 +196,6 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         self._drivers = list()
         self._drivers.append(OpenVPNTCP(first_port=1194))
         self._drivers.append(OpenVPNUDP(first_port=1194))
-        self.br_vpn = cfg.CONF.hyperswitch.vpn_bridge_name
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
 
     def mod_flow(self,

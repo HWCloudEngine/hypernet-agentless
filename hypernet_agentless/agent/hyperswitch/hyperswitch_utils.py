@@ -184,12 +184,6 @@ def add_ovs_port(bridge, dev):
                'add-port', bridge, dev])
 
 
-def add_ovs_patch_port(bridge, dev, peer):
-    add_ovs_port(bridge, dev)
-    ovs_vsctl(['set', 'interface', dev, 'type=patch'])
-    ovs_vsctl(['set', 'interface', dev, 'options:peer=%s' % peer])
-
-
 def set_mac_ip(nic, mac, cidr):
     execute('ip', 'addr', 'flush', 'dev', nic,
             run_as_root=True)
