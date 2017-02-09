@@ -1,4 +1,5 @@
 Stop-Process -processname "openvpn-gui"
+net stop OpenVpnService
 
 netsh interface set interface Ethernet disable
 netsh interface ipv4 set address name=Ethernet source=dhcp
@@ -82,4 +83,9 @@ if ($need_restart) {
     Restart-Computer
 }
 
+net start OpenVpnService
+
+Start-Sleep -s 5
+
+net stop OpenVpnService
 net start OpenVpnService

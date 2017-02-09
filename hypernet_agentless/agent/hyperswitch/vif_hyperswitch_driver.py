@@ -61,22 +61,16 @@ def get_nsize(netmask):
 class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
     """VIF driver for hyperswitch networking."""
 
-    def __init__(self, *args, **kwargs):
-        super(HyperSwitchVIFDriver, self).__init__()
-        self.call_back = kwargs.get('call_back')
-        self.device_id = kwargs.get('device_id')
-        self.mgnt_nic = cfg.CONF.hyperswitch.network_mngt_interface
-        self.vm_nic = cfg.CONF.hyperswitch.network_vms_interface
-        self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
-        # retrieve the vms nic cidr
-        leases = glob.glob('/var/lib/*/*%s.leases' % self.vm_nic)
+    def _get_cidr_router(self, nic):
+        nic = nic.strip()
+        leases = glob.glob('/var/lib/*/*%s.leases' % nic)
         if len(leases) == 0:
-            leases = glob.glob('/var/lib/*/*%s.lease' % self.vm_nic)
+            leases = glob.glob('/var/lib/*/*%s.lease' % nic)
         #TODO: exception if not find lease file
         lease_file = leases[0]
         mask = None
         ip = None
-        self.routers = None
+        routers = None
         with open(lease_file, 'r') as f:
             for line in f:
                 if 'subnet-mask' in line:
@@ -84,8 +78,18 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
                 if 'fixed-address' in line:
                     ip = line.split()[1].split(';')[0]
                 if 'routers' in line:
-                    self.routers = line.split()[2].split(';')[0]
-        self.vm_cidr = '%s/%s' % (ip, get_nsize(mask))
+                    routers = line.split()[2].split(';')[0]
+        return '%s/%s' % (ip, get_nsize(mask)), routers
+
+    def __init__(self, *args, **kwargs):
+        super(HyperSwitchVIFDriver, self).__init__()
+        self.call_back = kwargs.get('call_back')
+        self.device_id = kwargs.get('device_id')
+        self.mgnt_nic = cfg.CONF.hyperswitch.network_mngt_interface
+        self.vms_nics = cfg.CONF.hyperswitch.network_vms_interface.split[',']
+        self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
+
+        _, self.routers = self._get_cidr_router(self.mgnt_nic)
         self.br_vpn = cfg.CONF.hyperswitch.vpn_bridge_name
 
     def get_br_name(self, iface_id):
@@ -136,32 +140,46 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         return self.get_tap_name(vif_id)
 
     def startup_init(self):
-        # prepare the VPN bridge
-        vm_nic_cidr = self.vm_cidr
-        vm_nic_mac = hu.get_mac(self.vm_nic)
         # create the br-vpn bridge
-        hu.add_ovs_bridge(self.br_vpn, vm_nic_mac)
+        hu.add_ovs_bridge(self.br_vpn)
 
-        # Set the IP
-        hu.execute('ip', 'addr', 'flush', 'dev', self.vm_nic,
-                   run_as_root=True)
-        hu.execute('ip', 'link', 'set', 'dev', self.vm_nic, 'promisc', 'on',
-                   run_as_root=True)
-        hu.execute('ip', 'link', 'set', 'dev', self.br_vpn, 'up',
-                   run_as_root=True)
-        hu.set_mac_ip(self.br_vpn, vm_nic_mac, vm_nic_cidr)
+        # prepare all the nic bridges
+        for nic in self.vms_nics:
+            br_nic = 'br-%s' % nic
+            vm_nic_mac = hu.get_mac(nic)
+            hu.add_ovs_bridge(br_nic, vm_nic_mac)
+            vm_nic_cidr, _ = self._get_cidr_router(nic)
+            # Set the IP
+            hu.execute('ip', 'addr', 'flush', 'dev', nic,
+                       run_as_root=True)
+            hu.execute('ip', 'link', 'set', 'dev', nic, 'promisc', 'on',
+                       run_as_root=True)
+            hu.execute('ip', 'link', 'set', 'dev', br_nic, 'up',
+                       run_as_root=True)
+            hu.set_mac_ip(br_nic, vm_nic_mac, vm_nic_cidr)
+
+            # add the vm interface to the bridge
+            hu.add_ovs_port(br_nic, nic)
+
+            # create the patch
+            hu.add_ovs_patch_port(
+                self.br_vpn,
+                'patchvpn-%s' % nic,
+                br_nic
+            )
+            hu.add_ovs_patch_port(
+                br_nic,
+                'patch%s-vpn' % nic,
+                self.br_vpn
+            )
 
         if self.routers:
             hu.execute('ip', 'route', 'add', 'default', 'via', self.routers,
                        run_as_root=True)
-        # add the vm interface to the bridge
-        hu.add_ovs_port(self.br_vpn, self.vm_nic)
 
         # set the controller as local controller
-        if self.mgnt_nic == self.vm_nic:
-            mgnt_ip = self.vm_cidr.split('/')[0]
-        else:
-            mgnt_ip = hu.get_nic_cidr(self.mgnt_nic).split('/')[0]
+        mgnt_ip, _ = self._get_cidr_router(self.mgnt_nic)
+
         hu.execute('ovs-vsctl',
                    'set-controller',
                    self.br_vpn,
@@ -288,8 +306,7 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
                     mac)
 
                 # - start openvpn process for the VM
-                vpn_nic_ip = hu.get_nic_cidr(self.br_vpn).split('/')[0]
-                vpn_driver.start_vpn(tap, br, vpn_nic_ip, mac)
+                vpn_driver.start_vpn(tap, br, pkt_ipv4.dst, mac)
 
                 # - add the flow for the vpn packet match/action
                 match, actions = vpn_driver.intercept_vpn_packets(

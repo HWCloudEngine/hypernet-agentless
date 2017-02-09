@@ -120,27 +120,37 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'name': config.mgnt_network(),
             'security_group': [config.mgnt_security_group()]
         }]
-        if config.data_network() != config.mgnt_network():
-            net_list.append({
-                'name': config.data_network(),
-                'security_group': config.data_security_group()
-            })
-            user_data['network_data_interface'] = 'eth1'
-        else:
+        i = 0
+        if config.data_network() == config.mgnt_network():
             net_list[0]['security_group'].append(
                 config.data_security_group())
-            user_data['network_data_interface'] = 'eth0'
+        else:
+            i = i + 1
+            net_list.append({
+                'name': config.data_network(),
+                'security_group': [config.data_security_group()]
+            })
+        user_data['network_data_interface'] = 'eth%d' % i
 
         for vm_subnet in self._vms_subnets:
-            if vm_subnet != config.mgnt_network():
-                user_data['network_vms_interface'] = 'eth2'
+            if vm_subnet == config.mgnt_network():
+                if 'network_vms_interface' in user_data:
+                    user_data['network_vms_interface'] = '%s, eth0' % (
+                        user_data['network_vms_interface'])
+                else:
+                    user_data['network_vms_interface'] = 'eth0'
+                net_list[0]['security_group'].append(self._hs_sg)
+            else:
+                i = i + 1
+                if 'network_vms_interface' in user_data:
+                    user_data['network_vms_interface'] = '%s, eth%d' % (
+                        user_data['network_vms_interface'], i)
+                else:
+                    user_data['network_vms_interface'] = 'eth%d' % i
                 net_list.append({
                     'name': vm_subnet,
-                    'security_group': self._hs_sg
+                    'security_group': [self._hs_sg]
                 })
-            else:
-                user_data['network_vms_interface'] = 'eth0'
-                net_list[0]['security_group'].append(self._hs_sg)
         return user_data, net_list
 
     def create_hyperswitch(self, context, hyperswitch):
@@ -340,28 +350,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             raise hyperswitch.AgentlessPortBadDeviceId(
                 neutron_device_id=device_id, device_id=al_device_id)
 
-        with context.session.begin(subtransactions=True):
-            # create in the provider
-            net_int_provider = self._provider_impl.create_network_interface(
-                port_id,
-                self._vms_subnets[index],
-                self._vm_sg)
-            try:
-                # create in DB
-                agentlessport_db = hyperswitch_db.AgentlessPort(
-                    id=port_id,
-                    tenant_id=tenant_id,
-                    device_id=al_device_id,
-                    name=al_port.get('name'),
-                    provider_ip=self._get_attr(
-                        net_int_provider, al_port, 'provider_ip'),
-                    flavor=flavor,
-                    index=index)
-                context.session.add(agentlessport_db)
-            except:
-                self._provider_impl.delete_network_interface(port_id)
-                raise
-
         # retrieve the hyperswitchs to connect
         if config.level() == 'vm' or al_device_id:
             hsservers = self.get_hyperswitchs(
@@ -386,6 +374,29 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                         'flavor': flavor
                     }
                 })]
+
+        with context.session.begin(subtransactions=True):
+            # create in the provider
+            net_int_provider = self._provider_impl.create_network_interface(
+                port_id,
+                self._vms_subnets[index],
+                self._vm_sg)
+            try:
+                # create in DB
+                agentlessport_db = hyperswitch_db.AgentlessPort(
+                    id=port_id,
+                    tenant_id=tenant_id,
+                    device_id=al_device_id,
+                    name=al_port.get('name'),
+                    provider_ip=self._get_attr(
+                        net_int_provider, al_port, 'provider_ip'),
+                    flavor=flavor,
+                    index=index)
+                context.session.add(agentlessport_db)
+            except:
+                self._provider_impl.delete_network_interface(port_id)
+                raise
+
         for hsserver in hsservers:
             self._provider_impl.start_hyperswitch(hsserver['id'])
         return self._make_agentlessport_dict(

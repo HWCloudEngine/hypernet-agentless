@@ -82,19 +82,16 @@ class FSProvider(provider_api.ProviderDriver):
     def _fs_instance_to_dict(self, fs_instance):
         LOG.debug('_fs_instance_to_dict %s' % fs_instance)
         LOG.debug('_fs_instance_to_dict networks %s' % fs_instance.networks)
-        res = {
-            'instance_id': fs_instance.id,
-            'name': fs_instance.name,
-            'instance_type': self._get_flavor_name(fs_instance.flavor['id']),
-        }
         vm_nets = self.get_vms_subnet()
         vms_ips = []
+        mgnt_ip = None
+        data_ip = None
         LOG.debug('_fs_instance_to_dict vm_nets %s' % vm_nets)
         for net_int in fs_instance.networks:
             if self._net_equal(net_int, self._cfg.mgnt_network()):
-                res['mgnt_ip'] = fs_instance.networks[net_int][0]
+                mgnt_ip = fs_instance.networks[net_int][0]
             if self._net_equal(net_int, self._cfg.data_network()):
-                res['data_ip'] = fs_instance.networks[net_int][0]
+                data_ip = fs_instance.networks[net_int][0]
             i = 0
             for net in vm_nets:
                 if self._net_equal(net_int, net):
@@ -103,7 +100,14 @@ class FSProvider(provider_api.ProviderDriver):
                         'index': i
                     })
                 i = i + 1
-        res['vms_ips'] = vms_ips
+        res = provider_api.ProviderHyperswitch(
+           instance_id=fs_instance.id,
+           name=fs_instance.name,
+           instance_type=self._get_flavor_name(fs_instance.flavor['id']),
+           mgnt_ip=mgnt_ip,
+           data_ip=data_ip,
+           vms_ips=vms_ips,
+        ).dict
         LOG.debug('_fs_instance_to_dict result %s' % res)
         return res
 
@@ -260,11 +264,11 @@ class FSProvider(provider_api.ProviderDriver):
             self._nova_client.servers.delete(hs.id)
 
     def _to_net_int(self, port):
-        return {
-           'id': port['id'],
-           'provider_ip': port['fixed_ips'][0]['ip_address'],
-           'name': port['name'],
-        }
+        return provider_api.ProviderPort(
+           port_id=port['id'],
+           provider_ip=port['fixed_ips'][0]['ip_address'],
+           name=port['name'],
+        ).dict
     
     def create_network_interface(self,
                                  port_id,

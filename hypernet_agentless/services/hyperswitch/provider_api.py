@@ -49,3 +49,35 @@ class ProviderDriver(object):
     @abc.abstractmethod
     def get_network_interface(self, port_id):
         return None
+
+
+class ProviderPort(object):
+
+    def __init__(self, port_id, provider_ip, name):
+        self._vals = {
+            'id': port_id,
+            'provider_ip': provider_ip,
+            'name': name,
+        }
+
+    @property
+    def dict(self):
+        return self._vals
+
+
+class ProviderHyperswitch(object):
+
+    def __init__(self, instance_id, name, instance_type,
+                 mgnt_ip, data_ip, vms_ips):
+        self._vals = {
+            'instance_id': instance_id,
+            'name': name,
+            'instance_type': instance_type,
+            'mgnt_ip': mgnt_ip,
+            'data_ip': data_ip,
+            'vms_ips': vms_ips,
+        }
+
+    @property
+    def dict(self):
+        return self._vals

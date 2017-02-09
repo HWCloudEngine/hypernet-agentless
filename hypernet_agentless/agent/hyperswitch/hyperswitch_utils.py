@@ -172,10 +172,11 @@ def del_ovs_bridge(br_name):
     ovs_vsctl(['--if-exists', 'del-br', br_name])
 
 
-def add_ovs_bridge(br_name, mac_address):
+def add_ovs_bridge(br_name, mac_address=None):
     ovs_vsctl(['--may-exist', 'add-br', br_name])
-    ovs_vsctl(['set', 'bridge', br_name,
-               'other-config:hwaddr=%s' % mac_address])
+    if mac_address:
+        ovs_vsctl(['set', 'bridge', br_name,
+                   'other-config:hwaddr=%s' % mac_address])
 
 
 def add_ovs_port(bridge, dev):
@@ -183,21 +184,10 @@ def add_ovs_port(bridge, dev):
                'add-port', bridge, dev])
 
 
-def get_nic_cidr(eth, restart=False):
-    ip = None
-    show = execute('ip', 'addr', 'show', eth, run_as_root=True)
-    for l in show[0].split('\n'):
-        if 'inet ' in l:
-            for a in l.split(' '):
-                if '/' in a:
-                    ip = a
-    if ip:
-        return ip
-    if restart:
-        execute('ifdown', eth, run_as_root=True)
-        execute('ifup', eth, run_as_root=True)
-        return get_nic_cidr(eth)
-    return None
+def add_ovs_patch_port(bridge, dev, peer):
+    ovs_vsctl(bridge, dev)
+    ovs_vsctl(['set', 'interface', dev, 'type=patch'])
+    ovs_vsctl(['set', 'interface', dev, 'options:peer=%s' % peer])
 
 
 def set_mac_ip(nic, mac, cidr):
