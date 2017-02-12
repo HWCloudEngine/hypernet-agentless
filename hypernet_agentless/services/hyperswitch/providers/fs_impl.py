@@ -261,7 +261,11 @@ class FSProvider(provider_api.ProviderDriver):
         hss = self._nova_client.servers.list(
             search_opts={'name': hyperswitch_id})
         for hs in hss:
+            n_ports = self._neutron_client.list_ports(
+                device_id=[hs.id])['ports']
             self._nova_client.servers.delete(hs.id)
+            for n_port in n_ports:
+                self._neutron_client.delete_port(n_port['id'])
 
     def _to_net_int(self, port):
         return provider_api.ProviderPort(
