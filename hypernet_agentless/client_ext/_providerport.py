@@ -74,10 +74,10 @@ class ProviderportList(extension.ClientExtensionList, Providerport):
 class ProviderportShow(extension.ClientExtensionShow, Providerport):
     """Show information of a given provider port."""
 
-    shell_command = 'provider-show'
+    shell_command = 'providerport-show'
 
 
 class ProviderportDelete(extension.ClientExtensionDelete, Providerport):
     """Delete a given provider port."""
 
-    shell_command = 'provider-delete'
+    shell_command = 'providerport-delete'
