@@ -140,6 +140,13 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 else:
                     user_data['network_vms_interface'] = 'eth0'
                 net_list[0]['security_group'].append(self._hs_sg)
+            elif vm_subnet == config.data_network():
+                if 'network_vms_interface' in user_data:
+                    user_data['network_vms_interface'] = '%s, eth1' % (
+                        user_data['network_vms_interface'])
+                else:
+                    user_data['network_vms_interface'] = 'eth1'
+                net_list[1]['security_group'].append(self._hs_sg)
             else:
                 i = i + 1
                 if 'network_vms_interface' in user_data:
@@ -282,14 +289,14 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 hs_db['id'])
         return hss_db
 
-    def _make_agentlessport_dict(self,
-                                 agentlessport_db,
+    def _make_providerport_dict(self,
+                                 providerport_db,
                                  neutron_port=None,
                                  provider_net_int=None,
                                  hsservers=None):
-        LOG.debug('_make_agentlessport_dict %s, %s, %s, %s' % (
-            agentlessport_db, neutron_port, provider_net_int, hsservers))
-        index = agentlessport_db.index
+        LOG.debug('_make_providerport_dict %s, %s, %s, %s' % (
+            providerport_db, neutron_port, provider_net_int, hsservers))
+        index = providerport_db.index
         mac_address = None
         if neutron_port:
             mac_address = neutron_port['mac_address']
@@ -306,48 +313,48 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                             else:
                                 hsservers_ip = '%s' % vms_ip['vms_ip']
         res = {
-            'id': agentlessport_db.id,
-            'tenant_id': agentlessport_db.tenant_id,
-            'device_id': agentlessport_db.device_id,
-            'port_id': agentlessport_db.id,
-            'name': agentlessport_db.name,
+            'id': providerport_db.id,
+            'tenant_id': providerport_db.tenant_id,
+            'device_id': providerport_db.device_id,
+            'port_id': providerport_db.id,
+            'name': providerport_db.name,
             'index': index,
-            'flavor': agentlessport_db.flavor,
+            'flavor': providerport_db.flavor,
             'user_data': 'mac%d = %s\nhsservers%d = %s' % (
                 index, mac_address, index, hsservers_ip),
             'provider': provider_net_int,
         }
         return res
 
-    def create_agentlessport(self, context, agentlessport):
-        al_port = agentlessport[hs_constants.AGENTLESSPORT]
-        port_id = al_port.get('port_id')
+    def create_providerport(self, context, providerport):
+        p_port = providerport[hs_constants.PROVIDERPORT]
+        port_id = p_port.get('port_id')
         
         # Get the neutron port
         neutron_ports = self._core_plugin.get_ports(
             context,
             filters={'id': [port_id]})
         if not neutron_ports or len(neutron_ports) == 0:
-            raise hyperswitch.AgentlessPortNeutronPortNotFound(
-                agentlessport_id=port_id)
+            raise hyperswitch.ProviderPortNeutronPortNotFound(
+                providerport_id=port_id)
 
         if len(neutron_ports) != 1:
-            raise hyperswitch.AgentlessPortNeutronPortMultipleFound(
-                agentlessport_id=port_id)
+            raise hyperswitch.ProviderPortNeutronPortMultipleFound(
+                providerport_id=port_id)
 
         neutron_port = neutron_ports[0]
 
-        index = al_port['index']
+        index = p_port['index']
 
         device_id = neutron_port['device_id']
         tenant_id = neutron_port['tenant_id']
-        flavor = al_port.get('flavor')
+        flavor = p_port.get('flavor')
         if not flavor:
             flavor = config.hs_default_flavor()
 
-        al_device_id = al_port.get('device_id')
+        al_device_id = p_port.get('device_id')
         if al_device_id and al_device_id != device_id:
-            raise hyperswitch.AgentlessPortBadDeviceId(
+            raise hyperswitch.ProviderPortBadDeviceId(
                 neutron_device_id=device_id, device_id=al_device_id)
 
         # retrieve the hyperswitchs to connect
@@ -383,35 +390,35 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 self._vm_sg)
             try:
                 # create in DB
-                agentlessport_db = hyperswitch_db.AgentlessPort(
+                providerport_db = hyperswitch_db.ProviderPort(
                     id=port_id,
                     tenant_id=tenant_id,
                     device_id=al_device_id,
-                    name=al_port.get('name'),
+                    name=p_port.get('name'),
                     provider_ip=self._get_attr(
-                        net_int_provider, al_port, 'provider_ip'),
+                        net_int_provider, p_port, 'provider_ip'),
                     flavor=flavor,
                     index=index)
-                context.session.add(agentlessport_db)
+                context.session.add(providerport_db)
             except:
                 self._provider_impl.delete_network_interface(port_id)
                 raise
 
         for hsserver in hsservers:
             self._provider_impl.start_hyperswitch(hsserver['id'])
-        return self._make_agentlessport_dict(
-            agentlessport_db, neutron_port, net_int_provider, hsservers)
+        return self._make_providerport_dict(
+            providerport_db, neutron_port, net_int_provider, hsservers)
 
     def _get_neutron_port(self, context, port_id):
         neutron_ports = self._core_plugin.get_ports(
             context,
             filters={'id': [port_id]})
         if not neutron_ports or len(neutron_ports) == 0:
-            raise hyperswitch.AgentlessPortNotFound(
-                agentlessport_id=port_id)
+            raise hyperswitch.ProviderPortNotFound(
+                providerport_id=port_id)
         if len(neutron_ports) > 1:
-            raise hyperswitch.AgentlessPortNeutronPortMultipleFound(
-                agentlessport_id=port_id)
+            raise hyperswitch.ProviderPortNeutronPortMultipleFound(
+                providerport_id=port_id)
         return neutron_ports[0]
 
     def _get_provider_net_int(self, context, port_id): 
@@ -429,61 +436,61 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             )
         return hsservers
 
-    def get_agentlessport(self, context, agentlessport_id, fields=None):
-        LOG.debug('get agentless port %s.' % agentlessport_id)
-        # hypernet agentless port
+    def get_providerport(self, context, providerport_id, fields=None):
+        LOG.debug('get provider port %s.' % providerport_id)
+        # hypernet provider port
         try:
-            agentlessport_db = self._get_by_id(
-                context, hyperswitch_db.AgentlessPort, agentlessport_id)
+            providerport_db = self._get_by_id(
+                context, hyperswitch_db.ProviderPort, providerport_id)
         except exc.NoResultFound:
-            raise hyperswitch.AgentlessPortNotFound(
-                agentlessport_id=agentlessport_id)
+            raise hyperswitch.ProviderPortNotFound(
+                providerport_id=providerport_id)
 
         # neutron port
-        neutron_port = self._get_neutron_port(context, agentlessport_id)
+        neutron_port = self._get_neutron_port(context, providerport_id)
 
         # provider port
         provider_net_int = self._get_provider_net_int(
-            context, agentlessport_id)
+            context, providerport_id)
 
         # hyperswitch for this agent less port
         hsservers = self._get_provider_hyperswitch_server(
             context, neutron_port['device_id'], neutron_port['tenant_id']) 
 
-        return self._make_agentlessport_dict(
-            agentlessport_db, neutron_port, provider_net_int, hsservers)
+        return self._make_providerport_dict(
+            providerport_db, neutron_port, provider_net_int, hsservers)
 
-    def delete_agentlessport(self, context, agentlessport_id):
-        LOG.debug('removing agent less port %s.' % agentlessport_id)
+    def delete_providerport(self, context, providerport_id):
+        LOG.debug('removing agent less port %s.' % providerport_id)
         # remove from DB
         try:
-            agentlessport_db = self._get_by_id(
-                context, hyperswitch_db.AgentlessPort, agentlessport_id)
+            providerport_db = self._get_by_id(
+                context, hyperswitch_db.ProviderPort, providerport_id)
             with context.session.begin(subtransactions=True):
-                context.session.delete(agentlessport_db)
+                context.session.delete(providerport_db)
         except exc.NoResultFound:
             pass
 
         # remove from provider
-        self._provider_impl.delete_network_interface(agentlessport_id)
+        self._provider_impl.delete_network_interface(providerport_id)
 
-    def get_agentlessports(self, context, filters=None, fields=None,
+    def get_providerports(self, context, filters=None, fields=None,
                            sorts=None, limit=None, marker=None,
                            page_reverse=False):
         LOG.debug('get agent less ports %s.' % filters)
         # search id hypernet agent less port DB
-        agentlessports_db = self._get_collection_query(
-            context, hyperswitch_db.AgentlessPort,
+        providerports_db = self._get_collection_query(
+            context, hyperswitch_db.ProviderPort,
             filters=filters, sorts=sorts, limit=limit)
         res = []
         # add neutron and provider info
-        for agentlessport_db in agentlessports_db:
-            port_id = agentlessport_db['id']
+        for providerport_db in providerports_db:
+            port_id = providerport_db['id']
             neutron_port = self._get_neutron_port(context, port_id)
             provider_net_int = self._get_provider_net_int(
                 context, port_id)
             hsservers = self._get_provider_hyperswitch_server(
                 context, neutron_port['device_id'], neutron_port['tenant_id']) 
-            res.append(self._make_agentlessport_dict(
-                agentlessport_db, neutron_port, provider_net_int, hsservers))
+            res.append(self._make_providerport_dict(
+                providerport_db, neutron_port, provider_net_int, hsservers))
         return res

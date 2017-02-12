@@ -286,8 +286,8 @@ class FSProvider(provider_api.ProviderDriver):
             }})['port']
         else:
             if len(ports) != 1:
-                raise hyperswitch.AgentlessPortProviderPortMultipleFound(
-                    agentlessport_id=port_id)
+                raise hyperswitch.ProviderPortProviderPortMultipleFound(
+                    providerport_id=port_id)
             port = ports[0]
         LOG.debug('port: %s.' % (port))
         return self._to_net_int(port)
@@ -309,8 +309,8 @@ class FSProvider(provider_api.ProviderDriver):
         ports = self._neutron_client.list_ports(name=[port_id])['ports']
         for port in ports:
             if i != 0:
-                raise hyperswitch.AgentlessPortProviderPortMultipleFound(
-                    agentlessport_id=port_id)
+                raise hyperswitch.ProviderPortProviderPortMultipleFound(
+                    providerport_id=port_id)
             res = self._to_net_int(port)
             i = i + 1
         LOG.debug('get network interface %s result = %s.' % (port_id, res))

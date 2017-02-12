@@ -22,11 +22,13 @@ LOG = logging.getLogger(__name__)
 
 
 RESOURCE_ATTRIBUTE_MAP = {
-    'agentlessports': {
+    'providerports': {
         'id': {'allow_post': False, 'allow_put': False,
                'is_visible': True},
         'name': {'allow_post': True, 'allow_put': False,
                  'is_visible': True},
+        'type': {'allow_post': True, 'allow_put': False,
+                 'is_visible': True, 'default': 'agentless'},
         'tenant_id': {'allow_post': True, 'allow_put': False,
                       'is_visible': True, 'default': None},
         'port_id': {'allow_post': True, 'allow_put': False,
@@ -133,19 +135,19 @@ class HyperswitchPluginBase(service_base.ServicePluginBase):
         return "Hyperswitch Management Plugin"
 
     @abc.abstractmethod
-    def create_agentlessport(self, context, agentlessport):
+    def create_providerport(self, context, providerport):
         pass
 
     @abc.abstractmethod
-    def get_agentlessport(self, context, agentlessport_id, fields=None):
+    def get_providerport(self, context, providerport_id, fields=None):
         pass
 
     @abc.abstractmethod
-    def delete_agentlessport(self, context, agentlessport_id):
+    def delete_providerport(self, context, providerport_id):
         pass
 
     @abc.abstractmethod
-    def get_agentlessports(self, context, filters=None, fields=None,
+    def get_providerports(self, context, filters=None, fields=None,
                             sorts=None, limit=None, marker=None,
                             page_reverse=False):
         pass
@@ -185,23 +187,23 @@ class HyperswitchProviderMultipleFound(exceptions.Conflict):
                 '%(hyperswitch_id)s found in provider.')
 
 
-class AgentlessPortNotFound(exceptions.NotFound):
-    message = _('Agent less Port %(agentlessport_id)s could not be found.')
+class ProviderPortNotFound(exceptions.NotFound):
+    message = _('Provider Port %(providerport_id)s could not be found.')
 
 
-class AgentlessPortNeutronPortNotFound(exceptions.NotFound):
-    message = _('Neutron port %(agentlessport_id)s found.')
+class ProviderPortNeutronPortNotFound(exceptions.NotFound):
+    message = _('Neutron port not for Provider Port %(providerport_id)s.')
 
 
-class AgentlessPortNeutronPortMultipleFound(exceptions.Conflict):
-    message = _('Multiple neutron ports for Agent less Port '
-                '%(agentlessport_id)s found.')
+class ProviderPortNeutronPortMultipleFound(exceptions.Conflict):
+    message = _('Multiple neutron ports found for Provider Port '
+                '%(providerport_id)s.')
 
-class AgentlessPortProviderPortMultipleFound(exceptions.Conflict):
-    message = _('Multiple provider ports for Agent less Port '
-                '%(agentlessport_id)s found.')
+class ProviderPortProviderPortMultipleFound(exceptions.Conflict):
+    message = _('Multiple provider ports for Provider Port '
+                '%(providerport_id)s found.')
 
 
-class AgentlessPortBadDeviceId(exceptions.Conflict):
+class ProviderPortBadDeviceId(exceptions.Conflict):
     message = _('Device id not match (received: %(device_id)s, '
                 'neutron port: %(neutron_device_id)s).')

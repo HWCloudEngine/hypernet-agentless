@@ -37,11 +37,12 @@ class HyperSwitchVmsIp(model_base.BASEV2):
         primaryjoin='HyperSwitch.id==HyperSwitchVmsIp.hyperswitch_id')
 
 
-class AgentlessPort(model_base.BASEV2, models_v2.HasId, models_v2.HasTenant):
-    """Define an agentless port."""
+class ProviderPort(model_base.BASEV2, models_v2.HasId, models_v2.HasTenant):
+    """Define an provider port."""
 
     device_id = sa.Column(sa.String(length=255), nullable=True)
     name = sa.Column(sa.String(length=255), nullable=True)
+    type = sa.Column(sa.String(length=64), nullable=False)
     provider_ip = sa.Column(sa.String(length=64), nullable=False)
     flavor = sa.Column(sa.String(length=255), nullable=True)
     index = sa.Column(sa.Integer(), nullable=False)

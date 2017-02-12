@@ -4,18 +4,18 @@ from neutronclient.common import extension
 from neutronclient.neutron.v2_0 import NeutronCommand
 
 
-class Agentlessport(extension.NeutronClientExtension):
-    resource = 'agentlessport'
+class Providerport(extension.NeutronClientExtension):
+    resource = 'providerport'
     resource_plural = '%ss' % resource
     object_path = '/%s' % resource_plural
     resource_path = '/%s/%%s' % resource_plural
     versions = ['2.0']
 
 
-class AgentlessportCreate(extension.ClientExtensionCreate, Agentlessport):
-    """Create an agentless port information."""
+class ProviderportCreate(extension.ClientExtensionCreate, Providerport):
+    """Create an provider port information."""
 
-    shell_command = 'agentlessport-create'
+    shell_command = 'providerport-create'
 
     def get_parser(self, prog_name):
         parser = NeutronCommand.get_parser(self, prog_name)
@@ -44,40 +44,40 @@ class AgentlessportCreate(extension.ClientExtensionCreate, Agentlessport):
             help=_('Index of the port on the VM, begin from 0.'))
 
     def args2body(self, parsed_args):
-        body = {'agentlessport':
+        body = {'providerport':
             {
                 'port_id': parsed_args.port_id,
                 'index': parsed_args.index,
             }
         }
         if parsed_args.name:
-            body['agentlessport']['name'] = parsed_args.name
+            body['providerport']['name'] = parsed_args.name
         if parsed_args.flavor:
-            body['agentlessport']['flavor'] = parsed_args.flavor
+            body['providerport']['flavor'] = parsed_args.flavor
         if parsed_args.device_id:
-            body['agentlessport']['device_id'] = parsed_args.device_id
+            body['providerport']['device_id'] = parsed_args.device_id
         if parsed_args.provider_ip:
-            body['agentlessport']['provider_ip'] = parsed_args.provider_ip
+            body['providerport']['provider_ip'] = parsed_args.provider_ip
         return body
 
 
-class AgentlessportList(extension.ClientExtensionList, Agentlessport):
-    """List agentless ports that belongs to a given tenant."""
+class ProviderportList(extension.ClientExtensionList, Providerport):
+    """List provider ports that belongs to a given tenant."""
 
-    shell_command = 'agentlessport-list'
+    shell_command = 'providerport-list'
     list_columns = ['id', 'port_id', 'device_id', 'tenant_id', 'index',
                     'user_data']
     pagination_support = True
     sorting_support = True
 
 
-class AgentlessportShow(extension.ClientExtensionShow, Agentlessport):
-    """Show information of a given agentless port."""
+class ProviderportShow(extension.ClientExtensionShow, Providerport):
+    """Show information of a given provider port."""
 
-    shell_command = 'agentlessport-show'
+    shell_command = 'provider-show'
 
 
-class AgentlessportDelete(extension.ClientExtensionDelete, Agentlessport):
-    """Delete a given agentless port."""
+class ProviderportDelete(extension.ClientExtensionDelete, Providerport):
+    """Delete a given provider port."""
 
-    shell_command = 'agentlessport-delete'
+    shell_command = 'provider-delete'

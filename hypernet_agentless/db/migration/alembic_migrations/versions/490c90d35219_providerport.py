@@ -32,11 +32,12 @@ import sqlalchemy as sa
 
 def upgrade():
     op.create_table(
-        'agentlessports',
+        'providerports',
         sa.Column('id', sa.String(length=36), nullable=False),
         sa.Column('tenant_id', sa.String(length=255), nullable=False),
         sa.Column('device_id', sa.String(length=255), nullable=True),
         sa.Column('name', sa.String(length=255), nullable=True),
+        sa.Column('type', sa.String(length=64), nullable=False),
         sa.Column('provider_ip', sa.String(length=64), nullable=False),
         sa.Column('flavor', sa.String(length=255), nullable=True),
         sa.Column('index', sa.Integer(), nullable=False),
@@ -44,4 +45,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('agentlessports')
+    op.drop_table('providerports')
