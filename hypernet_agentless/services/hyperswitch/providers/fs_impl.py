@@ -172,6 +172,28 @@ class FSProvider(provider_api.ProviderDriver):
                 snets = self._neutron_client.list_subnets(cidr=cidr)['subnets']
                 if len(snets) > 0:
                     self._vm_nets = self._vm_nets + snets
+                else:
+                    name = 'vms_%s' % cidr
+                    nets = self._neutron_client.list_networks(
+                        name=name)['networks']
+                    if len(nets) > 0:
+                        net = nets[0]
+                    else:
+                        net = self._neutron_client.create_network({
+                            'network': {
+                                'name': name
+                            }
+                        })['network']
+                    snet = self._neutron_client.create_subnet({
+                        'subnet': {
+                            'name': name,
+                            'cidr': cidr,
+                            'enable_dhcp': 'true',
+                            'network_id': net['id'],
+                            'ip_version': 4,
+                        }
+                    })['subnet']
+                    self._vm_nets = self._vm_nets + [snet]
         subnets_id = []
         for net in self._vm_nets:
             subnets_id.append(net['network_id'])
