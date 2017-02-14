@@ -48,8 +48,26 @@ class Config(object):
             self._write_file('/etc/hostname', params['host'])
         if 'mngt_ip' in params:
             self._write_file(MNGT_IP_FILE, params['mngt_ip'])
+        # debian/ubuntu like net configuration with dhcp
+        if os.path.exists('/etc/network/interfaces'):
+            net_ints = set()
+            net_ints.add(params['network_mngt_interface'])
+            net_ints.add(params['network_data_interface'])
+            for net_int in params['network_vms_interface'].split():
+                net_ints.add(net_int)
+            with open('/etc/network/interfaces', 'w') as f:
+                f.write('auto lo\n')
+                f.write('iface lo inet loopback\n\n')
+                for net_int in net_ints:
+                    f.write('auto %s\n' % net_int)
+                    f.write('iface %s inet dhcp\n\n' % net_int)
+            for net_int in net_ints:
+                if net_int != params['network_mngt_interface']:
+                    subprocess.call(['/sbin/ifdown', net_int])
+                    subprocess.call(['/sbin/ifup', net_int])
+        # TODO: centos like net configuration
         for service in self._SERVICES:
-            subprocess.call(['service', service, 'restart']) 
+            subprocess.call(['service', service, 'restart'])
 
 
 class ConfigTCPHandler(SocketServer.StreamRequestHandler):
