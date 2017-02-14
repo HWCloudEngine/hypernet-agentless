@@ -54,7 +54,7 @@ class Config(object):
             net_ints.add(params['network_mngt_interface'])
             net_ints.add(params['network_data_interface'])
             for net_int in params['network_vms_interface'].split():
-                net_ints.add(net_int)
+                net_ints.add(net_int.strip())
             with open('/etc/network/interfaces', 'w') as f:
                 f.write('auto lo\n')
                 f.write('iface lo inet loopback\n\n')
