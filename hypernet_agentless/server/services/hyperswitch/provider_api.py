@@ -8,6 +8,14 @@ class ProviderDriver(object):
         return None, None
 
     @abc.abstractmethod
+    def get_hs_subnet(self):
+        return None
+
+    @abc.abstractmethod
+    def get_hs_vms_router(self, vms_subnets, hs_subnet):
+        return None
+
+    @abc.abstractmethod
     def get_vms_subnet(self):
         return []
 

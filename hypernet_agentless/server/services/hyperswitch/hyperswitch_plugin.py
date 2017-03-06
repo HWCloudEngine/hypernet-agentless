@@ -40,6 +40,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 self._provider_impl = null_impl.NULLProvider()
             self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
             self._vms_subnets = self._provider_impl.get_vms_subnet()
+            self._hs_subnet = self._provider_impl.get_hs_subnet()
+            self._hs_vms_router = self._provider_impl.get_hs_vms_router(
+                self._vms_subnets, self._hs_subnet)
             self._hs_sg, self._vm_sg  = self._provider_impl.get_sgs()
         except Exception as e:
             LOG.exception('execption = %s' % e)
@@ -138,32 +141,46 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             })
         user_data['network_data_interface'] = 'eth%d' % i
 
-        for vm_subnet in self._vms_subnets:
-            if vm_subnet == config.mgnt_network():
-                if 'network_vms_interface' in user_data:
-                    user_data['network_vms_interface'] = '%s, eth0' % (
-                        user_data['network_vms_interface'])
-                else:
-                    user_data['network_vms_interface'] = 'eth0'
+        if self._hs_subnet:
+            if self._hs_subnet == config.mgnt_network():
+                user_data['network_vms_interface'] = 'eth0'
                 net_list[0]['security_group'].append(self._hs_sg)
-            elif vm_subnet == config.data_network():
-                if 'network_vms_interface' in user_data:
-                    user_data['network_vms_interface'] = '%s, eth1' % (
-                        user_data['network_vms_interface'])
-                else:
-                    user_data['network_vms_interface'] = 'eth1'
+            elif self._hs_subnet == config.data_network():
+                user_data['network_vms_interface'] = 'eth1'
                 net_list[1]['security_group'].append(self._hs_sg)
             else:
-                i = i + 1
-                if 'network_vms_interface' in user_data:
-                    user_data['network_vms_interface'] = '%s, eth%d' % (
-                        user_data['network_vms_interface'], i)
-                else:
-                    user_data['network_vms_interface'] = 'eth%d' % i
+                user_data['network_vms_interface'] = 'eth2'
                 net_list.append({
-                    'name': vm_subnet,
+                    'name': self._hs_subnet,
                     'security_group': [self._hs_sg]
                 })
+        else:
+            for vm_subnet in self._vms_subnets:
+                if vm_subnet == config.mgnt_network():
+                    if 'network_vms_interface' in user_data:
+                        user_data['network_vms_interface'] = '%s, eth0' % (
+                            user_data['network_vms_interface'])
+                    else:
+                        user_data['network_vms_interface'] = 'eth0'
+                    net_list[0]['security_group'].append(self._hs_sg)
+                elif vm_subnet == config.data_network():
+                    if 'network_vms_interface' in user_data:
+                        user_data['network_vms_interface'] = '%s, eth1' % (
+                            user_data['network_vms_interface'])
+                    else:
+                        user_data['network_vms_interface'] = 'eth1'
+                    net_list[1]['security_group'].append(self._hs_sg)
+                else:
+                    i = i + 1
+                    if 'network_vms_interface' in user_data:
+                        user_data['network_vms_interface'] = '%s, eth%d' % (
+                            user_data['network_vms_interface'], i)
+                    else:
+                        user_data['network_vms_interface'] = 'eth%d' % i
+                    net_list.append({
+                        'name': vm_subnet,
+                        'security_group': [self._hs_sg]
+                    })
         return user_data, net_list
 
     def create_hyperswitch(self, context, hyperswitch):

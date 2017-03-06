@@ -67,7 +67,7 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
             self.vms_nics.append(nic.strip())
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
 
-        _, self.routers = self._get_cidr_router(self.mgnt_nic)
+        _, self.routers, _ = self._get_cidr_router(self.mgnt_nic)
 
     def get_br_name(self, iface_id):
         return ("qbr" + iface_id)[:NIC_NAME_LEN]
@@ -124,14 +124,14 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         self.open_flow_app.start()
 
         # set the controller as local controller
-        mgnt_cidr, _ = self._get_cidr_router(self.mgnt_nic)
+        mgnt_cidr, _, _ = self._get_cidr_router(self.mgnt_nic)
 
         # prepare all the nic bridges
         for nic in self.vms_nics:
             br_nic = 'br-%s' % nic
             vm_nic_mac = hu.get_mac(nic)
             hu.add_ovs_bridge(br_nic, vm_nic_mac)
-            vm_nic_cidr, _ = self._get_cidr_router(nic)
+            vm_nic_cidr, _, static_routes = self._get_cidr_router(nic)
             # Set the IP
             hu.execute('ip', 'addr', 'flush', 'dev', nic,
                        run_as_root=True)
@@ -140,6 +140,11 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
             hu.execute('ip', 'link', 'set', 'dev', br_nic, 'up',
                        run_as_root=True)
             hu.set_mac_ip(br_nic, vm_nic_mac, vm_nic_cidr)
+
+            for static_route in static_routes:
+                hu.execute('ip', 'route', 'add', static_route['cidr'],
+                           'via', static_route['gw'],
+                           run_as_root=True)
 
             # add the vm interface to the bridge
             hu.add_ovs_port(br_nic, nic)
