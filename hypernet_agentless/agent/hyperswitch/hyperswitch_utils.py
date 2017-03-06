@@ -209,24 +209,67 @@ def extract_date(line):
         '%Y/%m/%d %H:%M:%S').timetuple())
 
 
+def extract_static_routes(line):
+    routes = line.split()[2].split(';')[0].split(',')
+    res = []
+    i = 0
+    while i < len(routes):
+        if int(routes[i]) > 24:
+            cidr = '%s.%s.%s.%s/%s' % (
+                routes[i + 1], routes[i + 2], routes[i + 3], routes[i + 4],
+                routes[i]
+            )
+            i = i + 5
+        elif int(routes[i]) > 16:
+            cidr = '%s.%s.%s.0/%s' % (
+                routes[i + 1], routes[i + 2], routes[i + 3],
+                routes[i]
+            )
+            i = i + 4
+        elif int(routes[i]) > 8:
+            cidr = '%s.%s.0.0/%s' % (
+                routes[i + 1], routes[i + 2],
+                routes[i]
+            )
+            i = i + 3
+        elif int(routes[i]) > 0 :
+            cidr = '%s.0.0.0/%s' % (
+                routes[i + 1],
+                routes[i]
+            )
+            i = i + 2
+        else:
+            cidr = None
+            i = i + 5
+        if cidr:
+            gw = '%s.%s.%s.%s' % (
+                routes[i], routes[i + 1], routes[i + 2], routes[i + 3])
+            res.append({'gw': gw, 'cidr': cidr})
+            i = i + 4
+    return res
+
+
 def extract_cidr_router(lease_file, nic):
     mask = None
     ip = None
     routers = None
     in_lease_nic = False
     d_renew = 0
+    static_routes = None
     with open(lease_file, 'r') as f:
         for line in f:
-            if 'interface' in line and nic in line:
+            if ' interface ' in line and nic in line:
                 in_lease_nic = True
-            if 'subnet-mask' in line:
+            if ' subnet-mask ' in line:
                 mask_cur = line.split()[2].split(';')[0]
-            if 'fixed-address' in line:
+            if ' fixed-address ' in line:
                 ip_cur = line.split()[1].split(';')[0]
-            if 'routers' in line:
+            if ' routers ' in line:
                 routers_cur = line.split()[2].split(';')[0]
-            if 'renew' in line:
+            if ' renew ' in line:
                 d_renew_cur = extract_date(line)
+            if ' rfc3442-classless-static-routes ' in line:
+                static_routes = extract_static_routes(line)
             if in_lease_nic and '}' in line:
                 in_lease_nic = False
                 if d_renew_cur > d_renew:
@@ -234,4 +277,4 @@ def extract_cidr_router(lease_file, nic):
                     ip = ip_cur
                     routers = routers_cur
                     d_renew = d_renew_cur
-    return '%s/%s' % (ip, get_nsize(mask)), routers
+    return '%s/%s' % (ip, get_nsize(mask)), routers, static_routes

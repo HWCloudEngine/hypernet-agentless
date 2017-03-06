@@ -33,8 +33,9 @@ class HyperswitchCallback(object):
         self._hyperswitch_plugin_property = None
         super(HyperswitchCallback, self).__init__()
 
-    def _neutron_client(self, context):
-        return os_client.get_neutron_client(context, admin=True)
+    @property
+    def _neutron_client(self):
+        return os_client.get_neutron_client(admin=True)
 
     @property
     def _hyperswitch_plugin(self):
@@ -52,7 +53,7 @@ class HyperswitchCallback(object):
         host_id = kwargs['host_id']
         evt = kwargs['evt']
         LOG.debug('get_vif_for_provider_ip %s' % provider_ip)
-        
+
         p_ports = self._hyperswitch_plugin.get_providerports(
             context, filters={'provider_ip': [provider_ip]})
         LOG.debug('provider ports for %s: %s' % (
@@ -61,26 +62,26 @@ class HyperswitchCallback(object):
             LOG.warn('%d ports for %s' % (len(p_ports), provider_ip))
             return None
 
-        ports = self._neutron_client(context).list_ports(
+        ports = self._neutron_client.list_ports(
             id=[p_ports[0]['id']])['ports']
         LOG.debug('hyper port %s' % ports)
         if len(ports) != 1:
             return None
         port = ports[0]
         if evt == 'up':
-            self._neutron_client(context).update_port(
+            self._neutron_client.update_port(
                 port['id'],
                 {'port': {'binding:host_id': host_id}})
             tenant_id = port['tenant_id']
             LOG.debug('tenant_id: %s' % tenant_id)
-            routers = self._neutron_client(context).list_routers(
+            routers = self._neutron_client.list_routers(
                 tenant_id=[tenant_id])['routers']
             LOG.debug('routers: %s' % routers)
             for router in routers:
-                self._neutron_client(context).update_router(
+                self._neutron_client.update_router(
                     router['id'],
                     {'router': {'admin_state_up': False}})
-                self._neutron_client(context).update_router(
+                self._neutron_client.update_router(
                     router['id'],
                     {'router': {'admin_state_up': True}})
 
