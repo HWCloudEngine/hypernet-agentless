@@ -61,13 +61,15 @@ OPTS_HYPERSWITCH = [
                help=_("Data network id or name.")),
     cfg.StrOpt('data_security_group',
                help=_("Data network security group id or name.")),
-    cfg.ListOpt('vms_networks',
-               help=_("VMs networks id or name list "
-                      " for not automatic creation.")),
     cfg.ListOpt('vms_cidr', default=['172.31.192.0/20',
                                      '172.31.208.0/20',
                                      '172.31.224.0/20'],
-               help=_("Data network security group id or name.")),
+                help=_("VMs networks CIDR list.")),
+    cfg.StrOpt('hs_cidr',
+               help=_("HS network CIDR - if empty the HS are directly "
+                      "connected to the VMS networks")),
+    cfg.StrOpt('vms_hn_router', default='vms_hn_router',
+               help=_("VMs network To HN router name")),
     cfg.StrOpt('hs_sg_name',
                default='hs_sg_vms_123456',
                help=_("Hyper Switch Security Group Name for VPN Server NICS.")),
@@ -215,12 +217,16 @@ def data_security_group():
     return cfg.CONF.hyperswitch.data_security_group
 
 
-def vms_networks():
-    return cfg.CONF.hyperswitch.vms_networks
-
-
 def vms_cidr():
     return cfg.CONF.hyperswitch.vms_cidr
+
+
+def hs_cidr():
+    return cfg.CONF.hyperswitch.hs_cidr
+
+
+def vms_hn_router():
+    return cfg.CONF.hyperswitch.vms_hn_router
 
 
 def pod_fip_address():

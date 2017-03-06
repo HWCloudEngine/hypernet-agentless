@@ -1,9 +1,8 @@
 
 # create hypernet.tar.gz
 
-sudo apt-get install git python-pip python-virtualenv libmariadbclient-dev python-dev libssl-dev libjsoncpp-dev libyaml-dev libpython2.7-dev
+sudo apt-get install git python-virtualenv libmariadbclient-dev python-dev libssl-dev libjsoncpp-dev libyaml-dev libpython2.7-dev
 
-sudo pip install virtualenv
 virtualenv /opt/hypernet
 source /opt/hypernet/bin/activate
 pip install -r requirements.txt
@@ -19,9 +18,11 @@ gzip hypernet.tar
 add-apt-repository -y cloud-archive:juno
 apt-get -y update
 apt-get -y dist-upgrade
-apt-get --no-install-recommends -y install neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-l3-agent
-apt-get --no-install-recommends -y install openvpn linux-bridge
-
+apt-get --no-install-recommends -y install neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-l3-agent openvpn bridge-utils
+apt-get install git python-virtualenv libmariadbclient-dev python-dev libssl-dev libjsoncpp-dev libyaml-dev libpython2.7-dev
+virtualenv /opt/hypernet
+source /opt/hypernet/bin/activate
+pip install -e /home/ubuntu/hypernet-agentless
 
 # endpoint creation sample
 keystone service-create --name hypernet --type hypernet --description "OpenStack Hypernet"

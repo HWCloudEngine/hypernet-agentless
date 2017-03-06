@@ -23,7 +23,8 @@ class FSProvider(provider_api.ProviderDriver):
 
     @property
     def _neutron_client(self):
-        return os_client.get_neutron_client('hyperswitch_fs')
+        return os_client.get_neutron_client(
+            context=None, admin=True, group='hyperswitch_fs')
 
     @property
     def _nova_client(self):
@@ -63,6 +64,7 @@ class FSProvider(provider_api.ProviderDriver):
         LOG.debug('_fs_instance_to_dict %s' % fs_instance)
         LOG.debug('_fs_instance_to_dict networks %s' % fs_instance.networks)
         vm_nets = self.get_vms_subnet()
+        hs_net = self.get_hs_subnet()
         vms_ips = []
         mgnt_ip = None
         data_ip = None
@@ -72,14 +74,21 @@ class FSProvider(provider_api.ProviderDriver):
                 mgnt_ip = fs_instance.networks[net_int][0]
             if self._net_equal(net_int, self._cfg.data_network()):
                 data_ip = fs_instance.networks[net_int][0]
-            i = 0
-            for net in vm_nets:
-                if self._net_equal(net_int, net):
+            if hs_net:
+                if self._net_equal(net_int, hs_net):
                     vms_ips.append({
                         'vms_ip': fs_instance.networks[net_int][0],
-                        'index': i
+                        'index': 0
                     })
-                i = i + 1
+            else:
+                i = 0
+                for net in vm_nets:
+                    if self._net_equal(net_int, net):
+                        vms_ips.append({
+                            'vms_ip': fs_instance.networks[net_int][0],
+                            'index': i
+                        })
+                    i = i + 1
         res = provider_api.ProviderHyperswitch(
            instance_id=fs_instance.id,
            name=fs_instance.name,
@@ -97,6 +106,73 @@ class FSProvider(provider_api.ProviderDriver):
             return self._nova_client.flavors.get(flavor_id).name
         except:
             return flavor_id
+
+    def _get_net(self, name, cidr):
+        snets = self._neutron_client.list_subnets(cidr=cidr)['subnets']
+        if len(snets) > 0:
+            for snet in snets:
+                return snet['network_id']
+        else:
+            nets = self._neutron_client.list_networks(
+                name=name)['networks']
+            if len(nets) > 0:
+                net = nets[0]
+            else:
+                net = self._neutron_client.create_network({
+                    'network': {
+                        'name': name
+                    }
+                })['network']
+            snet = self._neutron_client.create_subnet({
+                'subnet': {
+                    'name': name,
+                    'cidr': cidr,
+                    'enable_dhcp': 'true',
+                    'network_id': net['id'],
+                    'ip_version': 4,
+                }
+            })['subnet']
+            return snet['network_id']
+
+    def get_hs_subnet(self):
+        if not self._cfg.hs_cidr():
+            return None
+        #TODO: add static route to VMs 
+        return self._get_net(
+            'hs_%s' % self._cfg.hs_cidr(), self._cfg.hs_cidr())
+
+    def _get_first_subnet_id(self, net_id):
+        snets = self._neutron_client.list_subnets(network_id=net_id)['subnets']
+        return snets[0]['id']
+
+    def get_hs_vms_router(self, vms_subnets, hs_subnet):
+        if not hs_subnet:
+            return None
+        routers = self._neutron_client.list_routers(
+            name=[self._cfg.vms_hn_router()]
+        )['routers']
+        router_id = None
+        for router in routers:
+            router_id = router['id']
+        if not router_id:
+            router_id = self._neutron_client.create_router(
+                {'router': {
+                    'name': self._cfg.vms_hn_router(),
+                    'tenant_id': self._cfg.fs_tenant_id()
+                }}
+            )['router']['id']
+        try:
+            self._neutron_client.add_interface_router(
+                router_id, {'subnet_id': self._get_first_subnet_id(hs_subnet)})
+        except Exception as e:
+            LOG.warn('%s' % e)
+        for net_id in vms_subnets:
+            try:
+                self._neutron_client.add_interface_router(
+                    router_id, {'subnet_id': self._get_first_subnet_id(net_id)})
+            except Exception as e:
+                LOG.warn('%s' % e)
+        return router_id
 
     def get_sgs(self):
         hs_sg, vm_sg = None, None
@@ -147,37 +223,11 @@ class FSProvider(provider_api.ProviderDriver):
         return hs_sg, vm_sg
 
     def get_vms_subnet(self):
+        nets_id = []
         if len(self._vm_nets) != len(self._cfg.vms_cidr()):
             for cidr in self._cfg.vms_cidr():
-                snets = self._neutron_client.list_subnets(cidr=cidr)['subnets']
-                if len(snets) > 0:
-                    self._vm_nets = self._vm_nets + snets
-                else:
-                    name = 'vms_%s' % cidr
-                    nets = self._neutron_client.list_networks(
-                        name=name)['networks']
-                    if len(nets) > 0:
-                        net = nets[0]
-                    else:
-                        net = self._neutron_client.create_network({
-                            'network': {
-                                'name': name
-                            }
-                        })['network']
-                    snet = self._neutron_client.create_subnet({
-                        'subnet': {
-                            'name': name,
-                            'cidr': cidr,
-                            'enable_dhcp': 'true',
-                            'network_id': net['id'],
-                            'ip_version': 4,
-                        }
-                    })['subnet']
-                    self._vm_nets = self._vm_nets + [snet]
-        subnets_id = []
-        for net in self._vm_nets:
-            subnets_id.append(net['network_id'])
-        return subnets_id
+                nets_id.append(self._get_net('vms_%s' % cidr, cidr))
+        return nets_id
 
     def create_hyperswitch(self,
                            user_data,
