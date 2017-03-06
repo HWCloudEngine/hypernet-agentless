@@ -1,24 +1,14 @@
-[ovs]
-enable_tunneling = True
-local_ip = ##data_ip##
+[DEFAULT]
+core_plugin = ml2
+debug = True
+host = ##host##
+lock_path = $state_path/lock
+rpc_backend = rabbit
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+agent_mode = dvr
+rabbit_userid = ##rabbit_userid##
+rabbit_password = ##rabbit_password##
+rabbit_hosts = ##rabbit_hosts##
 
 [agent]
-polling_interval = 60
-dont_fragment = False
-tunnel_types = vxlan
-l2_population = True
-arp_responder = True
-enable_distributed_routing = True
-
-[ml2]
-tenant_network_types = vxlan
-type_drivers = vxlan
-mechanism_drivers = openvswitch,l2population
-
-[ml2_type_vxlan]
-vni_ranges = 1001:2000
-
-[securitygroup]
-firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
-enable_security_group = True
-enable_ipset = True
+root_helper = sudo /usr/bin/neutron-rootwrap /etc/neutron/rootwrap.conf

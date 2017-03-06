@@ -1,0 +1,63 @@
+[DEFAULT]
+rabbit_userid = ##rabbit_userid##
+#default_log_levels = amqp=WARN,amqplib=WARN,boto=WARN,qpid=WARN,sqlalchemy=WARN,suds=INFO,requests.packages.urllib3.connectionpool=WARN,oslo.messaging=INFO,neutron.context=INFO,neutron.agent.linux.utils=INFO
+verbose = True
+rabbit_host = ##rabbit_hosts##
+debug = True
+kombu_heartbeat = 60
+rabbit_use_ssl = True
+lock_path = /tmp/tmp_neutron
+rabbit_password = ##rabbit_password##
+rpc_response_timeout = 900
+use_syslog = True
+log_format = neutron-openvswitch-agent %(levelname)s [pid:%(process)d] [%(threadName)s][tid:%(thread)d] [%(filename)s:%(lineno)d %(funcName)s] %(message)s
+dhcp_distributed = True
+enable_mq_cluster = False
+mq_failover_strategy = shuffle
+host = ##host##
+exclude_relay_cidr =
+
+[ovs]
+integration_bridge = br-int
+tunnel_type = vxlan
+tunnel_bridge = br-tun
+local_ip = ##data_ip##
+enable_tunneling = True
+l2_gateway_ip =
+tenant_network_type = vxlan, flat, vlan
+bridge_mappings = physnet1:br-ext
+tunnel_id_ranges = 5000:10000
+enable_wildcard_vxlan = True
+
+[agent]
+ether_type_check = True
+enable_bum = True
+enable_src_mac_check = True
+vxlan_udp_port = 4789
+veth_mtu = 1300
+arp_responder = False
+port_promisc_enable = True
+anti_arp_and_mac_spoofing = True
+enable_port_multi_device = False
+l2_population = True
+tunnel_types = vxlan
+enable_distributed_routing = True
+brd_ratelimit = 10
+report_interval = 50
+dont_fragment = True
+
+[securitygroup]
+enable_ipset = True
+firewall_driver = neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+enable_security_group = True
+enable_acl = True
+enable_related_state = True
+
+[qos]
+auto_qos_enabled = True
+qos_driver = neutron.services.qos.drivers.openflow.PolicyQoSVlanDriver
+enable_dscp_vlanpcp_mapping = False
+
+[fwaas]
+fwaas_enabled = True
+fwaas_driver = neutron.services.fwaas.drivers.linux.iptables_fwaas_v2.IptablesFwaasDriver

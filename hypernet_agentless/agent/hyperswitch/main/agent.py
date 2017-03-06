@@ -3,19 +3,17 @@ eventlet.monkey_patch()
 
 import sys
 
-from oslo import messaging
+import oslo_messaging
 
+from hypernet_agentless._i18n import _LI
 from hypernet_agentless.agent.hyperswitch import config
 from hypernet_agentless.agent.hyperswitch import vif_hyperswitch_driver
-from hypernet_agentless import hs_constants
+from hypernet_agentless.common import hs_constants
+from hypernet_agentless.server import context
 
-from oslo.config import cfg
+from oslo_config import cfg
 
-from neutron.openstack.common import log as logging
-
-from neutron import context
-from neutron.common import rpc
-from neutron.openstack.common.gettextutils import _LI
+from oslo_log import log as logging
 
 
 LOG = logging.getLogger(__name__)
@@ -27,16 +25,19 @@ class HyperSwitchAgentCallback(object):
     RPC_API_VERSION = '1.0'
 
     def __init__(self):
-        target = messaging.Target(topic=hs_constants.HYPERSWITCH_CALLBACK,
-                                  version='1.0',
-                                  exchange=hs_constants.HYPERSWITCH)
-        self.client = rpc.get_client(target)
-        self.context = context.get_admin_context()
+        transport = oslo_messaging.get_transport(cfg.CONF)
+        target = oslo_messaging.Target(
+            topic=hs_constants.HYPERSWITCH_CALLBACK,
+            version='1.0',
+            exchange=hs_constants.HYPERSWITCH)
+        self.client = oslo_messaging.RPCClient(transport, target)
+        self.context = context.get_admin_context_without_session()
         super(HyperSwitchAgentCallback, self).__init__()
 
     def get_vif_for_provider_ip(self, provider_ip, host_id, evt):
         """Retrieve the VIFs for a provider IP."""
-        return self.client.call(self.context, 'get_vif_for_provider_ip',
+        LOG.debug(self.context.to_dict())
+        return self.client.call(self.context.to_dict(), 'get_vif_for_provider_ip',
                                 provider_ip=provider_ip,
                                 host_id=host_id,
                                 evt=evt)
@@ -49,12 +50,15 @@ class HyperSwitchAgent(object):
         self.device_id = cfg.CONF.host
 
         # the queue client for plug/unplug calls from nova driver
+        transport = oslo_messaging.get_transport(cfg.CONF)
         endpoints = [self]
-        target = messaging.Target(topic=hs_constants.HYPERSWITCH_UPDATE,
-                                  version='1.0',
-                                  exchange=hs_constants.HYPERSWITCH,
-                                  server=cfg.CONF.host)
-        self.server = rpc.get_server(target, endpoints)
+        target = oslo_messaging.Target(
+            topic=hs_constants.HYPERSWITCH_UPDATE,
+            version='1.0',
+            exchange=hs_constants.HYPERSWITCH,
+            server=cfg.CONF.host)
+        self.server = oslo_messaging.get_rpc_server(
+            transport, target, endpoints)
 
         # the call back to nova driver init
         self.call_back = HyperSwitchAgentCallback()

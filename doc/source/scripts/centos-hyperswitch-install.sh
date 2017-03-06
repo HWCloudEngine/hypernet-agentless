@@ -71,11 +71,15 @@ cp -r $FROM_DIR/etc/agent/hyperswitch /etc
 
 # neutron template
 rm -rf `find /etc/neutron -name "*.tmpl"`
-cp $FROM_DIR/etc/agent/neutron/neutron.conf.tmpl /etc/neutron
-cp $FROM_DIR/etc/agent/neutron/plugins/ml2/openvswitch_agent.ini.tmpl /etc/neutron/plugins/ml2
+cp $FROM_DIR/etc/agent/neutron/dvr_compute_agent.ini.tmpl /etc/neutron
+cp $FROM_DIR/etc/agent/neutron/dhcp_agent.ini.tmpl /etc/neutron
+cp $FROM_DIR/etc/agent/neutron/plugins/openvswitch/ovs_neutron_plugin.ini.tmpl /etc/neutron/plugins/openvswitch
 
 # var folder
 rm -rf /var/log/hyperswitch
 mkdir /var/log/hyperswitch
 
 # TODO: openvpn certificates creation: CA, server and one client
+# etc openswan conf
+rm -rf /etc/openswan
+cp -r $FROM_DIR/etc/agent/openswan /etc

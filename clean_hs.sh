@@ -1,8 +1,9 @@
 #!/bin/bash
 
-rm -rf ./build
-rm -rf /usr/local/lib/python2.7/dist-packages/hypernet*
-rm -rf /usr/local/bin/hyperswitch*
+# rm -rf /opt/hypernet
+# mkdir /opt/hypernet
+# 
+# cp -r . /opt/hypernet
 
 ovs-vsctl del-br br-vpn
 ovs-vsctl del-br br-eth0
@@ -15,10 +16,6 @@ ovs-vsctl del-br br-int
 ovs-vsctl del-br br-ex
 ovs-vsctl add-br br-ex
 
-python ./setup.py clean
-python ./setup.py build
-python ./setup.py install
-
 # templates
 rm -rf `find /etc -name "*.tmpl"`
 cp ./etc/agent/neutron/neutron.conf.tmpl /etc/neutron
@@ -27,19 +24,22 @@ cp ./etc/agent/neutron/plugins/ml2/ml2_conf.ini.tmpl /etc/neutron/plugins/ml2
 cp ./etc/agent/hosts.tmpl /etc
 
 # init conf
-rm -f /etc/init/hyperswitch*
+rm -f /etc/init/hypernet*
 cp -r ./etc/agent/init/* /etc/init
 
 # etc hyperswitch conf
-rm -rf /etc/hyperswitch
-cp -r ./etc/agent/hyperswitch /etc
+rm -rf /etc/hypernet
+cp -r ./etc/agent/hypernet /etc
+
+# openvpn config files
+cp ./etc/agent/openvpn/* /etc/openvpn/
 
 # var folder
-rm -rf /var/log/hyperswitch
-mkdir /var/log/hyperswitch
+rm -rf /var/log/hypernet
+mkdir /var/log/hypernet
 
 # clean current configuration
-rm -f /etc/hyperswitch/hyperswitch.conf
+rm -f /etc/hypernet/hyperswitch.conf
 rm -f /etc/neutron/neutron.conf
 rm -f /etc/neutron/metadata_agent.ini
 rm -f /etc/neutron/plugins/ml2/openvswitch_agent.ini

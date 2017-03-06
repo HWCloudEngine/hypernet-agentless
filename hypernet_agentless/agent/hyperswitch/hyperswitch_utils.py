@@ -1,11 +1,13 @@
+import datetime
 import shlex
 import time
 import os
 
-from oslo.config import cfg
+from oslo_concurrency import processutils
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_utils import importutils
 
-from neutron.openstack.common import log as logging
-from neutron.openstack.common import importutils, processutils
 
 eventlet = importutils.try_import('eventlet')
 if eventlet and eventlet.patcher.is_monkey_patched(time):
@@ -48,8 +50,7 @@ def launch(*cmd, **kwargs):
     except OSError as err:
         f = _('Got an OSError\ncommand: %(cmd)r\n'
                    'errno: %(errno)r')
-        sanitized_cmd = logging.mask_password(' '.join(cmd))
-        LOG.error(f, {"cmd": sanitized_cmd, "errno": err.errno})
+        LOG.error(f, {'cmd': ' '.join(cmd), 'errno': err.errno})
     finally:
         time.sleep(0)
 
@@ -192,3 +193,45 @@ def set_mac_ip(nic, mac, cidr):
     execute('ip', 'addr', 'add', cidr, 'dev', nic,
             check_exit_code=False,
             run_as_root=True)
+
+
+def get_nsize(netmask):
+    binary_str = ''
+    for octet in netmask.split('.'):
+        binary_str += bin(int(octet))[2:].zfill(8)
+    return str(len(binary_str.rstrip('0')))
+
+
+def extract_date(line):
+    s = line.split()
+    return time.mktime(datetime.datetime.strptime(
+        s[2] + ' ' + s[3].split(';')[0],
+        '%Y/%m/%d %H:%M:%S').timetuple())
+
+
+def extract_cidr_router(lease_file, nic):
+    mask = None
+    ip = None
+    routers = None
+    in_lease_nic = False
+    d_renew = 0
+    with open(lease_file, 'r') as f:
+        for line in f:
+            if 'interface' in line and nic in line:
+                in_lease_nic = True
+            if 'subnet-mask' in line:
+                mask_cur = line.split()[2].split(';')[0]
+            if 'fixed-address' in line:
+                ip_cur = line.split()[1].split(';')[0]
+            if 'routers' in line:
+                routers_cur = line.split()[2].split(';')[0]
+            if 'renew' in line:
+                d_renew_cur = extract_date(line)
+            if in_lease_nic and '}' in line:
+                in_lease_nic = False
+                if d_renew_cur > d_renew:
+                    mask = mask_cur
+                    ip = ip_cur
+                    routers = routers_cur
+                    d_renew = d_renew_cur
+    return '%s/%s' % (ip, get_nsize(mask)), routers
