@@ -1,24 +1,29 @@
+import socket
+
+from oslo_config import cfg
+
+from oslo_log import log as logging
+
+import oslo_messaging
+
+from hypernet_agentless import version
 from hypernet_agentless._i18n import _
-from oslo.config import cfg
+from hypernet_agentless.common import hs_constants
 
-from neutron.common import rpc
-from neutron.openstack.common import log as logging
-
-from oslo import messaging
-
-from hypernet_agentless import version, hs_constants
-
-messaging.set_transport_defaults(control_exchange=hs_constants.HYPERSWITCH)
 
 LOG = logging.getLogger(__name__)
 
-
 # import the configuration options
-cfg.CONF.import_opt('host', 'neutron.common.config')
 cfg.CONF.import_opt('ovs_vsctl_timeout', 'neutron.agent.linux.ovs_lib')
 
 
 OPTS = [
+    cfg.StrOpt('host', default=socket.gethostname(),
+               sample_default='example.domain',
+               help=_("Hostname to be used by the Hypernet server, agents and "
+                      "services running on this machine. All the agents and "
+                      "services running on this machine must use the same "
+                      "host value.")),
     cfg.IntOpt('network_device_mtu',
                help=_('MTU setting for device. This option will be removed in '
                       'Newton. Please use the system-wide segment_mtu setting '
@@ -51,7 +56,8 @@ def init(args, **kwargs):
     cfg.CONF(args=args, project=product_name,
              version='%%(prog)s %s' % version.version_info.release_string(),
              **kwargs)
-    rpc.init(cfg.CONF)
+    oslo_messaging.set_transport_defaults(
+        control_exchange=hs_constants.HYPERSWITCH)
 
 
 def get_root_helper(conf):

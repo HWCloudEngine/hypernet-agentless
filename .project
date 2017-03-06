@@ -2,9 +2,6 @@
 <projectDescription>
 	<name>hypernet-agentless</name>
 	<comment></comment>
-	<projects>
-		<project>neutron</project>
-	</projects>
 	<buildSpec>
 		<buildCommand>
 			<name>org.python.pydev.PyDevBuilder</name>

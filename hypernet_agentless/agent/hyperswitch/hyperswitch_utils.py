@@ -2,10 +2,11 @@ import shlex
 import time
 import os
 
-from oslo.config import cfg
+from oslo_concurrency import processutils
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_utils import importutils
 
-from neutron.openstack.common import log as logging
-from neutron.openstack.common import importutils, processutils
 
 eventlet = importutils.try_import('eventlet')
 if eventlet and eventlet.patcher.is_monkey_patched(time):
@@ -48,8 +49,7 @@ def launch(*cmd, **kwargs):
     except OSError as err:
         f = _('Got an OSError\ncommand: %(cmd)r\n'
                    'errno: %(errno)r')
-        sanitized_cmd = logging.mask_password(' '.join(cmd))
-        LOG.error(f, {"cmd": sanitized_cmd, "errno": err.errno})
+        LOG.error(f, {'cmd': ' '.join(cmd), 'errno': err.errno})
     finally:
         time.sleep(0)
 
