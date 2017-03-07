@@ -70,6 +70,8 @@ def get_sort_dirs(sorts, page_reverse=False):
 class CommonDbMixin(object):
     """Common methods used in core and service plugins."""
 
+    _model_query_hooks = {}
+
     @property
     def safe_reference(self):
         """Return a weakref to the instance.

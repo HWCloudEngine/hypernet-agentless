@@ -135,10 +135,13 @@ def main():
         os.path.join(os.path.dirname(__file__), 'alembic.ini')
     )
     config.set_main_option('script_location',
-                           'hypernet_agentless.db.migration:alembic_migrations')
+                           'hypernet_agentless.server.db.migration:alembic_migrations')
     # attach the Neutron conf to the Alembic conf
-    config.neutron_config = CONF
+    config.hypernet_config = CONF
 
     CONF()
     #TODO(gongysh) enable logging
     CONF.command.func(config, CONF.command.name)
+
+if __name__ == "__main__":
+    main()

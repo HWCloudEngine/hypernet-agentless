@@ -20,7 +20,7 @@ logging_config.fileConfig(config.config_file_name)
 
 
 class _HypernetBase(models.ModelBase):
-    """Base class for Neutron Models."""
+    """Base class for Hypernet Models."""
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 
