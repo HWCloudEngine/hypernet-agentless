@@ -2,14 +2,12 @@
 import time
 
 from hypernet_agentless.common import hs_constants
+from hypernet_agentless.server import config
 from hypernet_agentless.server.extensions import hyperswitch
 from hypernet_agentless.server.services.hyperswitch import provider_api
 
-from neutronclient.v2_0 import client as neutron_client
-
-from novaclient.v1_1 import client as nova_client
-
 from oslo_log import log as logging
+from hypernet_agentless.server.services import os_client
 
 
 LOG = logging.getLogger(__name__)
@@ -18,36 +16,18 @@ HS_START_NAME = '%s-' % hs_constants.HYPERSWITCH
 
 class FSProvider(provider_api.ProviderDriver):
     
-    def __init__(self, cfg=None):
-        if not cfg:
-            from hypernet_agentless.server import config
-            self._cfg = config
-        else:
-            self._cfg = cfg
-        self._neutron_client_property = None
-        self._nova_client_property = None
+    def __init__(self):
+        self._cfg = config
         self._net_ids = {}
         self._vm_nets = []
 
     @property
     def _neutron_client(self):
-        if self._neutron_client_property is None:
-            self._neutron_client_property = neutron_client.Client(
-                username=self._cfg.fs_username(),
-                password=self._cfg.fs_password(),
-                tenant_id=self._cfg.fs_tenant_id(),
-                auth_url=self._cfg.fs_auth_url())
-        return self._neutron_client_property
+        return os_client.get_neutron_client('hyperswitch_fs')
 
     @property
     def _nova_client(self):
-        if self._nova_client_property is None:
-            self._nova_client_property = nova_client.Client(
-                username=self._cfg.fs_username(),
-                api_key=self._cfg.fs_password(),
-                tenant_id=self._cfg.fs_tenant_id(),
-                auth_url=self._cfg.fs_auth_url())
-        return self._nova_client_property
+        return os_client.get_nova_client('hyperswitch_fs')
 
     def _get_net_id(self, id_or_name):
         if not id_or_name in self._net_ids:

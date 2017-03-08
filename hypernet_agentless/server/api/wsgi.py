@@ -254,6 +254,7 @@ class JSONDeserializer(TextDeserializer):
             return jsonutils.loads(datastring)
         except ValueError:
             msg = _("Cannot understand JSON")
+            LOG.exception(_("InvalidJSON: %s"), msg)
             raise exceptions.MalformedRequestBody(reason=msg)
 
     def default(self, datastring):
@@ -607,6 +608,7 @@ class Fault(webob.exc.HTTPException):
         """Generate a WSGI response based on the exception passed to ctor."""
         # Replace the body with fault details.
         fault_data, metadata = self._body_function(self.wrapped_exc)
+        LOG.info(req)
         content_type = req.best_match_content_type()
         serializer = {
             'application/json': JSONDictSerializer(),

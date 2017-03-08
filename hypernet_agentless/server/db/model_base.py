@@ -32,7 +32,7 @@ class HasStatusDescription(object):
 
 
 class _HypernetBase(models.ModelBase):
-    """Base class for Neutron Models."""
+    """Base class for Hypernet Models."""
 
     __table_args__ = {'mysql_engine': 'InnoDB'}
 

@@ -16,6 +16,8 @@ from oslo_log import log as logging
 from oslo_utils import uuidutils
 
 from sqlalchemy.orm import exc
+from hypernet_agentless.server.services import os_client
+
 
 LOG = logging.getLogger(__name__)
 
@@ -26,22 +28,25 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
     supported_extension_aliases = [hs_constants.HYPERSWITCH]
     
     def __init__(self):
-        if config.provider() in ['openstack', 'fs']:
-            from providers import fs_impl
-            self._provider_impl = fs_impl.FSProvider()
-        elif config.provider() == 'aws':
-            from providers import aws_impl
-            self._provider_impl = aws_impl.AWSProvider()
-        else:
-            from providers import null_impl
-            self._provider_impl = null_impl.NULLProvider()
-        self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
-        self._vms_subnets = self._provider_impl.get_vms_subnet()
-        self._hs_sg, self._vm_sg  = self._provider_impl.get_sgs()
+        try:
+            if config.provider() in ['openstack', 'fs']:
+                from providers import fs_impl
+                self._provider_impl = fs_impl.FSProvider()
+            elif config.provider() == 'aws':
+                from providers import aws_impl
+                self._provider_impl = aws_impl.AWSProvider()
+            else:
+                from providers import null_impl
+                self._provider_impl = null_impl.NULLProvider()
+            self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
+            self._vms_subnets = self._provider_impl.get_vms_subnet()
+            self._hs_sg, self._vm_sg  = self._provider_impl.get_sgs()
+        except:
+            LOG.exception('rrr')
 
     @property
-    def _core_plugin(self):
-        return manager.NeutronManager.get_plugin()
+    def _neutron_client(self):
+        return os_client.get_neutron_client('neutron')
 
     def _make_hyperswitch_dict(self,
                                hs_db,
@@ -264,13 +269,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         self._provider_impl.delete_hyperswitch(hyperswitch_id)
 
         # remove agents
-        agents = self._core_plugin.get_agents(
-            context,
-            filters={'host': [hs_db.id]}
-        )
+        agents = self._neutron_client.list_agents(
+            host=[hs_db.id])
         LOG.debug('agents to delete: %s' % agents)
         for agent in agents:
-            self._core_plugin.delete_agent(context, agent.get('id'))
+            self._neutron_client.delete_agent(agent.get('id'))
 
     def get_hyperswitchs(self, context, filters=None, fields=None,
                          sorts=None, limit=None, marker=None,
@@ -332,9 +335,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         port_id = p_port.get('port_id')
         
         # Get the neutron port
-        neutron_ports = self._core_plugin.get_ports(
-            context,
-            filters={'id': [port_id]})
+        neutron_ports = self._neutron_client.list_ports(
+            id=[port_id])
         if not neutron_ports or len(neutron_ports) == 0:
             raise hyperswitch.ProviderPortNeutronPortNotFound(
                 providerport_id=port_id)
@@ -412,9 +414,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             providerport_db, neutron_port, net_int_provider, hsservers)
 
     def _get_neutron_port(self, context, port_id):
-        neutron_ports = self._core_plugin.get_ports(
-            context,
-            filters={'id': [port_id]})
+        neutron_ports = self._neutron_client.list_ports(
+            id=[port_id])
         if not neutron_ports or len(neutron_ports) == 0:
             raise hyperswitch.ProviderPortNotFound(
                 providerport_id=port_id)

@@ -136,7 +136,7 @@ def main():
     )
     config.set_main_option('script_location',
                            'hypernet_agentless.server.db.migration:alembic_migrations')
-    # attach the Neutron conf to the Alembic conf
+    # attach the Hypernet conf to the Alembic conf
     config.hypernet_config = CONF
 
     CONF()

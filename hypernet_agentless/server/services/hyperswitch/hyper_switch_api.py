@@ -1,7 +1,9 @@
-
+from keystoneauth1 import loading
 
 from hypernet_agentless.common import hs_constants
-from hypernet_agentless.server import config
+from hypernet_agentless.server import config, manager
+
+from neutronclient.v2_0 import client as neutron_client
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -29,30 +31,29 @@ class HyperswitchCallback(object):
         self.server = oslo_messaging.get_rpc_server(
             transport, target, endpoints)
         self.server.start()
-        self._plugin_property = None
-        self._l3_plugin_property = None
+        self._neutron_client_property = None
         self._hyperswitch_plugin_property = None
         super(HyperswitchCallback, self).__init__()
 
     @property
-    def _plugin(self):
-        if self._plugin_property is None:
-            self._plugin_property = manager.NeutronManager.get_plugin()
-        return self._plugin_property
-
-    @property
-    def _l3_plugin(self):
-        if self._l3_plugin_property is None:
-            self._l3_plugin_property = (
-                manager.NeutronManager.get_service_plugins().get(
-                    p_const.L3_ROUTER_NAT))
-        return self._l3_plugin_property
+    def _neutron_client(self):
+        if self._neutron_client_property is None:
+            auth_plugin = loading.load_auth_from_conf_options(
+                cfg.CONF, 'neutron')
+            auth_session = loading.load_session_from_conf_options(
+                cfg.CONF, 'neutron')
+            self._neutron_client_property = neutron_client.Client(
+                session=auth_session,
+                auth=auth_plugin,
+                endpoint_override=cfg.CONF.neutron.url,
+                region_name=cfg.CONF.neutron.region_name)
+        return self._neutron_client_property
 
     @property
     def _hyperswitch_plugin(self):
         if self._hyperswitch_plugin_property is None:
             self._hyperswitch_plugin_property = (
-                manager.NeutronManager.get_service_plugins().get(
+                manager.HypernetManager.get_service_plugins().get(
                     hs_constants.HYPERSWITCH))
         return self._hyperswitch_plugin_property
 
@@ -73,31 +74,26 @@ class HyperswitchCallback(object):
             LOG.warn('%d ports for %s' % (len(p_ports), provider_ip))
             return None
 
-        ports = self._plugin.get_ports(context, filters={
-            'id': [p_ports[0]['id']]
-        })
+        ports = self._neutron_client.list_ports(
+            id=[p_ports[0]['id']])
         LOG.debug('hyper port %s' % ports)
         if len(ports) != 1:
             return None
         port = ports[0]
         if evt == 'up':
-            self._plugin.update_port(
-                context,
+            self._neutron_client.update_port(
                 port['id'],
                 {'port': {'binding:host_id': host_id}})
             tenant_id = port['tenant_id']
             LOG.debug('tenant_id: %s' % tenant_id)
-            routers = self._l3_plugin.get_routers(
-                context,
-                filters={'tenant_id': [tenant_id]})
+            routers = self._neutron_client.list_routers(
+                tenant_id=[tenant_id])
             LOG.debug('routers: %s' % routers)
             for router in routers:
-                self._l3_plugin.update_router(
-                    context,
+                self._neutron_client.update_router(
                     router['id'],
                     {'router': {'admin_state_up': False}})
-                self._l3_plugin.update_router(
-                    context,
+                self._neutron_client.update_router(
                     router['id'],
                     {'router': {'admin_state_up': True}})
 

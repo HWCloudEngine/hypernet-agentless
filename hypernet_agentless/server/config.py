@@ -78,25 +78,6 @@ OPTS_HYPERSWITCH = [
                help=_("Default flavor for hyperswitch creation.")),
     cfg.DictOpt('hs_flavor_map',
                 help=_("HyperSwitch flavor Map")),
-    cfg.StrOpt('aws_access_key_id',
-               help=_("AWS Access Key Id.")),
-    cfg.StrOpt('aws_secret_access_key',
-               help=_("AWS Secret Access Key.")),
-    cfg.StrOpt('aws_region_name',
-               help=_("AWS Region Name.")),
-    cfg.StrOpt('aws_vpc',
-               help=_("AWS VPC id.")),
-    cfg.StrOpt('fs_username',
-               help=_("The Openstack username.")),
-    cfg.StrOpt('fs_password',
-               help=_("The Openstack Password.")),
-    cfg.StrOpt('fs_tenant_id',
-               help=_("The Openstack Tenant Id.")),
-    cfg.StrOpt('fs_auth_url',
-               help=_("The Openstack Auth Url (keystone).")),
-    cfg.StrOpt('fs_availability_zone',
-               default='nova',
-               help=_("The Openstack Availability zone.")),
     cfg.StrOpt('controller_ip',
                help=_("the controller ip.")),
     cfg.StrOpt('controller_name',
@@ -115,6 +96,23 @@ OPTS_HYPERSWITCH = [
                help=_("the metadata admin_password.")),
 ]
 
+OPTS_HYPERSWITCH_AWS = [
+    cfg.StrOpt('access_key_id',
+               help=_("AWS Access Key Id.")),
+    cfg.StrOpt('secret_access_key',
+               help=_("AWS Secret Access Key.")),
+    cfg.StrOpt('region_name',
+               help=_("AWS Region Name.")),
+    cfg.StrOpt('vpc',
+               help=_("AWS VPC id.")),
+]
+
+OPTS_HYPERSWITCH_FS = [
+    cfg.StrOpt('availability_zone',
+               default='nova',
+               help=_("The Openstack Availability zone.")),
+]
+
 OPTS_DATABASE = [
     cfg.StrOpt('engine',
                default='',
@@ -123,6 +121,8 @@ OPTS_DATABASE = [
 
 cfg.CONF.register_opts(OPTS)
 cfg.CONF.register_opts(OPTS_HYPERSWITCH, hs_constants.HYPERSWITCH)
+cfg.CONF.register_opts(OPTS_HYPERSWITCH_AWS, hs_constants.HYPERSWITCH + '_aws')
+cfg.CONF.register_opts(OPTS_HYPERSWITCH_FS, hs_constants.HYPERSWITCH + '_fs')
 cfg.CONF.register_cli_opts(OPTS_DATABASE, 'database')
 
 
@@ -158,7 +158,7 @@ def host():
 
 def rabbit_hosts():
     rabbit_hosts = None
-    for rabbit_host in cfg.CONF.rabbit_hosts:
+    for rabbit_host in cfg.CONF.oslo_messaging_rabbit.rabbit_hosts:
         # translate to ip
         if ':' in rabbit_host:
             a = rabbit_host.split(':')
@@ -179,11 +179,11 @@ def rabbit_hosts():
 
 
 def rabbit_userid():
-    return cfg.CONF.rabbit_userid
+    return cfg.CONF.oslo_messaging_rabbit.rabbit_userid
 
 
 def rabbit_password():
-    return cfg.CONF.rabbit_password
+    return cfg.CONF.oslo_messaging_rabbit.rabbit_password
 
 
 def provider():
@@ -235,39 +235,27 @@ def hs_flavor_map():
 
 
 def aws_access_key_id():
-    return cfg.CONF.hyperswitch.aws_access_key_id
+    return cfg.CONF.hyperswitch_aws.access_key_id
 
 
 def aws_secret_access_key():
-    return cfg.CONF.hyperswitch.aws_secret_access_key
+    return cfg.CONF.hyperswitch_aws.secret_access_key
 
 
 def aws_region_name():
-    return cfg.CONF.hyperswitch.aws_region_name
+    return cfg.CONF.hyperswitch_aws.region_name
 
 
 def aws_vpc():
-    return cfg.CONF.hyperswitch.aws_vpc
-
-
-def fs_username():
-    return cfg.CONF.hyperswitch.fs_username
-
-
-def fs_password():
-    return cfg.CONF.hyperswitch.fs_password
+    return cfg.CONF.hyperswitch_aws.vpc
 
 
 def fs_tenant_id():
-    return cfg.CONF.hyperswitch.fs_tenant_id
-
-
-def fs_auth_url():
-    return cfg.CONF.hyperswitch.fs_auth_url
+    return cfg.CONF.hyperswitch_fs.tenant_id
 
 
 def fs_availability_zone():
-    return cfg.CONF.hyperswitch.fs_availability_zone
+    return cfg.CONF.hyperswitch_fs.availability_zone
 
 
 def controller_ip():
