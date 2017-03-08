@@ -1,3 +1,0 @@
-HYPERSWITCH_DIR=$DEST/hypernet-agentless
-HYPERSWITCH_CONF_FILE=/etc/neutron/hyperswitch_plugin.ini
-HYPERSWITCH_PLUGIN=hypernet_agentless.services.hyperswitch.hyperswitch_plugin.HyperswitchPlugin

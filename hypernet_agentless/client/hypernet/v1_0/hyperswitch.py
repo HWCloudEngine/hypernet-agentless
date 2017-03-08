@@ -1,9 +1,9 @@
 
-from neutronclient._i18n import _
-from neutronclient.common import extension
-from neutronclient.common import utils
+from hypernet_agentless._i18n import _
+from hypernet_agentless.client.common import extension
+from hypernet_agentless.client.common import utils
 
-class HyperSwitch(extension.NeutronClientExtension):
+class HyperSwitch(extension.HypernetClientExtension):
     resource = 'hyperswitch'
     resource_plural = '%ss' % resource
     object_path = '/%s' % resource_plural

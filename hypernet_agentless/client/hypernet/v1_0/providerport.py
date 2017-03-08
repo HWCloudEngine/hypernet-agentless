@@ -1,10 +1,10 @@
 
-from neutronclient._i18n import _
-from neutronclient.common import extension
-from neutronclient.neutron.v2_0 import NeutronCommand
+from hypernet_agentless._i18n import _
+from hypernet_agentless.client.common import extension
+from hypernet_agentless.client.hypernet.v1_0 import HypernetCommand
 
 
-class Providerport(extension.NeutronClientExtension):
+class Providerport(extension.HypernetClientExtension):
     resource = 'providerport'
     resource_plural = '%ss' % resource
     object_path = '/%s' % resource_plural
@@ -18,7 +18,7 @@ class ProviderportCreate(extension.ClientExtensionCreate, Providerport):
     shell_command = 'providerport-create'
 
     def get_parser(self, prog_name):
-        parser = NeutronCommand.get_parser(self, prog_name)
+        parser = HypernetCommand.get_parser(self, prog_name)
         self.add_known_arguments(parser)
         return parser
 
