@@ -580,7 +580,6 @@ class HypernetShell(app.App):
             region_name=self.options.os_region_name,
             api_version=self.api_version,
             auth_strategy=self.options.os_auth_strategy,
-            service_type=self.options.os_service_type,
             endpoint_type=self.options.os_endpoint_type,
             insecure=self.options.insecure,
             ca_cert=self.options.os_cacert,

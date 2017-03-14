@@ -58,7 +58,7 @@ class JSONDeserializer(TextDeserializer):
     def _from_json(self, datastring):
         try:
             return json.loads(utils.safe_decode(
-                datastring, encoding='utf-8'))
+                datastring), encoding='utf-8')
         except ValueError:
             msg = _("Cannot understand JSON")
             raise exceptions.MalformedResponseBody(reason=msg)

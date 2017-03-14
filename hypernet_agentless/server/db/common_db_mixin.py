@@ -83,6 +83,7 @@ class CommonDbMixin(object):
         return weakref.proxy(self)
 
     def _model_query(self, context, model):
+        print(context)
         query = context.session.query(model)
         # define basic filter condition for model query
         query_filter = None

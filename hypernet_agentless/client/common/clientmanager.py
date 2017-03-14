@@ -22,7 +22,7 @@ class ClientCache(object):
 
 class ClientManager(object):
     """Manages access to API clients, including authentication."""
-    hyerpernet = ClientCache(hypernet_client.make_client)
+    hypernet = ClientCache(hypernet_client.make_client)
 
     def __init__(self, token=None, url=None,
                  auth_url=None,
@@ -38,7 +38,7 @@ class ClientManager(object):
                  insecure=False,
                  ca_cert=None,
                  log_credentials=False,
-                 service_type=None,
+                 service_type='hypernet',
                  timeout=None,
                  retries=0,
                  raise_errors=True,

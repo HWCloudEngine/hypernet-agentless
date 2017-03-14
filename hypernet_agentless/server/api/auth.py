@@ -14,8 +14,6 @@
 
 from oslo_config import cfg
 
-from oslo_context import context
-
 from oslo_log import log as logging
 
 from oslo_middleware import base
@@ -23,6 +21,7 @@ from oslo_middleware import request_id
 
 import webob.dec
 import webob.exc
+from hypernet_agentless.server import context
 
 
 LOG = logging.getLogger(__name__)
@@ -53,11 +52,10 @@ class HypernetKeystoneContext(base.ConfigurableMiddleware):
                                      req.headers.get('X_STORAGE_TOKEN'))
 
         # Create a context with the authentication data
-        ctx = context.RequestContext(
-            user=user_id, tenant=tenant_id, roles=roles,
+        ctx = context.Context(
+            user_id=user_id, tenant_id=tenant_id, roles=roles,
             request_id=req_id, auth_token=auth_token
         )
-
         # Inject the context...
         req.environ['hypernet.context'] = ctx
 
