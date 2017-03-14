@@ -336,7 +336,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         
         # Get the neutron port
         neutron_ports = self._neutron_client.list_ports(
-            id=[port_id])
+            id=[port_id])['ports']
         if not neutron_ports or len(neutron_ports) == 0:
             raise hyperswitch.ProviderPortNeutronPortNotFound(
                 providerport_id=port_id)
@@ -359,7 +359,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         if al_device_id and al_device_id != device_id:
             raise hyperswitch.ProviderPortBadDeviceId(
                 neutron_device_id=device_id, device_id=al_device_id)
-
         # retrieve the hyperswitchs to connect
         if config.level() == 'vm' or al_device_id:
             hsservers = self.get_hyperswitchs(

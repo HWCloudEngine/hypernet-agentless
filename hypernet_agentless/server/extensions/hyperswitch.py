@@ -187,6 +187,11 @@ class HyperswitchProviderMultipleFound(exceptions.Conflict):
                 '%(hyperswitch_id)s found in provider.')
 
 
+class HyperswitchVMCreationFailed(exceptions.Conflict):
+    message = _('The Hyperswitch VM failed to be created %(hyperswitch_id),'
+                '%(hyperswitch_status).')
+
+
 class ProviderPortNotFound(exceptions.NotFound):
     message = _('Provider Port %(providerport_id)s could not be found.')
 

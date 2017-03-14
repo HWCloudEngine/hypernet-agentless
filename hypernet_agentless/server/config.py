@@ -129,16 +129,17 @@ cfg.CONF.register_cli_opts(OPTS_DATABASE, 'database')
 def init(args, **kwargs):
     product_name = 'hypernet'
     
+    logging.register_options(cfg.CONF)
+
     wsgi.register_opts(cfg.CONF) 
     cfg.CONF.register_opts(service.list_opts()[0][1])
     sslutils.register_opts(cfg.CONF)
-    
-    logging.register_options(cfg.CONF)
-    logging.setup(cfg.CONF, product_name)
 
     cfg.CONF(args=args, project=product_name,
              version='%%(prog)s %s' % version.version_info.release_string(),
              **kwargs)
+
+    logging.setup(cfg.CONF, product_name)
     rpc.init(cfg.CONF)
 
 

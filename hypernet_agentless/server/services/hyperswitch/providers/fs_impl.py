@@ -220,11 +220,19 @@ class FSProvider(provider_api.ProviderDriver):
              nics=nics,
              userdata=user_metadata,
              availability_zone=self._cfg.fs_availability_zone())
-        while len(hs_instance.networks) == 0:
+        nb_retry = 0
+        while len(hs_instance.networks) == 0 and nb_retry < 100:
+            LOG.debug(dir(hs_instance))
             time.sleep(1)
             for inst in self._nova_client.servers.list(
                 search_opts={'name': hyperswitch_id}):
                 hs_instance = inst
+            nb_retry = nb_retry + 1
+        if nb_retry == 100:
+            self._nova_client.servers.delete(hs_instance.id)
+            raise hyperswitch.HyperswitchVMCreationFailed(
+                    hyperswitch_id=hyperswitch_id,
+                    hyperswitch_status=hs_instance.status)
         return self._fs_instance_to_dict(hs_instance)
 
     def get_hyperswitch(self, hyperswitch_id):
