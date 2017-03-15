@@ -2,8 +2,9 @@
 import sys
 
 import eventlet
-#eventlet.monkey_patch()
-eventlet.monkey_patch(os=False, thread=False)
+eventlet.monkey_patch()
+# FOR Debug with breakpoints:
+# eventlet.monkey_patch(os=False, thread=False)
 from oslo_config import cfg
 import oslo_i18n
 from oslo_service import service
