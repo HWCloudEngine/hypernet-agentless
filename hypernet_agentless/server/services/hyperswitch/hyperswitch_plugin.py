@@ -414,7 +414,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
     def _get_neutron_port(self, context, port_id):
         neutron_ports = self._neutron_client.list_ports(
-            id=[port_id])
+            id=[port_id])['ports']
         if not neutron_ports or len(neutron_ports) == 0:
             raise hyperswitch.ProviderPortNotFound(
                 providerport_id=port_id)
