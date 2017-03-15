@@ -270,7 +270,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
         # remove agents
         agents = self._neutron_client.list_agents(
-            host=[hs_db.id])
+            host=[hs_db.id])['agents']
         LOG.debug('agents to delete: %s' % agents)
         for agent in agents:
             self._neutron_client.delete_agent(agent.get('id'))
