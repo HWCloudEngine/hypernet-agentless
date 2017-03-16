@@ -222,8 +222,7 @@ class FSProvider(provider_api.ProviderDriver):
              availability_zone=self._cfg.fs_availability_zone())
         nb_retry = 0
         while len(hs_instance.networks) == 0 and nb_retry < 100:
-            LOG.debug(dir(hs_instance))
-            time.sleep(1)
+            time.sleep(2)
             for inst in self._nova_client.servers.list(
                 search_opts={'name': hyperswitch_id}):
                 hs_instance = inst

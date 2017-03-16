@@ -1,8 +1,9 @@
 #!/bin/bash
 
-rm -rf ./build
-rm -rf /usr/local/lib/python2.7/dist-packages/hypernet*
-rm -rf /usr/local/bin/hyperswitch*
+rm -rf /opt/hyperswitch
+mkdir /opt/hyperswitch
+
+cp -r . /opt/hyperswitch
 
 ovs-vsctl del-br br-vpn
 ovs-vsctl del-br br-eth0
@@ -14,10 +15,6 @@ ovs-vsctl del-br br-eth5
 ovs-vsctl del-br br-int
 ovs-vsctl del-br br-ex
 ovs-vsctl add-br br-ex
-
-python ./setup.py clean
-python ./setup.py build
-python ./setup.py install
 
 # templates
 rm -rf `find /etc -name "*.tmpl"`
