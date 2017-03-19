@@ -1,9 +1,9 @@
 #!/bin/bash
 
-rm -rf /opt/hypernet
-mkdir /opt/hypernet
-
-cp -r . /opt/hypernet
+# rm -rf /opt/hypernet
+# mkdir /opt/hypernet
+# 
+# cp -r . /opt/hypernet
 
 ovs-vsctl del-br br-vpn
 ovs-vsctl del-br br-eth0

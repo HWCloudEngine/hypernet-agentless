@@ -169,7 +169,7 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
                        'tcp:%s:6633' % mgnt_cidr.split('/')[0],
                        run_as_root=True)
 
-        if self.routers:
+        if self.routers and self.mgnt_nic in self.vms_nics:
             hu.execute('ip', 'route', 'add', 'default', 'via', self.routers,
                        run_as_root=True)
 

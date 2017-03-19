@@ -13,9 +13,8 @@ from hypernet_agentless.common import hs_constants
 
 LOG = logging.getLogger(__name__)
 
-# import the configuration options
-cfg.CONF.import_opt('ovs_vsctl_timeout', 'neutron.agent.linux.ovs_lib')
-
+# Default timeout for ovs-vsctl command
+DEFAULT_OVS_VSCTL_TIMEOUT = 10
 
 OPTS = [
     cfg.StrOpt('host', default=socket.gethostname(),
@@ -33,6 +32,11 @@ OPTS = [
                default="/etc/hyperswitch/rootwrap.conf",
                help='Path to the rootwrap configuration file to use for '
                     'running commands as root'),
+    cfg.IntOpt('ovs_vsctl_timeout',
+               default=DEFAULT_OVS_VSCTL_TIMEOUT,
+               help=_('Timeout in seconds for ovs-vsctl commands. '
+                      'If the timeout expires, ovs commands will fail with '
+                      'ALARMCLOCK error.')),
 ]
 cfg.CONF.register_opts(OPTS)
 OPTS_AGENT = [
@@ -51,13 +55,16 @@ except:
 
 def init(args, **kwargs):
     product_name = "hyperswitch-agent"
-    #logging.register_options(cfg.CONF)
-    logging.setup(cfg.CONF, product_name)
+
+    logging.register_options(cfg.CONF)
     cfg.CONF(args=args, project=product_name,
              version='%%(prog)s %s' % version.version_info.release_string(),
              **kwargs)
     oslo_messaging.set_transport_defaults(
         control_exchange=hs_constants.HYPERSWITCH)
+
+
+    logging.setup(cfg.CONF, product_name)
 
 
 def get_root_helper(conf):
