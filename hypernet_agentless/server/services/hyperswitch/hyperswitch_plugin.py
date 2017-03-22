@@ -275,8 +275,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         for agent in agents:
             self._neutron_client.delete_agent(agent.get('id'))
 
-        return True
-
     def get_hyperswitchs(self, context, filters=None, fields=None,
                          sorts=None, limit=None, marker=None,
                          page_reverse=False):
@@ -477,8 +475,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
         # remove from provider
         self._provider_impl.delete_network_interface(providerport_id)
-
-        return True
 
     def get_providerports(self, context, filters=None, fields=None,
                            sorts=None, limit=None, marker=None,

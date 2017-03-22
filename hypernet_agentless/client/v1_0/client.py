@@ -171,8 +171,7 @@ class ClientBase(object):
             body = self.serialize(body)
 
         resp, replybody = self.httpclient.do_request(
-            action, method, body=body,
-            content_type=self.content_type())
+            action, method, body=body)
 
         status_code = resp.status_code
         if status_code in (requests.codes.ok,

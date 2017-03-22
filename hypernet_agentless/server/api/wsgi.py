@@ -196,7 +196,10 @@ class ResponseHeaderSerializer(ActionDispatcher):
         self.dispatch(response, data, action=action)
 
     def default(self, response, data):
-        response.status_int = 200
+        if data:
+            response.status_int = 200
+        else:
+            response.status_int = 204
 
 
 class ResponseSerializer(object):
