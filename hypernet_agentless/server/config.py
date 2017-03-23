@@ -167,11 +167,9 @@ def rabbit_hosts():
             p = a[1]
         else:
             h = rabbit_host
-        h = socket.gethostbyname_ex(h)[2][0]
-        if ':' in rabbit_host:
-            rabbit_host = '%s:%s' % (h, p)
-        else:
-            rabbit_host = h
+            p = 5672
+        h = socket.getaddrinfo(h, p)[2][4][0]
+        rabbit_host = '%s:%s' % (h, p)
         if rabbit_hosts:
             rabbit_hosts = '%s, %s' % (rabbit_hosts, rabbit_host)
         else:
