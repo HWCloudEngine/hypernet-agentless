@@ -1,13 +1,14 @@
 from keystoneauth1 import loading
 
 from hypernet_agentless.common import hs_constants
-from hypernet_agentless.server import config, manager
+from hypernet_agentless.server import config, manager, rpc
 
 from neutronclient.v2_0 import client as neutron_client
 
 from oslo_config import cfg
 from oslo_log import log as logging
 import oslo_messaging
+from hypernet_agentless.server.services import os_client
 
 
 LOG = logging.getLogger(__name__)
@@ -22,32 +23,19 @@ class HyperswitchCallback(object):
 
     def __init__(self):
         endpoints = [self]
-        transport = oslo_messaging.get_transport(cfg.CONF)
         target = oslo_messaging.Target(
             topic=hs_constants.HYPERSWITCH_CALLBACK,
             version='1.0',
             exchange=hs_constants.HYPERSWITCH,
             server=config.host())
-        self.server = oslo_messaging.get_rpc_server(
-            transport, target, endpoints)
+        self.server = rpc.get_server(target, endpoints)
         self.server.start()
-        self._neutron_client_property = None
         self._hyperswitch_plugin_property = None
         super(HyperswitchCallback, self).__init__()
 
     @property
     def _neutron_client(self):
-        if self._neutron_client_property is None:
-            auth_plugin = loading.load_auth_from_conf_options(
-                cfg.CONF, 'neutron')
-            auth_session = loading.load_session_from_conf_options(
-                cfg.CONF, 'neutron')
-            self._neutron_client_property = neutron_client.Client(
-                session=auth_session,
-                auth=auth_plugin,
-                endpoint_override=cfg.CONF.neutron.url,
-                region_name=cfg.CONF.neutron.region_name)
-        return self._neutron_client_property
+        return os_client.get_neutron_client('neutron')
 
     @property
     def _hyperswitch_plugin(self):
@@ -75,7 +63,7 @@ class HyperswitchCallback(object):
             return None
 
         ports = self._neutron_client.list_ports(
-            id=[p_ports[0]['id']])
+            id=[p_ports[0]['id']])['ports']
         LOG.debug('hyper port %s' % ports)
         if len(ports) != 1:
             return None
@@ -87,7 +75,7 @@ class HyperswitchCallback(object):
             tenant_id = port['tenant_id']
             LOG.debug('tenant_id: %s' % tenant_id)
             routers = self._neutron_client.list_routers(
-                tenant_id=[tenant_id])
+                tenant_id=[tenant_id])['routers']
             LOG.debug('routers: %s' % routers)
             for router in routers:
                 self._neutron_client.update_router(

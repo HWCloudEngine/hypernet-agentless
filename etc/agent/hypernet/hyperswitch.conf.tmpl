@@ -5,6 +5,8 @@ rpc_backend = rabbit
 use_syslog = False
 state_path = /var/run/hyperswitch
 rootwrap_config = /etc/hyperswitch/rootwrap.conf
+
+[oslo_messaging_rabbit]
 rabbit_userid = ##rabbit_userid##
 rabbit_password = ##rabbit_password##
 rabbit_hosts = ##rabbit_hosts##

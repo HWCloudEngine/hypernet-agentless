@@ -60,6 +60,40 @@ def get_notifier(service=None, host=None, publisher_id=None):
     return NOTIFIER.prepare(publisher_id=publisher_id)
 
 
+def get_server(target, endpoints, serializer=None):
+    assert TRANSPORT is not None
+    serializer = RequestContextSerializer(serializer)
+    return oslo_messaging.get_rpc_server(TRANSPORT, target, endpoints,
+                                         'eventlet', serializer)
+
+
+class RequestContextSerializer(om_serializer.Serializer):
+    """This serializer is used to convert RPC common context into
+    Neutron Context.
+    """
+    def __init__(self, base=None):
+        super(RequestContextSerializer, self).__init__()
+        self._base = base
+
+    def serialize_entity(self, ctxt, entity):
+        if not self._base:
+            return entity
+        return self._base.serialize_entity(ctxt, entity)
+
+    def deserialize_entity(self, ctxt, entity):
+        if not self._base:
+            return entity
+        return self._base.deserialize_entity(ctxt, entity)
+
+    def serialize_context(self, ctxt):
+        _context = ctxt.to_dict()
+        return _context
+
+    def deserialize_context(self, ctxt):
+        rpc_ctxt_dict = ctxt.copy()
+        return context.Context.from_dict(rpc_ctxt_dict)
+
+
 class PluginRpcSerializer(om_serializer.Serializer):
     """Serializer.
     This serializer is used to convert RPC common context into

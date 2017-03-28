@@ -47,13 +47,6 @@ LOG = logging.getLogger(__name__)
 NIC_NAME_LEN = 14
 
 
-def get_nsize(netmask):
-    binary_str = ''
-    for octet in netmask.split('.'):
-        binary_str += bin(int(octet))[2:].zfill(8)
-    return str(len(binary_str.rstrip('0')))
-
-
 class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
     """VIF driver for hyperswitch networking."""
 
@@ -62,19 +55,7 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         if len(leases) == 0:
             leases = glob.glob('/var/lib/*/*%s.lease' % nic)
         #TODO: exception if not find lease file
-        lease_file = leases[0]
-        mask = None
-        ip = None
-        routers = None
-        with open(lease_file, 'r') as f:
-            for line in f:
-                if 'subnet-mask' in line:
-                    mask = line.split()[2].split(';')[0]
-                if 'fixed-address' in line:
-                    ip = line.split()[1].split(';')[0]
-                if 'routers' in line:
-                    routers = line.split()[2].split(';')[0]
-        return '%s/%s' % (ip, get_nsize(mask)), routers
+        return hu.extract_cidr_router(leases[0], nic)
 
     def __init__(self, *args, **kwargs):
         super(HyperSwitchVIFDriver, self).__init__()

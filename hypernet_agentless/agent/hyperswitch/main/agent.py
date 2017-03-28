@@ -31,7 +31,7 @@ class HyperSwitchAgentCallback(object):
             version='1.0',
             exchange=hs_constants.HYPERSWITCH)
         self.client = oslo_messaging.RPCClient(transport, target)
-        self.context = context.get_admin_context()
+        self.context = context.get_admin_context_without_session()
         super(HyperSwitchAgentCallback, self).__init__()
 
     def get_vif_for_provider_ip(self, provider_ip, host_id, evt):

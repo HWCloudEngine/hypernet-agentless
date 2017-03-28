@@ -192,3 +192,32 @@ def set_mac_ip(nic, mac, cidr):
     execute('ip', 'addr', 'add', cidr, 'dev', nic,
             check_exit_code=False,
             run_as_root=True)
+
+
+def get_nsize(netmask):
+    binary_str = ''
+    for octet in netmask.split('.'):
+        binary_str += bin(int(octet))[2:].zfill(8)
+    return str(len(binary_str.rstrip('0')))
+
+
+def extract_cidr_router(lease_file, nic):
+    mask = None
+    ip = None
+    routers = None
+    in_lease_nic = False
+    with open(lease_file, 'r') as f:
+        for line in f:
+            if 'interface' in line and nic in line:
+                in_lease_nic = True
+            if in_lease_nic:
+                if '}' in line:
+                    in_lease_nic = False
+                if 'subnet-mask' in line:
+                    mask = line.split()[2].split(';')[0]
+                if 'fixed-address' in line:
+                    ip = line.split()[1].split(';')[0]
+                if 'routers' in line:
+                    routers = line.split()[2].split(';')[0]
+    return '%s/%s' % (ip, get_nsize(mask)), routers
+    
