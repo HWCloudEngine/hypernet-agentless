@@ -1,3 +1,4 @@
+import datetime
 import shlex
 import time
 import os
@@ -201,23 +202,36 @@ def get_nsize(netmask):
     return str(len(binary_str.rstrip('0')))
 
 
+def extract_date(line):
+    s = line.split()
+    return time.mktime(datetime.datetime.strptime(
+        s[2] + ' ' + s[3].split(';')[0],
+        '%Y/%m/%d %H:%M:%S').timetuple())
+
+
 def extract_cidr_router(lease_file, nic):
     mask = None
     ip = None
     routers = None
     in_lease_nic = False
+    d_renew = 0
     with open(lease_file, 'r') as f:
         for line in f:
             if 'interface' in line and nic in line:
                 in_lease_nic = True
-            if in_lease_nic:
-                if '}' in line:
-                    in_lease_nic = False
-                if 'subnet-mask' in line:
-                    mask = line.split()[2].split(';')[0]
-                if 'fixed-address' in line:
-                    ip = line.split()[1].split(';')[0]
-                if 'routers' in line:
-                    routers = line.split()[2].split(';')[0]
+            if 'subnet-mask' in line:
+                mask_cur = line.split()[2].split(';')[0]
+            if 'fixed-address' in line:
+                ip_cur = line.split()[1].split(';')[0]
+            if 'routers' in line:
+                routers_cur = line.split()[2].split(';')[0]
+            if 'renew' in line:
+                d_renew_cur = extract_date(line)
+            if in_lease_nic and '}' in line:
+                in_lease_nic = False
+                if d_renew_cur > d_renew:
+                    mask = mask_cur
+                    ip = ip_cur
+                    routers = routers_cur
+                    d_renew = d_renew_cur
     return '%s/%s' % (ip, get_nsize(mask)), routers
-    
