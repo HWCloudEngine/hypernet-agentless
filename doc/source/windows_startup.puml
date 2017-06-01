@@ -1,0 +1,23 @@
+@startuml
+
+WinDHCPCLient -> AWSDHCP: Get Address and route For eth0
+StartupScript -> AWSMetadata: Get User Data
+StartupScript -> StartupScript: Write the OpenVPN\n Configuration File
+StartupScript -> StartupScript: Remove the default Route
+StartupScript -> StartupScript: Setup Static IP
+StartupScript -> OpenVPNClient: Start OpenVPN Client
+OpenVPNClient -> OVS: Connect
+OVS -> HSLocalController: Send First Packet
+HSLocalController -> HypernetService: Get VIF Info(ProviderIP)
+HypernetService <-> DB: Find Provider Port
+HypernetService -> NeutronServer
+NeutronServer <-> DB: Find Hyper Port
+NeutronServer -> HypernetService: Return Hyper Port Info
+HypernetService -> HSLocalController: Return VIF INFO
+HSLocalController -> HSLocalController: Plug vif
+HSLocalController -> HSLocalController: Start OpenVPN Server
+HSLocalController -> OVS: Add Flow\nredirect Packet\n(ProviderIP, OpenVPNPort)\nto OpenVPNServer 
+OpenVPNClient -> OpenVPNServer: Connect
+WinDHCPCLient -> NeutronDHCP: Get Address and route For the TAP
+
+@enduml
