@@ -1,5 +1,6 @@
 
 # create hypernet.tar.gz
+sudo apt-get install git python-pip python-virtualenv libmariadbclient-dev python-dev libssl-dev libjsoncpp-dev
 sudo pip install virtualenv
 virtualenv /opt/hypernet
 source /opt/hypernet/bin/activate
