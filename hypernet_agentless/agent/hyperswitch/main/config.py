@@ -10,9 +10,10 @@ MNGT_IP_FILE = '/etc/hyperswitch/mngt_ip'
 class Config(object):
     _SERVICES = [
         'neutron-ovs-cleanup',
-        'neutron-l3-agent',
+        'neutron-l3-agent-for-hypervm',
         'neutron-metadata-agent',
-        'neutron-plugin-openvswitch-agent',
+        'neutron-plugin-openvswitch-agent-for-hypervm',
+        'neutron-dhcp-agent-for-hypervm',
         'hyperswitch-cleanup',
         'hyperswitch',
 #        'hyperswitch-config',
@@ -36,7 +37,7 @@ class Config(object):
         for file_conf in stdout.split():
             print('file configuration %s' % file_conf)
             with open(file_conf, 'r') as source:
-                lines = source.readlines()                
+                lines = source.readlines()
             for i in range(len(lines)):
                 for key, value in params.iteritems():
                     if value:

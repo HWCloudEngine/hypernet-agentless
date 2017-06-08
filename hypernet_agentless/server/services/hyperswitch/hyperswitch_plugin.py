@@ -41,12 +41,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
             self._vms_subnets = self._provider_impl.get_vms_subnet()
             self._hs_sg, self._vm_sg  = self._provider_impl.get_sgs()
-        except:
-            LOG.exception('rrr')
+        except Exception as e:
+            LOG.exception('execption = %s' % e)
 
-    @property
-    def _neutron_client(self):
-        return os_client.get_neutron_client('neutron')
+    def _neutron_client(self, context):
+        return os_client.get_neutron_client(context, admin=True)
 
     def _make_hyperswitch_dict(self,
                                hs_db,
@@ -244,7 +243,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         hs = hyperswitch[hs_constants.HYPERSWITCH]
         with context.session.begin(subtransactions=True):
             hs_db.update(hs)
-            
+
         # hyperswitch provider
         hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
         if hs_provider:
@@ -269,11 +268,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         self._provider_impl.delete_hyperswitch(hyperswitch_id)
 
         # remove agents
-        agents = self._neutron_client.list_agents(
+        agents = self._neutron_client(context).list_agents(
             host=[hs_db.id])['agents']
         LOG.debug('agents to delete: %s' % agents)
         for agent in agents:
-            self._neutron_client.delete_agent(agent.get('id'))
+            self._neutron_client(context).delete_agent(agent.get('id'))
 
     def get_hyperswitchs(self, context, filters=None, fields=None,
                          sorts=None, limit=None, marker=None,
@@ -335,8 +334,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         port_id = p_port.get('port_id')
         
         # Get the neutron port
-        neutron_ports = self._neutron_client.list_ports(
-            id=[port_id])['ports']
+        search_opts = {'id': port_id}
+        neutron_ports = self._neutron_client(context).list_ports(
+            **search_opts)['ports']
         if not neutron_ports or len(neutron_ports) == 0:
             raise hyperswitch.ProviderPortNeutronPortNotFound(
                 providerport_id=port_id)
@@ -413,7 +413,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             providerport_db, neutron_port, net_int_provider, hsservers)
 
     def _get_neutron_port(self, context, port_id):
-        neutron_ports = self._neutron_client.list_ports(
+        neutron_ports = self._neutron_client(context).list_ports(
             id=[port_id])['ports']
         if not neutron_ports or len(neutron_ports) == 0:
             raise hyperswitch.ProviderPortNotFound(

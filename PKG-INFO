@@ -1,0 +1,20 @@
+Metadata-Version: 1.1
+Name: hypernet-agentless
+Version: 1.0.0
+Summary: OpenStack Hypernet integration for agentless
+Home-page: http://www.openstack.org/
+Author: Huawei
+Author-email: lionel.zerbib@huawei.com
+License: UNKNOWN
+Description: # hypernet-agentless
+
+
+Platform: UNKNOWN
+Classifier: Environment :: OpenStack
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7

@@ -1,0 +1,35 @@
+[DEFAULT]
+rabbit_userid = ##rabbit_userid##
+verbose = True
+rabbit_host = ##rabbit_hosts##
+debug = True
+kombu_heartbeat = 60
+rabbit_use_ssl = True
+lock_path = /tmp/tmp_neutron
+rabbit_password = ##rabbit_password##
+rpc_response_timeout = 900
+use_syslog = True
+log_format = neutron-dvr-compute-agent %(levelname)s [pid:%(process)d] [%(threadName)s][tid:%(thread)d] [%(filename)s:%(lineno)d %(funcName)s] %(message)s
+enable_mq_cluster = False
+mq_failover_strategy = shuffle
+agent_mode = dvr
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+mq_instance = rabbitmq
+router_reschedule = True
+enable_metadata_proxy = False
+router_delete_namespaces = True
+metadata_external =
+exclude_relay_cidr =
+pod_fip_address = ##pod_fip_address##
+cloud_type = hybrid_cloud
+isolate_relay_cidr = ##isolate_relay_cidr##
+gateway_external_network_id =
+isolate_tenant_cidrs =
+ignore_router_update = False
+external_network_bridge =
+isolate_sys_security_cidrs =
+host = ##host##
+network_device_mtu = 1300
+
+[agent]
+report_interval = 50

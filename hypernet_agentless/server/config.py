@@ -127,8 +127,8 @@ cfg.CONF.register_cli_opts(OPTS_DATABASE, 'database')
 
 
 def init(args, **kwargs):
-    product_name = 'hypernet'
-    
+    product_name = 'hypernet_agentless'
+
     logging.register_options(cfg.CONF)
 
     wsgi.register_opts(cfg.CONF) 

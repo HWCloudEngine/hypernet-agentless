@@ -36,7 +36,8 @@ class HyperSwitchAgentCallback(object):
 
     def get_vif_for_provider_ip(self, provider_ip, host_id, evt):
         """Retrieve the VIFs for a provider IP."""
-        return self.client.call(self.context, 'get_vif_for_provider_ip',
+        LOG.debug(self.context.to_dict())
+        return self.client.call(self.context.to_dict(), 'get_vif_for_provider_ip',
                                 provider_ip=provider_ip,
                                 host_id=host_id,
                                 evt=evt)
