@@ -117,7 +117,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'controller_name': config.controller_name(),
             'controller_host': config.controller_host(),
             'metadata_proxy_shared_secret': (
-                config.meta_metadata_proxy_shared_secret())
+                config.meta_metadata_proxy_shared_secret()),
+            'pod_fip_address': config.pod_fip_address(),
+            'isolate_relay_cidr':config.isolate_relay_cidr()
         }
 
         net_list = [{
