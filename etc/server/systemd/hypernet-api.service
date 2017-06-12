@@ -1,0 +1,14 @@
+[Unit]
+Description=Hypernet Server
+After=syslog.target network.target
+
+[Service]
+Type=notify
+NotifyAccess=all
+TimeoutStartSec=0
+Restart=always
+User=root
+ExecStart=/usr/bin/hypernet-api --config-file=/etc/hypernet/hypernet.conf --log-file=/var/log/hypernet/hypernet.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+[DEFAULT]
+rabbit_userid = ##rabbit_userid##
+default_log_levels = amqp=WARN,amqplib=WARN,boto=WARN,qpid=WARN,sqlalchemy=WARN,suds=INFO,requests.packages.urllib3.connectionpool=WARN,oslo.messaging=INFO,neutron.context=INFO,neutron.openstack.common.lockutils=WARN
+verbose = True
+rabbit_host = ##rabbit_hosts##
+debug = True
+kombu_heartbeat = 60
+rabbit_use_ssl = True
+rabbit_password = ##rabbit_password##
+rpc_response_timeout = 900
+use_syslog = True
+log_format = neutron-dhcp-agent %(levelname)s [pid:%(process)d] [%(threadName)s] [tid:%(thread)d] [%(filename)s:%(lineno)d %(funcName)s] %(message)s
+dhcp_distributed = True
+enable_mq_cluster = False
+mq_failover_strategy = shuffle
+dnsmasq_dhcp_mtu = 1300
+use_namespaces = True
+monitor_file_dir = /etc/neutron/neutron-dhcp-agent/
+dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+dnsmasq_lease_max = 16777216
+dhcp_delete_namespaces = True
+enable_isolated_metadata = False
+interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+dnsmasq_config_file = /etc/neutron/dnsmasq.conf
+host = ##host##
+
+[agent]
+report_interval = 50

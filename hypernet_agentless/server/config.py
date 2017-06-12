@@ -94,6 +94,12 @@ OPTS_HYPERSWITCH = [
                help=_("the metadata admin_user.")),
     cfg.StrOpt('meta_admin_password',
                help=_("the metadata admin_password.")),
+    cfg.StrOpt('pod_fip_address',
+               default='100.64.0.0/10',
+               help=_('pod fip address.')),
+    cfg.StrOpt('isolate_relay_cidr', 
+               default="",
+               help=_('isolate relay cidr.')),
 ]
 
 OPTS_HYPERSWITCH_AWS = [
@@ -127,8 +133,8 @@ cfg.CONF.register_cli_opts(OPTS_DATABASE, 'database')
 
 
 def init(args, **kwargs):
-    product_name = 'hypernet'
-    
+    product_name = 'hypernet_agentless'
+
     logging.register_options(cfg.CONF)
 
     wsgi.register_opts(cfg.CONF) 
@@ -215,6 +221,14 @@ def vms_networks():
 
 def vms_cidr():
     return cfg.CONF.hyperswitch.vms_cidr
+
+
+def pod_fip_address():
+    return cfg.CONF.hyperswitch.pod_fip_address
+
+
+def isolate_relay_cidr():
+    return cfg.CONF.hyperswitch.isolate_relay_cidr
 
 
 def hs_sg_name():

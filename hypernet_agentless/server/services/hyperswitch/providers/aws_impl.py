@@ -144,8 +144,12 @@ class AWSProvider(provider_api.ProviderDriver):
         hs_sg, vm_sg = None, None
         try:
             resp = self.ec2.describe_security_groups(
-                GroupNames=[self._cfg.hs_sg_name(), self._cfg.vm_sg_name()]
+                Filters=[
+                    {'Name': 'vpc-id', 'Values': [self._cfg.aws_vpc()]},
+                    {'Name': 'group-name', 'Values': [
+                        self._cfg.hs_sg_name(), self._cfg.vm_sg_name()]}],
             )
+
             for sg in resp['SecurityGroups']:
                 if sg['GroupName'] == self._cfg.hs_sg_name():
                     hs_sg = sg['GroupId']
@@ -290,7 +294,7 @@ class AWSProvider(provider_api.ProviderDriver):
         return self._aws_instance_to_dict(aws_instance)
 
     def get_hyperswitch(self, hyperswitch_id):
-        LOG.debug('get hyperswitch for hyperswitch_id.' % hyperswitch_id)
+        LOG.debug('get hyperswitch for %s.' % hyperswitch_id)
         i = 0;
         aws_instances = self._find_vms('Name', [hyperswitch_id])
         res = None
@@ -379,7 +383,7 @@ class AWSProvider(provider_api.ProviderDriver):
             return self._network_interface_dict(net_int)
 
     def delete_network_interface(self, port_id):
-        LOG.debug('delete net interface (%s, %s, %s).' % port_id)
+        LOG.debug('delete net interface %s.' % port_id)
         resp = self.ec2.describe_network_interfaces(
             Filters=[{
                 'Name': 'tag:hybrid_cloud_port_id',
@@ -390,7 +394,7 @@ class AWSProvider(provider_api.ProviderDriver):
                 NetworkInterfaceId=net_int['NetworkInterfaceId'])
 
     def get_network_interface(self, port_id):
-        LOG.debug('get net interface (%s, %s, %s).' % port_id)
+        LOG.debug('get net interface %s.' % port_id)
         resp = self.ec2.describe_network_interfaces(
             Filters=[{
                 'Name': 'tag:hybrid_cloud_port_id',
