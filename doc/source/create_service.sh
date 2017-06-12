@@ -1,6 +1,8 @@
 
 # create hypernet.tar.gz
-sudo apt-get install git python-pip python-virtualenv libmariadbclient-dev python-dev libssl-dev libjsoncpp-dev
+
+sudo apt-get install git python-pip python-virtualenv libmariadbclient-dev python-dev libssl-dev libjsoncpp-dev libyaml-dev libpython2.7-dev
+
 sudo pip install virtualenv
 virtualenv /opt/hypernet
 source /opt/hypernet/bin/activate
@@ -31,12 +33,8 @@ keystone endpoint-create \
 --internalurl http://10.10.128.71:8333 \
 --region regionOne
 
-keystone endpoint-create \
---service-id $(keystone service-list | awk '/ hypernet / {print $2}') \
---publicurl http://controller:8333 \
---adminurl http://controller:8333 \
---internalurl http://controller:8333 \
---region regionOne
+keystone user-create --name hypernet --pass stack
+keystone user-role-add --user hypernet --tenant service --role admin
 
 
 
