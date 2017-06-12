@@ -16,6 +16,8 @@ class Config(object):
         'neutron-dhcp-agent-for-hypervm',
         'hyperswitch-cleanup',
         'hyperswitch',
+        'neutron-l3-agent',
+        'neutron-plugin-openvswitch-agent',
 #        'hyperswitch-config',
     ]
 
