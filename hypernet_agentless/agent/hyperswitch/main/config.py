@@ -12,7 +12,7 @@ class Config(object):
         'neutron-ovs-cleanup',
         'neutron-l3-agent-for-hypervm',
         'neutron-metadata-agent',
-        'neutron-plugin-openvswitch-agent-for-hypervm',
+        'neutron-openvswitch-agent-for-hypervm',
         'neutron-dhcp-agent-for-hypervm',
         'hyperswitch-cleanup',
         'hyperswitch',
@@ -42,8 +42,7 @@ class Config(object):
                 lines = source.readlines()
             for i in range(len(lines)):
                 for key, value in params.iteritems():
-                    if value:
-                        lines[i] = lines[i].replace('##%s##' % key, value)
+                    lines[i] = lines[i].replace('##%s##' % key, value)
             self._write_file(
                 file_conf[0:file_conf.rfind('.')], lines)
         if 'host' in params:
