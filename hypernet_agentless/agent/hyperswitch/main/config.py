@@ -6,13 +6,20 @@ import subprocess
 
 MNGT_IP_FILE = '/etc/hyperswitch/mngt_ip'
 
+def fs_encrypt(value):
+    try:
+        from FSSecurity import crypt
+        return crypt.encrypt(value)
+    except ImportError:
+            return value
+
 
 class Config(object):
     _SERVICES = [
         'neutron-ovs-cleanup',
         'neutron-l3-agent-for-hypervm',
         'neutron-metadata-agent',
-        'neutron-plugin-openvswitch-agent-for-hypervm',
+        'neutron-openvswitch-agent-for-hypervm',
         'neutron-dhcp-agent-for-hypervm',
         'hyperswitch-cleanup',
         'hyperswitch',
@@ -42,12 +49,13 @@ class Config(object):
                 lines = source.readlines()
             for i in range(len(lines)):
                 for key, value in params.iteritems():
-                    if value:
-                        lines[i] = lines[i].replace('##%s##' % key, value)
+                    if key in ['rabbit_password']:
+                        value = fs_encrypt(value)
+                    lines[i] = lines[i].replace('##%s##' % key, value)
             self._write_file(
                 file_conf[0:file_conf.rfind('.')], lines)
         if 'host' in params:
-            subprocess.call(['hostname', params['host']]) 
+            subprocess.call(['hostname', params['host']])
             self._write_file('/etc/hostname', params['host'])
         if 'mngt_ip' in params:
             self._write_file(MNGT_IP_FILE, params['mngt_ip'])
