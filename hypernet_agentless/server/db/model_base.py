@@ -64,4 +64,7 @@ class _HypernetBaseV2(_HypernetBase):
         return cls.__name__.lower() + 's'
 
 
+BASEV1 = declarative.declarative_base(cls=_HypernetBase)
 BASEV2 = declarative.declarative_base(cls=_HypernetBaseV2)
+
+

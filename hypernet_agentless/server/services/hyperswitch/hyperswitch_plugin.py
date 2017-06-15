@@ -9,6 +9,8 @@ from hypernet_agentless.server.db.hyperswitch import hyperswitch_db
 from hypernet_agentless.server import config
 from hypernet_agentless.server.services.hyperswitch import hyper_switch_api
 from hypernet_agentless.server.extensions import hyperswitch
+from hypernet_agentless.server.services.hyperswitch import providers
+from hypernet_agentless.server.services.hyperswitch import manager_ratio
 
 from oslo_log import log as logging
 
@@ -28,6 +30,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
     supported_extension_aliases = [hs_constants.HYPERSWITCH]
 
     def __init__(self):
+        self._ratio_manager = manager_ratio.RatioManagement(self)    
         try:
             if config.provider() in ['openstack', 'fs']:
                 clazz = (
@@ -53,6 +56,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             self._hs_sg, self._vm_sg = self._provider_impl.get_sgs()
         except Exception as e:
             LOG.exception('execption = %s' % e)
+        LOG.debug('loaded')
 
     def _neutron_client(self, context):
         return os_client.get_neutron_client(context, admin=True)
@@ -356,6 +360,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         return res
 
     def create_providerport(self, context, providerport):
+        LOG.debug('create provider port - enter')
         p_port = providerport[hs_constants.PROVIDERPORT]
         port_id = p_port.get('port_id')
 
@@ -372,7 +377,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 providerport_id=port_id)
 
         neutron_port = neutron_ports[0]
-
         index = p_port['index']
 
         device_id = neutron_port['device_id']
@@ -385,7 +389,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         if al_device_id and al_device_id != device_id:
             raise hyperswitch.ProviderPortBadDeviceId(
                 neutron_device_id=device_id, device_id=al_device_id)
-        # retrieve the hyperswitchs to connect
+        # retrieve the hyperswitchs to connect based on the configuration
+        LOG.debug('create provider port - config level is %s' % config.level())
         if config.level() == 'vm' or al_device_id:
             hsservers = self.get_hyperswitchs(
                 context,
@@ -398,7 +403,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                         'flavor': flavor
                     }
                 })]
-        else:
+        elif config.level() == 'tenant':
             hsservers = self.get_hyperswitchs(
                 context,
                 filters={'tenant_id': [tenant_id]})
@@ -409,7 +414,19 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                         'flavor': flavor
                     }
                 })]
-
+        elif config.level() == 'ratio':
+            LOG.debug('config level is ratio, calling its new_port_added method')
+            #prepare HS data in case the ratio manager will callback to create a new HS
+            hyperswitch_data = {
+                hs_constants.HYPERSWITCH: {
+                    'tenant_id': tenant_id,
+                    'flavor': flavor
+                }
+            }
+            hs_ids = self._ratio_manager.new_port_added(context, port_id, index, hyperswitch_data)
+            hsservers = [{'id' : id} for id in hs_ids]
+        
+                    
         with context.session.begin(subtransactions=True):
             # create in the provider
             net_int_provider = self._provider_impl.create_network_interface(
@@ -502,6 +519,22 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         finally:
             # remove from provider
             self._provider_impl.delete_network_interface(providerport_id)
+    
+        # remove the hyperswitch if no longer needed   
+        # neutron port
+        neutron_port = self._get_neutron_port(context, providerport_id)
+
+        # hyperswitch for this agentless port
+        hsservers = self._get_provider_hyperswitch_server(
+            context, neutron_port['device_id'], neutron_port['tenant_id']) 
+        
+        if config.level() == 'vm' or config.level() == 'tenant':
+            #Need to delete the hyperswitch only if it has no other agentless ports
+            vms_ips = hsserver.get('vms_ips')
+            if len(vms_ips)==1:
+                self.delete_hyperswitch(context, hyperswitch_id)
+        elif config.level() == 'ratio':
+            self._ratio_manager.port_removed(context, providerport_id)
 
     def get_providerports(self, context, filters=None, fields=None,
                           sorts=None, limit=None, marker=None,
