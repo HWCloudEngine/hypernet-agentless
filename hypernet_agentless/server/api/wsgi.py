@@ -20,6 +20,7 @@ from hypernet_agentless.common import exceptions
 from hypernet_agentless.server import context
 from hypernet_agentless.server.db import api
 
+from hypernet_agentless.server.api import api_common
 
 LOG = logging.getLogger(__name__)
 
@@ -508,7 +509,7 @@ class Resource(Application):
     serialized by requested content type.
     """
 
-    def __init__(self, controller, fault_body_function,
+    def __init__(self, controller, fault_map=None,
                  deserializer=None, serializer=None):
         """Object initialization.
         :param controller: object that implement methods created by routes lib
@@ -516,14 +517,13 @@ class Resource(Application):
                              controller into a webob response
         :param serializer: object that can deserialize a webob request
                            into necessary pieces
-        :param fault_body_function: a function that will build the response
-                                    body for HTTP errors raised by operations
-                                    on this resource object
+        :param fault_map: a dict that will map exceptions raised by operations
+                                    on this resource object to http exceptions
         """
         self.controller = controller
         self.deserializer = deserializer or RequestDeserializer()
         self.serializer = serializer or ResponseSerializer()
-        self._fault_body_function = fault_body_function
+        self._fault_map = fault_map or {}
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, request):
@@ -547,13 +547,16 @@ class Resource(Application):
             action_result = self.dispatch(request, action, args)
         except webob.exc.HTTPException as ex:
             LOG.info(_("HTTP exception thrown: %s"), six.text_type(ex))
-            action_result = Fault(ex,
-                                  self._fault_body_function)
-        except Exception:
+            action_result = Fault(ex)
+        except Exception as ex:
             LOG.exception(_("Internal error"))
             # Do not include the traceback to avoid returning it to clients.
-            action_result = Fault(webob.exc.HTTPServerError(),
-                                  self._fault_body_function)
+            language = request.best_match_language()
+            faults = self._fault_map
+            mapped_exc = api_common.convert_exception_to_http_exc(ex,
+                                                                  faults,
+                                                                  language)
+            action_result = Fault(mapped_exc)
 
         if isinstance(action_result, dict) or action_result is None:
             response = self.serializer.serialize(action_result,

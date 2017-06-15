@@ -2,10 +2,12 @@
 import urllib
 
 from oslo_config import cfg
+import oslo_i18n
 from oslo_log import log as logging
 from six import iteritems
 from webob import exc
 
+from hypernet_agentless._i18n import _
 from hypernet_agentless.common import exceptions
 from hypernet_agentless.common import hs_constants
 
@@ -275,6 +277,50 @@ class SortingNativeHelper(SortingHelper):
 
 class NoSortingHelper(SortingHelper):
     pass
+
+
+def convert_exception_to_http_exc(e, faults, language):
+    e = translate(e, language)
+    if isinstance(e, exc.HTTPException):
+        # already an HTTP error
+        return e
+    for fault in faults:
+        if isinstance(e, fault):
+            mapped_exc = faults[fault]
+            break
+    else:
+        mapped_exc = exc.HTTPInternalServerError
+    http_exc = mapped_exc()
+    if isinstance(e, exceptions.HypernetException):
+        detail = e.msg
+    else:
+        detail = str(e)
+    http_exc.explanation = detail
+    return http_exc
+
+
+def translate(translatable, locale):
+    """Translates the object to the given locale.
+
+    If the object is an exception its translatable elements are translated
+    in place, if the object is a translatable string it is translated and
+    returned. Otherwise, the object is returned as-is.
+
+    :param translatable: the object to be translated
+    :param locale: the locale to translate to
+    :returns: the translated object, or the object as-is if it
+              was not translated
+    """
+    localize = oslo_i18n.translate
+    if isinstance(translatable, exceptions.HypernetException):
+        translatable.msg = localize(translatable.msg, locale)
+    elif isinstance(translatable, exc.HTTPError):
+        translatable.detail = localize(translatable.detail, locale)
+    elif isinstance(translatable, Exception):
+        translatable.message = localize(translatable, locale)
+    else:
+        return localize(translatable, locale)
+    return translatable
 
 
 class HypernetController(object):
