@@ -52,7 +52,11 @@ OPTS_HYPERSWITCH = [
     cfg.StrOpt('provider', default='null',
                help=_("Provider: aws|openstack|null.")),
     cfg.StrOpt('level', default='tenant',
-               help=_("Level: tenant|vm.")),
+               help=_("Level: tenant|vm|ratio.")),
+    cfg.IntOpt('hs_ratio',
+               help=_("Ratio: amount of VMs that each hyperswitch will handle.")),
+    cfg.BoolOpt('hs_ha', default=False,
+                help=_("Hyperswitch high availability - True|False.")),
     cfg.StrOpt('mgnt_network',
                help=_("Management network id or name.")),
     cfg.StrOpt('mgnt_security_group',
@@ -198,6 +202,11 @@ def provider():
 def level():
     return cfg.CONF.hyperswitch.level
 
+def hs_ratio():
+    return cfg.CONF.hyperswitch.hs_ratio
+
+def hs_ha():
+    return cfg.CONF.hyperswitch.hs_ha
 
 def mgnt_network():
     return cfg.CONF.hyperswitch.mgnt_network

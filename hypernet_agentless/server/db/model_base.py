@@ -64,3 +64,6 @@ class _HypernetBaseV2(_HypernetBase):
 
 
 BASEV2 = declarative.declarative_base(cls=_HypernetBaseV2)
+BASEV1 = declarative.declarative_base(cls=_HypernetBase)
+
+
