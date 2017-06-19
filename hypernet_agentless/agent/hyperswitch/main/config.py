@@ -6,11 +6,16 @@ import subprocess
 
 MNGT_IP_FILE = '/etc/hyperswitch/mngt_ip'
 
-def fs_encrypt(value):
-    try:
-        from FSSecurity import crypt
+NEED_ENCRYPT_FIELDS = ['rabbit_password']
+
+
+try:
+    from FSSecurity import crypt
+
+    def fs_encrypt(value):
         return crypt.encrypt(value)
-    except ImportError:
+except ImportError:
+    def fs_encrypt(value):
         return value
 
 
@@ -37,6 +42,9 @@ class Config(object):
                     dest.write(line)
 
     def apply(self, params):
+        for k in NEED_ENCRYPT_FIELDS:
+            if k in params:
+                params[k] = fs_encrypt(params[k])
         proc = subprocess.Popen(
             ['find', '/etc', '-name', '*.tmpl'],
             stdout=subprocess.PIPE,
@@ -49,8 +57,6 @@ class Config(object):
                 lines = source.readlines()
             for i in range(len(lines)):
                 for key, value in params.iteritems():
-                    if key in ['rabbit_password']:
-                        value = fs_encrypt(value)
                     lines[i] = lines[i].replace('##%s##' % key, value)
             self._write_file(
                 file_conf[0:file_conf.rfind('.')], lines)
