@@ -148,8 +148,8 @@ class HyperswitchPluginBase(service_base.ServicePluginBase):
 
     @abc.abstractmethod
     def get_providerports(self, context, filters=None, fields=None,
-                            sorts=None, limit=None, marker=None,
-                            page_reverse=False):
+                          sorts=None, limit=None, marker=None,
+                          page_reverse=False):
         pass
 
     @abc.abstractmethod
@@ -203,6 +203,7 @@ class ProviderPortNeutronPortNotFound(exceptions.NotFound):
 class ProviderPortNeutronPortMultipleFound(exceptions.Conflict):
     message = _('Multiple neutron ports found for Provider Port '
                 '%(providerport_id)s.')
+
 
 class ProviderPortProviderPortMultipleFound(exceptions.Conflict):
     message = _('Multiple provider ports for Provider Port '

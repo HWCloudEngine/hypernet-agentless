@@ -1,6 +1,6 @@
 import sys
 
-from hypernet_agentless._i18n import _LE
+from hypernet_agentless._i18n import _LE, _
 
 from oslo_concurrency import lockutils
 from oslo_log import log as logging
@@ -12,6 +12,7 @@ from stevedore import driver
 LOG = logging.getLogger(__name__)
 SYNCHRONIZED_PREFIX = 'hypernet-'
 synchronized = lockutils.synchronized_with_prefix(SYNCHRONIZED_PREFIX)
+
 
 def load_class_by_alias_or_classname(namespace, name):
     """Load class using stevedore alias or the class name

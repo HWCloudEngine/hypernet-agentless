@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from hypernet_agentless._i18n import _
 from hypernet_agentless.common import exceptions
 
 from oslo_db.sqlalchemy import utils as sa_utils
@@ -241,8 +242,7 @@ class CommonDbMixin(object):
                                            marker_obj=marker_obj,
                                            page_reverse=page_reverse)
         items = [
-            dict_func(c, fields) if dict_func else c
-                for c in query
+            dict_func(c, fields) if dict_func else c for c in query
         ]
         if limit and page_reverse:
             items.reverse()

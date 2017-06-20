@@ -118,9 +118,9 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
 
     def startup_init(self):
         # run the ryu appllication VPNBridgeHandler
-        app_mgr = app_manager.AppManager.get_instance()
-        self.open_flow_app = app_mgr.instantiate(VPNBridgeHandler,
-                                                 vif_hypervm_driver=self)
+        self.app_mgr = app_manager.AppManager.get_instance()
+        self.open_flow_app = self.app_mgr.instantiate(VPNBridgeHandler,
+                                                      vif_hypervm_driver=self)
         self.open_flow_app.start()
 
         # set the controller as local controller
@@ -159,13 +159,8 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
             hu.execute('ip', 'route', 'add', 'default', 'via', self.routers,
                        run_as_root=True)
 
-
-
-    def plug(self, device_id, hyper_vif):
-        pass
-
-    def unplug(self, device_id, hyper_vif):
-        pass
+    def unplug(self, vif_id):
+        self.app_mgr.unplug(vif_id)
 
     def cleanup(self):
         # remove the br-vpn bridge
@@ -236,7 +231,7 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         LOG.info('_packet_in_handler msg= %s' % msg)
-        
+
         # from IP, get hyper_vif / instance data
         pkt = packet.Packet(data=msg.data)
         pkt_ethernet = pkt.get_protocol(ethernet.ethernet)
@@ -307,17 +302,20 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
             provider_ip = msg.match['ipv4_dst']
         if 'ipv4_src' in msg.match:
             provider_ip = msg.match['ipv4_src']
-        vpn_driver = self._drivers[msg.cookie - 1]
         if not provider_ip:
             return
         with LocalLock():
-            port = vpn_driver.remove(provider_ip)
+            for vpn_driver in self._drivers:
+                port = vpn_driver.remove(provider_ip)
             if not port:
                 return
             result = self._vif_driver.call_back.get_vif_for_provider_ip(
                 provider_ip=provider_ip, host_id=cfg.CONF.host, evt='down')
-            vif_id = result['vif_id']
-            tap = self._vif_driver.remove_br_vnic(vif_id)
+            self.unplug(result['vif_id'])
+
+    def unplug(self, vif_id):
+        tap = self._vif_driver.remove_br_vnic(vif_id)
+        for vpn_driver in self._drivers:
             vpn_driver.stop_vpn(tap)
 
 
@@ -390,7 +388,7 @@ class OpenVPNTCP(VPNDriver):
                                 ip_proto=inet.IPPROTO_TCP,
                                 tcp_dst=1194,
                                 ipv4_src=provider_ip),
-                [parser.OFPActionSetField(tcp_dst=self.cur_port), 
+                [parser.OFPActionSetField(tcp_dst=self.cur_port),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
     def return_vpn_packets(self, parser, ofproto, provider_ip):
@@ -398,7 +396,7 @@ class OpenVPNTCP(VPNDriver):
                                 ip_proto=inet.IPPROTO_TCP,
                                 ipv4_dst=provider_ip,
                                 tcp_src=self.cur_port),
-                [parser.OFPActionSetField(tcp_src=1194), 
+                [parser.OFPActionSetField(tcp_src=1194),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
     def start_vpn(self, tap, br, vpn_nic_ip, mac):
@@ -411,8 +409,8 @@ class OpenVPNTCP(VPNDriver):
         hu.execute('ip', 'link', 'set', 'dev', tap, 'up',
                    run_as_root=True)
         hu.execute('brctl', 'addif', br, tap,
-                    check_exit_code=False,
-                    run_as_root=True)
+                   check_exit_code=False,
+                   run_as_root=True)
 
         pid = hu.process_exist(['openvpn', tap])
         if pid:
@@ -458,7 +456,7 @@ class OpenVPNUDP(OpenVPNTCP):
                                 ip_proto=inet.IPPROTO_UDP,
                                 udp_dst=1194,
                                 ipv4_src=provider_ip),
-                [parser.OFPActionSetField(udp_dst=self.cur_port), 
+                [parser.OFPActionSetField(udp_dst=self.cur_port),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
     def return_vpn_packets(self, parser, ofproto, provider_ip):
@@ -466,6 +464,5 @@ class OpenVPNUDP(OpenVPNTCP):
                                 ip_proto=inet.IPPROTO_UDP,
                                 ipv4_dst=provider_ip,
                                 udp_src=self.cur_port),
-                [parser.OFPActionSetField(udp_src=1194), 
+                [parser.OFPActionSetField(udp_src=1194),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
-

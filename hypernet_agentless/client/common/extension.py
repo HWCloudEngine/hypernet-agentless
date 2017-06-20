@@ -39,7 +39,8 @@ class ClientExtensionList(HypernetClientExtension, hypernetV10.ListCommand):
         return super(ClientExtensionList, self).get_data(parsed_args)
 
 
-class ClientExtensionDelete(HypernetClientExtension, hypernetV10.DeleteCommand):
+class ClientExtensionDelete(HypernetClientExtension,
+                            hypernetV10.DeleteCommand):
     def run(self, parsed_args):
         # NOTE(mdietz): Calls 'execute' to provide a consistent pattern
         #               for any implementers adding extensions with
@@ -50,7 +51,8 @@ class ClientExtensionDelete(HypernetClientExtension, hypernetV10.DeleteCommand):
         return super(ClientExtensionDelete, self).run(parsed_args)
 
 
-class ClientExtensionCreate(HypernetClientExtension, hypernetV10.CreateCommand):
+class ClientExtensionCreate(HypernetClientExtension,
+                            hypernetV10.CreateCommand):
     def get_data(self, parsed_args):
         # NOTE(mdietz): Calls 'execute' to provide a consistent pattern
         #               for any implementers adding extensions with
@@ -61,7 +63,8 @@ class ClientExtensionCreate(HypernetClientExtension, hypernetV10.CreateCommand):
         return super(ClientExtensionCreate, self).get_data(parsed_args)
 
 
-class ClientExtensionUpdate(HypernetClientExtension, hypernetV10.UpdateCommand):
+class ClientExtensionUpdate(HypernetClientExtension,
+                            hypernetV10.UpdateCommand):
     def run(self, parsed_args):
         # NOTE(mdietz): Calls 'execute' to provide a consistent pattern
         #               for any implementers adding extensions with

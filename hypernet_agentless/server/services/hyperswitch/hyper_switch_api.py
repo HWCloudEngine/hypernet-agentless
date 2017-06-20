@@ -1,9 +1,5 @@
-from keystoneauth1 import loading
-
 from hypernet_agentless.common import hs_constants
 from hypernet_agentless.server import config, manager, rpc
-
-from neutronclient.v2_0 import client as neutron_client
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -104,3 +100,8 @@ class HyperswitchAPI(object):
         self.client = oslo_messaging.RPCClient(transport, target)
         self.call_back = HyperswitchCallback()
         super(HyperswitchAPI, self).__init__()
+
+    def unplug_vif(self, context, vif_id):
+        """Propagate a delete port to the agents."""
+        return self.client.call(context, 'unplug_vif',
+                                vif_id=vif_id)

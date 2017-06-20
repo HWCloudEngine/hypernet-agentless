@@ -1,5 +1,4 @@
 
-
 TYPE_BOOL = "bool"
 TYPE_INT = "int"
 TYPE_LONG = "long"

@@ -6,6 +6,7 @@ from oslo_utils import excutils
 
 from hypernet_agentless._i18n import _
 
+
 class HypernetException(Exception):
     """Base Hypernet Exception.
 
@@ -111,6 +112,3 @@ class InUse(HypernetException):
 
 class ServiceUnavailable(HypernetException):
     message = _("The service is unavailable")
-
-
-

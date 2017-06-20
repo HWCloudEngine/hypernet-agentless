@@ -134,8 +134,10 @@ def main():
     config = alembic_config.Config(
         os.path.join(os.path.dirname(__file__), 'alembic.ini')
     )
-    config.set_main_option('script_location',
-                           'hypernet_agentless.server.db.migration:alembic_migrations')
+    config.set_main_option(
+        'script_location',
+        'hypernet_agentless.server.db.migration:alembic_migrations'
+    )
     # attach the Hypernet conf to the Alembic conf
     config.hypernet_config = CONF
 

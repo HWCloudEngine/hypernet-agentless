@@ -72,7 +72,7 @@ OPTS_HYPERSWITCH = [
                help=_("VMs network To HN router name")),
     cfg.StrOpt('hs_sg_name',
                default='hs_sg_vms_123456',
-               help=_("Hyper Switch Security Group Name for VPN Server NICS.")),
+               help=_("HyperSwitch SecurityGroup Name for VPN Server NICS.")),
     cfg.StrOpt('vm_sg_name',
                default='vm_sg_vms_123456',
                help=_("Provider Security Group Name for agent less NICs.")),
@@ -99,7 +99,7 @@ OPTS_HYPERSWITCH = [
     cfg.StrOpt('pod_fip_address',
                default='100.64.0.0/10',
                help=_('pod fip address.')),
-    cfg.StrOpt('isolate_relay_cidr', 
+    cfg.StrOpt('isolate_relay_cidr',
                default="",
                help=_('isolate relay cidr.')),
 ]
@@ -139,7 +139,7 @@ def init(args, **kwargs):
 
     logging.register_options(cfg.CONF)
 
-    wsgi.register_opts(cfg.CONF) 
+    wsgi.register_opts(cfg.CONF)
     cfg.CONF.register_opts(service.list_opts()[0][1])
     sslutils.register_opts(cfg.CONF)
 

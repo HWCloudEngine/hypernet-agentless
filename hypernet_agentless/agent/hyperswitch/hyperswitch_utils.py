@@ -3,6 +3,8 @@ import shlex
 import time
 import os
 
+from hypernet_agentless._i18n import _
+
 from oslo_concurrency import processutils
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -49,7 +51,7 @@ def launch(*cmd, **kwargs):
         subprocess.Popen(cmd, shell=shell)
     except OSError as err:
         f = _('Got an OSError\ncommand: %(cmd)r\n'
-                   'errno: %(errno)r')
+              'errno: %(errno)r')
         LOG.error(f, {'cmd': ' '.join(cmd), 'errno': err.errno})
     finally:
         time.sleep(0)
@@ -123,7 +125,7 @@ def create_linux_bridge(br_name, devs=None):
         execute('brctl', 'setfd', br_name, 0,
                 run_as_root=True)
         execute('brctl', 'stp', br_name, 'off',
-                   run_as_root=True)
+                run_as_root=True)
     execute('ip', 'link', 'set', br_name, 'up',
             run_as_root=True)
     if devs:
@@ -232,7 +234,7 @@ def extract_static_routes(line):
                 routes[i]
             )
             i = i + 3
-        elif int(routes[i]) > 0 :
+        elif int(routes[i]) > 0:
             cidr = '%s.0.0.0/%s' % (
                 routes[i + 1],
                 routes[i]

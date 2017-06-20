@@ -5,6 +5,8 @@ import webob.exc
 
 from oslo_log import log as logging
 from oslo_utils import strutils
+
+from hypernet_agentless._i18n import _
 from hypernet_agentless.common import exceptions
 from hypernet_agentless.server import rpc
 from hypernet_agentless.server.api import api_common

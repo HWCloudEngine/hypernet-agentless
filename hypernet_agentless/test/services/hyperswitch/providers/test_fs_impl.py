@@ -1,8 +1,9 @@
+
 from hypernet_agentless.services.hyperswitch.providers import fs_impl
-from hypernet_agentless.test.services.hyperswitch.providers import provider_impl
+from hypernet_agentless.test.services.hyperswitch import providers
 
 
-class TestFSProvider(provider_impl.TestProvider):
+class TestFSProvider(providers.provider_impl.TestProvider):
 
     @property
     def _provider(self):
@@ -10,7 +11,7 @@ class TestFSProvider(provider_impl.TestProvider):
 
 
 class FSStaticConfig(object):
-    
+
     def mgnt_network(self):
         return 'private'
 

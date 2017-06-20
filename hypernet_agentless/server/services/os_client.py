@@ -1,7 +1,12 @@
+from hypernet_agentless._i18n import _
+
 from keystoneauth1 import loading as ks_loading
+
 from neutronclient.common import exceptions as neutron_client_exc
 from neutronclient.v2_0 import client as clientv20
+
 from novaclient import client as nova_client
+
 from oslo_config import cfg
 
 client_opts = [
@@ -14,10 +19,10 @@ client_opts = [
                help='Default OVS bridge name to use if not specified '
                     'by Neutron'),
     cfg.IntOpt('extension_sync_interval',
-                default=600,
-                help='Number of seconds before querying neutron for'
-                     ' extensions'),
-   ]
+               default=600,
+               help='Number of seconds before querying neutron for'
+                    ' extensions'),
+]
 
 _SESSION = None
 _ADMIN_AUTH = None
@@ -41,20 +46,20 @@ def _load_auth_plugin(conf, group):
 
 
 def get_neutron_client(context=None, admin=False, group=NEUTRON_GROUP):
-    if not group in CFG_INITED:
+    if group not in CFG_INITED:
         CONF.register_opts(client_opts, group)
-        _options = ks_loading.register_session_conf_options(CONF, group)
+        ks_loading.register_session_conf_options(CONF, group)
         ks_loading.register_auth_conf_options(CONF, group)
         CFG_INITED.add(group)
 
     auth_plugin = None
 
-    if not group in _SESSION:
+    if group not in _SESSION:
         _SESSION[group] = ks_loading.load_session_from_conf_options(
             CONF, group)
 
     if admin or (context.is_admin and not context.auth_token):
-        if not group in _ADMIN_AUTH:
+        if group not in _ADMIN_AUTH:
             _ADMIN_AUTH[group] = _load_auth_plugin(CONF, group)
         auth_plugin = _ADMIN_AUTH[group]
 

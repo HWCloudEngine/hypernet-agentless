@@ -3,7 +3,9 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_service import periodic_task
 
-from hypernet_agentless.common import hs_utils, hs_constants
+from hypernet_agentless._i18n import _
+from hypernet_agentless.common import hs_constants
+from hypernet_agentless.common import hs_utils
 
 
 LOG = logging.getLogger(__name__)

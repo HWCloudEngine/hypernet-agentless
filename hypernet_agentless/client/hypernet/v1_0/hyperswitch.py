@@ -3,6 +3,7 @@ from hypernet_agentless._i18n import _
 from hypernet_agentless.client.common import extension
 from hypernet_agentless.client.common import utils
 
+
 class HyperSwitch(extension.HypernetClientExtension):
     resource = 'hyperswitch'
     resource_plural = '%ss' % resource

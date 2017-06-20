@@ -28,7 +28,8 @@ class HasStatusDescription(object):
 
     status = sa.Column(sa.String(hs_constants.STATUS_FIELD_SIZE),
                        nullable=False)
-    status_description = sa.Column(sa.String(hs_constants.DESCRIPTION_FIELD_SIZE))
+    status_description = sa.Column(
+        sa.String(hs_constants.DESCRIPTION_FIELD_SIZE))
 
 
 class _HypernetBase(models.ModelBase):

@@ -63,7 +63,6 @@ def init(args, **kwargs):
     oslo_messaging.set_transport_defaults(
         control_exchange=hs_constants.HYPERSWITCH)
 
-
     logging.setup(cfg.CONF, product_name)
 
 

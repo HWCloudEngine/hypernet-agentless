@@ -8,7 +8,7 @@ LOG = logging.getLogger(__name__)
 
 
 class NULLProvider(provider_api.ProviderDriver):
-    
+
     def __init__(self, cfg=None):
         if not cfg:
             from hypernet_agentless.server import config

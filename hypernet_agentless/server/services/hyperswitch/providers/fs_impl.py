@@ -14,6 +14,7 @@ LOG = logging.getLogger(__name__)
 
 HS_START_NAME = '%s-' % hs_constants.HYPERSWITCH
 
+
 class FSProvider(provider_api.ProviderDriver):
 
     def __init__(self):
@@ -31,7 +32,7 @@ class FSProvider(provider_api.ProviderDriver):
         return os_client.get_nova_client('hyperswitch_fs')
 
     def _get_net_id(self, id_or_name):
-        if not id_or_name in self._net_ids:
+        if id_or_name not in self._net_ids:
             try:
                 self._net_ids[id_or_name] = (
                     self._neutron_client.show_network(
@@ -45,7 +46,7 @@ class FSProvider(provider_api.ProviderDriver):
         return self._net_ids[id_or_name]
 
     def _net_equal(self, net1, net2):
-        return self._get_net_id(net1) == self._get_net_id(net2) 
+        return self._get_net_id(net1) == self._get_net_id(net2)
 
     def _find_image(self, key, value):
         images = self._nova_client.images.list()
@@ -90,12 +91,12 @@ class FSProvider(provider_api.ProviderDriver):
                         })
                     i = i + 1
         res = provider_api.ProviderHyperswitch(
-           instance_id=fs_instance.id,
-           name=fs_instance.name,
-           instance_type=self._get_flavor_name(fs_instance.flavor['id']),
-           mgnt_ip=mgnt_ip,
-           data_ip=data_ip,
-           vms_ips=vms_ips,
+            instance_id=fs_instance.id,
+            name=fs_instance.name,
+            instance_type=self._get_flavor_name(fs_instance.flavor['id']),
+            mgnt_ip=mgnt_ip,
+            data_ip=data_ip,
+            vms_ips=vms_ips,
         ).dict
         LOG.debug('_fs_instance_to_dict result %s' % res)
         return res
@@ -163,13 +164,15 @@ class FSProvider(provider_api.ProviderDriver):
             )['router']['id']
         try:
             self._neutron_client.add_interface_router(
-                router_id, {'subnet_id': self._get_first_subnet_id(hs_subnet)})
+                router_id, {
+                    'subnet_id': self._get_first_subnet_id(hs_subnet)})
         except Exception as e:
             LOG.warn('%s' % e)
         for net_id in vms_subnets:
             try:
                 self._neutron_client.add_interface_router(
-                    router_id, {'subnet_id': self._get_first_subnet_id(net_id)})
+                    router_id, {
+                        'subnet_id': self._get_first_subnet_id(net_id)})
             except Exception as e:
                 LOG.warn('%s' % e)
         return router_id
@@ -256,9 +259,9 @@ class FSProvider(provider_api.ProviderDriver):
                     'security_groups': net['security_group'],
                     'tenant_id': self._cfg.fs_tenant_id(),
                     'network_id': net['name']
-            }})['port']
+                }})['port']
             nics.append({'port-id': port['id']})
-        
+
         meta = {
             'hybrid_cloud_type': hs_constants.HYPERSWITCH
         }
@@ -298,15 +301,15 @@ class FSProvider(provider_api.ProviderDriver):
             i = i + 1
         LOG.debug('get hyperswitch %s result %s.' % (hyperswitch_id, res))
         return res
-            
+
     def start_hyperswitch(self, hyperswitch_id):
         LOG.debug('start hyperswitchs %s.' % hyperswitch_id)
         hss = self._nova_client.servers.list(
             search_opts={'name': hyperswitch_id})
         for hs in hss:
-            if not hs.status in ['ACTIVE', 'BUILD']:
+            if hs.status not in ['ACTIVE', 'BUILD']:
                 self._nova_client.servers.start(hs.id)
-       
+
     def stop_hyperswitch(self, hyperswitch_id):
         LOG.debug('stop hyperswitch %s.' % hyperswitch_id)
         hss = self._nova_client.servers.list(
@@ -328,11 +331,11 @@ class FSProvider(provider_api.ProviderDriver):
 
     def _to_net_int(self, port):
         return provider_api.ProviderPort(
-           port_id=port['id'],
-           provider_ip=port['fixed_ips'][0]['ip_address'],
-           name=port['name'],
+            port_id=port['id'],
+            provider_ip=port['fixed_ips'][0]['ip_address'],
+            name=port['name'],
         ).dict
-    
+
     def create_network_interface(self,
                                  port_id,
                                  subnet,
@@ -340,7 +343,7 @@ class FSProvider(provider_api.ProviderDriver):
         LOG.debug('create net interface (%s, %s, %s).' % (
             port_id, subnet, security_group))
         ports = self._neutron_client.list_ports(name=[port_id])['ports']
-        if len(ports) == 0 :
+        if len(ports) == 0:
             port = self._neutron_client.create_port({'port': {
                 'name': port_id,
                 'tenant_id': self._cfg.fs_tenant_id(),

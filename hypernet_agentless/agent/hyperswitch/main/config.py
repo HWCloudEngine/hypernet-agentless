@@ -30,7 +30,6 @@ class Config(object):
         'hyperswitch',
         'neutron-l3-agent',
         'neutron-plugin-openvswitch-agent',
-#        'hyperswitch-config',
     ]
 
     def _write_file(self, file_name, content):
@@ -102,7 +101,7 @@ def main():
     PORT = 8080
     if os.path.exists(MNGT_IP_FILE):
         with open(MNGT_IP_FILE, 'r') as source:
-            HOST = source.readline()                
+            HOST = source.readline()
     server = SocketServer.TCPServer((HOST, PORT), ConfigTCPHandler)
     print('Started config tcp server on %s:%s ' % (HOST, PORT))
 

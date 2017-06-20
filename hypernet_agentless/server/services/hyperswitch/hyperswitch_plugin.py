@@ -5,11 +5,10 @@ import time
 
 from hypernet_agentless.common import hs_constants
 from hypernet_agentless.server.db import common_db_mixin
-from hypernet_agentless.server.db.hyperswitch import hyperswitch_db 
+from hypernet_agentless.server.db.hyperswitch import hyperswitch_db
 from hypernet_agentless.server import config
 from hypernet_agentless.server.services.hyperswitch import hyper_switch_api
 from hypernet_agentless.server.extensions import hyperswitch
-from hypernet_agentless.server.services.hyperswitch import providers
 
 from oslo_log import log as logging
 
@@ -26,24 +25,33 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                         hyperswitch.HyperswitchPluginBase):
 
     supported_extension_aliases = [hs_constants.HYPERSWITCH]
-    
+
     def __init__(self):
         try:
             if config.provider() in ['openstack', 'fs']:
-                from providers import fs_impl
+                fs_impl = __import__(
+                    'hypernet_agentless.server.services.'
+                    'hyperswitch.providers.fs_impl'
+                )
                 self._provider_impl = fs_impl.FSProvider()
             elif config.provider() == 'aws':
-                from providers import aws_impl
+                aws_impl = __import__(
+                    'hypernet_agentless.server.services.'
+                    'hyperswitch.providers.aws_impl'
+                )
                 self._provider_impl = aws_impl.AWSProvider()
             else:
-                from providers import null_impl
+                null_impl = __import__(
+                    'hypernet_agentless.server.services.'
+                    'hyperswitch.providers.null_impl'
+                )
                 self._provider_impl = null_impl.NULLProvider()
             self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
             self._vms_subnets = self._provider_impl.get_vms_subnet()
             self._hs_subnet = self._provider_impl.get_hs_subnet()
             self._hs_vms_router = self._provider_impl.get_hs_vms_router(
                 self._vms_subnets, self._hs_subnet)
-            self._hs_sg, self._vm_sg  = self._provider_impl.get_sgs()
+            self._hs_sg, self._vm_sg = self._provider_impl.get_sgs()
         except Exception as e:
             LOG.exception('execption = %s' % e)
 
@@ -56,7 +64,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         LOG.debug('_make_hyperswitch_dict %s, %s' % (
             hs_db, hs_provider))
         vms_ips = []
-        for vms_ip in  hs_db.vms_ips:
+        for vms_ip in hs_db.vms_ips:
             vms_ips.append({
                 'vms_ip': vms_ip.vms_ip,
                 'index': vms_ip.index
@@ -94,7 +102,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 sock.sendall(data + "\n.\n")
                 received = sock.recv(1024)
                 if received == 'OK' or retry == 20:
-                    break;
+                    break
             except:
                 LOG.error('%s' % sys.exc_info()[0])
                 time.sleep(5)
@@ -122,7 +130,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'metadata_proxy_shared_secret': (
                 config.meta_metadata_proxy_shared_secret()),
             'pod_fip_address': config.pod_fip_address(),
-            'isolate_relay_cidr':config.isolate_relay_cidr()
+            'isolate_relay_cidr': config.isolate_relay_cidr()
         }
 
         net_list = [{
@@ -327,7 +335,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 vms_ips = hsserver.get('vms_ips')
                 if vms_ips:
                     for vms_ip in vms_ips:
-                        if vms_ip['index'] == index: 
+                        if vms_ip['index'] == index:
                             if hsservers_ip:
                                 hsservers_ip = '%s, %s' % (
                                     hsservers_ip, vms_ip['vms_ip'])
@@ -351,7 +359,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
     def create_providerport(self, context, providerport):
         p_port = providerport[hs_constants.PROVIDERPORT]
         port_id = p_port.get('port_id')
-        
+
         # Get the neutron port
         search_opts = {'id': port_id}
         neutron_ports = self._neutron_client(context).list_ports(
@@ -442,7 +450,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 providerport_id=port_id)
         return neutron_ports[0]
 
-    def _get_provider_net_int(self, context, port_id): 
+    def _get_provider_net_int(self, context, port_id):
         return self._provider_impl.get_network_interface(port_id)
 
     def _get_provider_hyperswitch_server(self, context, device_id, tenant_id):
@@ -476,7 +484,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
         # hyperswitch for this agent less port
         hsservers = self._get_provider_hyperswitch_server(
-            context, neutron_port['device_id'], neutron_port['tenant_id']) 
+            context, neutron_port['device_id'], neutron_port['tenant_id'])
 
         return self._make_providerport_dict(
             providerport_db, neutron_port, provider_net_int, hsservers)
@@ -489,15 +497,16 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 context, hyperswitch_db.ProviderPort, providerport_id)
             with context.session.begin(subtransactions=True):
                 context.session.delete(providerport_db)
+            self._hyper_switch_api.unplug_vif(context, providerport_id)
         except exc.NoResultFound:
             pass
-
-        # remove from provider
-        self._provider_impl.delete_network_interface(providerport_id)
+        finally:
+            # remove from provider
+            self._provider_impl.delete_network_interface(providerport_id)
 
     def get_providerports(self, context, filters=None, fields=None,
-                           sorts=None, limit=None, marker=None,
-                           page_reverse=False):
+                          sorts=None, limit=None, marker=None,
+                          page_reverse=False):
         LOG.debug('get agent less ports %s.' % filters)
         # search id hypernet agent less port DB
         providerports_db = self._get_collection_query(
@@ -511,7 +520,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             provider_net_int = self._get_provider_net_int(
                 context, port_id)
             hsservers = self._get_provider_hyperswitch_server(
-                context, neutron_port['device_id'], neutron_port['tenant_id']) 
+                context, neutron_port['device_id'], neutron_port['tenant_id'])
             res.append(self._make_providerport_dict(
                 providerport_db, neutron_port, provider_net_int, hsservers))
         return res

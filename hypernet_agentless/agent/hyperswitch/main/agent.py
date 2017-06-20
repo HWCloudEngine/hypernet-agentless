@@ -37,10 +37,11 @@ class HyperSwitchAgentCallback(object):
     def get_vif_for_provider_ip(self, provider_ip, host_id, evt):
         """Retrieve the VIFs for a provider IP."""
         LOG.debug(self.context.to_dict())
-        return self.client.call(self.context.to_dict(), 'get_vif_for_provider_ip',
-                                provider_ip=provider_ip,
-                                host_id=host_id,
-                                evt=evt)
+        return self.client.call(
+            self.context.to_dict(), 'get_vif_for_provider_ip',
+            provider_ip=provider_ip,
+            host_id=host_id,
+            evt=evt)
 
 
 class HyperSwitchAgent(object):
@@ -71,6 +72,13 @@ class HyperSwitchAgent(object):
         self.vif_driver.startup_init()
 
         self.server.start()
+
+    def unplug_vif(self, context, **kwargs):
+        """
+            un
+        """
+        vif_id = kwargs['vif_id']
+        self.vif_driver.unplug(vif_id)
 
     def daemon_loop(self):
         while True:

@@ -97,7 +97,7 @@ MAX_NIC = {
 
 
 class AWSProvider(provider_api.ProviderDriver):
-    
+
     def __init__(self, cfg=None):
         if not cfg:
             from hypernet_agentless.server import config
@@ -284,12 +284,12 @@ class AWSProvider(provider_api.ProviderDriver):
                         })
                     i = i + 1
         return provider_api.ProviderHyperswitch(
-           instance_id=aws_instance.id,
-           name=name,
-           instance_type=aws_instance.instance_type,
-           mgnt_ip=mgnt_ip,
-           data_ip=data_ip,
-           vms_ips=vms_ips,
+            instance_id=aws_instance.id,
+            name=name,
+            instance_type=aws_instance.instance_type,
+            mgnt_ip=mgnt_ip,
+            data_ip=data_ip,
+            vms_ips=vms_ips,
         ).dict
 
     def create_hyperswitch(self,
@@ -341,7 +341,7 @@ class AWSProvider(provider_api.ProviderDriver):
 
     def get_hyperswitch(self, hyperswitch_id):
         LOG.debug('get hyperswitch for %s.' % hyperswitch_id)
-        i = 0;
+        i = 0
         aws_instances = self._find_vms('Name', [hyperswitch_id])
         res = None
         for aws_instance in aws_instances:
@@ -358,7 +358,7 @@ class AWSProvider(provider_api.ProviderDriver):
         aws_instances = self._find_vms('Name', [hyperswitch_id])
         for aws_instance in aws_instances:
             aws_instance.start()
-        
+
     def stop_hyperswitch(self, hyperswitch_id):
         LOG.debug('start hyperswitch %s.' % hyperswitch_id)
         aws_instances = self._find_vms('Name', [hyperswitch_id])
@@ -384,9 +384,9 @@ class AWSProvider(provider_api.ProviderDriver):
             if tag['Key'] == 'hybrid_cloud_port_id':
                 port_id = tag['Value']
         return provider_api.ProviderPort(
-           port_id=port_id,
-           provider_ip=net_int['PrivateIpAddress'],
-           name=port_id,
+            port_id=port_id,
+            provider_ip=net_int['PrivateIpAddress'],
+            name=port_id,
         ).dict
 
     def create_network_interface(self,
@@ -398,7 +398,8 @@ class AWSProvider(provider_api.ProviderDriver):
         net_ints = self.ec2.describe_network_interfaces(
             Filters=[{
                 'Name': 'tag:hybrid_cloud_port_id',
-                'Values':  [port_id]}]
+                'Values': [port_id]
+            }]
         )
         net_int = None
         for net_int in net_ints['NetworkInterfaces']:
@@ -413,13 +414,17 @@ class AWSProvider(provider_api.ProviderDriver):
                 resp = self.ec2.describe_network_interfaces(
                     NetworkInterfaceIds=[net_int['NetworkInterfaceId']])
                 time.sleep(1)
-            
+
         LOG.debug('aws net interface: %s.' % (net_int))
         int_id = net_int['NetworkInterfaceId']
-        tags = [{'Key': 'hybrid_cloud_port_id',
-                 'Value': port_id},
-                  {'Key': 'hybrid_cloud_type',
-                 'Value': 'hybrid_provider_port'}]
+        tags = [{
+                    'Key': 'hybrid_cloud_port_id',
+                    'Value': port_id
+                },
+                {
+                    'Key': 'hybrid_cloud_type',
+                    'Value': 'hybrid_provider_port'
+                }]
 
         self.ec2.create_tags(Resources=[int_id], Tags=tags)
 
@@ -433,7 +438,7 @@ class AWSProvider(provider_api.ProviderDriver):
         resp = self.ec2.describe_network_interfaces(
             Filters=[{
                 'Name': 'tag:hybrid_cloud_port_id',
-                'Values':  [port_id]}]
+                'Values': [port_id]}]
         )
         for net_int in resp['NetworkInterfaces']:
             self.ec2.delete_network_interface(
@@ -444,7 +449,7 @@ class AWSProvider(provider_api.ProviderDriver):
         resp = self.ec2.describe_network_interfaces(
             Filters=[{
                 'Name': 'tag:hybrid_cloud_port_id',
-                'Values':  [port_id]}]
+                'Values': [port_id]}]
         )
         i = 0
         res = None
