@@ -13,6 +13,7 @@ from hypernet_agentless.server.extensions import hyperswitch
 from oslo_log import log as logging
 
 from oslo_utils import uuidutils
+from oslo_utils import importutils
 
 from sqlalchemy.orm import exc
 from hypernet_agentless.server.services import os_client
@@ -29,23 +30,21 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
     def __init__(self):
         try:
             if config.provider() in ['openstack', 'fs']:
-                fs_impl = __import__(
+                clazz = (
                     'hypernet_agentless.server.services.'
-                    'hyperswitch.providers.fs_impl'
+                    'hyperswitch.providers.fs_impl.FSProvider'
                 )
-                self._provider_impl = fs_impl.FSProvider()
             elif config.provider() == 'aws':
-                aws_impl = __import__(
+                clazz = (
                     'hypernet_agentless.server.services.'
-                    'hyperswitch.providers.aws_impl'
+                    'hyperswitch.providers.aws_impl.AWSProvider'
                 )
-                self._provider_impl = aws_impl.AWSProvider()
             else:
-                null_impl = __import__(
+                clazz = (
                     'hypernet_agentless.server.services.'
-                    'hyperswitch.providers.null_impl'
+                    'hyperswitch.providers.null_impl.NULLProvider'
                 )
-                self._provider_impl = null_impl.NULLProvider()
+            self._provider_impl = importutils.import_object(clazz)
             self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
             self._vms_subnets = self._provider_impl.get_vms_subnet()
             self._hs_subnet = self._provider_impl.get_hs_subnet()
@@ -149,7 +148,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             })
         user_data['network_data_interface'] = 'eth%d' % i
 
-        if self._hs_subnet:
+        if hasattr(self, '_hs_subnet'):
             if self._hs_subnet == config.mgnt_network():
                 user_data['network_vms_interface'] = 'eth0'
                 net_list[0]['security_group'].append(self._hs_sg)
