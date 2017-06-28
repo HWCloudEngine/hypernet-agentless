@@ -103,5 +103,4 @@ class HyperswitchAPI(object):
 
     def unplug_vif(self, context, vif_id):
         """Propagate a delete port to the agents."""
-        return self.client.call(context, 'unplug_vif',
-                                vif_id=vif_id)
+        self.client.cast(context, 'unplug_vif', vif_id=vif_id)

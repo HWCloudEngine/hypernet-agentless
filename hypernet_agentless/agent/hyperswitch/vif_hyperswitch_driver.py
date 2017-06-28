@@ -141,10 +141,11 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
                        run_as_root=True)
             hu.set_mac_ip(br_nic, vm_nic_mac, vm_nic_cidr)
 
-            for static_route in static_routes:
-                hu.execute('ip', 'route', 'add', static_route['cidr'],
-                           'via', static_route['gw'],
-                           run_as_root=True)
+            if static_routes:
+                for static_route in static_routes:
+                    hu.execute('ip', 'route', 'add', static_route['cidr'],
+                               'via', static_route['gw'],
+                               run_as_root=True)
 
             # add the vm interface to the bridge
             hu.add_ovs_port(br_nic, nic)
@@ -160,7 +161,7 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
                        run_as_root=True)
 
     def unplug(self, vif_id):
-        self.app_mgr.unplug(vif_id)
+        self.open_flow_app.unplug(vif_id)
 
     def cleanup(self):
         # remove the br-vpn bridge
@@ -304,16 +305,23 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
             provider_ip = msg.match['ipv4_src']
         if not provider_ip:
             return
+        LOG.info('_flow_removed_handler provider_ip=%s' % provider_ip)
         with LocalLock():
+            LOG.info('_flow_removed_handler after lock')
+            p_found = False
             for vpn_driver in self._drivers:
-                port = vpn_driver.remove(provider_ip)
-            if not port:
+                if not vpn_driver.remove(provider_ip):
+                    pass
+                else:
+                    p_found = True
+            if not p_found:
                 return
             result = self._vif_driver.call_back.get_vif_for_provider_ip(
                 provider_ip=provider_ip, host_id=cfg.CONF.host, evt='down')
             self.unplug(result['vif_id'])
 
     def unplug(self, vif_id):
+        LOG.info('unplug vif_id=%s' % vif_id)
         tap = self._vif_driver.remove_br_vnic(vif_id)
         for vpn_driver in self._drivers:
             vpn_driver.stop_vpn(tap)

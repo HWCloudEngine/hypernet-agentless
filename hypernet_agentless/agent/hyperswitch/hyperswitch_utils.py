@@ -198,6 +198,8 @@ def set_mac_ip(nic, mac, cidr):
 
 
 def get_nsize(netmask):
+    if not netmask:
+        return None
     binary_str = ''
     for octet in netmask.split('.'):
         binary_str += bin(int(octet))[2:].zfill(8)
