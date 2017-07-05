@@ -8,12 +8,12 @@ class TestProvider(unittest.TestCase):
         return None
 
     def test_1_launch_hyperswitch(self):
-        nets = self._provider.get_vms_subnet()
-        _, vm_sg = self._provider.get_sgs()
+        net = self._provider.get_subnet('name', '172.31.120.0/24')
+        vm_sg = self._provider.get_sgs()['vm_sg']
         hs = self._provider.launch_hyperswitch(
             {'1': '2'},
             '0G',
-            [{'name': nets[0],
+            [{'name': net,
               'security_group': [vm_sg]}],
             hybrid_cloud_tenant_id='12345'
         )
@@ -34,14 +34,14 @@ class TestProvider(unittest.TestCase):
             self._provider.delete_hyperswitch(hs['id'])
 
     def test_1_create_network_interface(self):
-        nets = self._provider.get_vms_subnet()
-        _, vm_sg = self._provider.get_sgs()
+        net = self._provider.get_subnet('name', '172.31.120.0/24')
+        vm_sg = self._provider.get_sgs()['vm_sg']
         res = self._provider.create_network_interface(
             port_id='123456',
             device_id=None,
             tenant_id=None,
             index=0,
-            subnet=nets[0],
+            subnet=net,
             security_group=vm_sg)
         self.assertEqual('123456', res['port_id'])
         TestProvider.ip = res['ip']
