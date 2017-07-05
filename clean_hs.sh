@@ -41,5 +41,8 @@ mkdir /var/log/hypernet
 # clean current configuration
 rm -f /etc/hyperswitch/hyperswitch.conf
 rm -f /etc/neutron/neutron.conf
+rm -f /etc/neutron/plugins/ml2/ml2_conf.ini
 rm -f /etc/neutron/metadata_agent.ini
-rm -f /etc/neutron/plugins/ml2/openvswitch_agent.ini
+
+
+

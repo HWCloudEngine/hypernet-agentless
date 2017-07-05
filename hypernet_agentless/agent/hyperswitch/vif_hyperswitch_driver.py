@@ -37,11 +37,20 @@ hyper_swith_agent_opts = [
     cfg.IntOpt('idle_timeout',
                default=90,
                help='The flow iddle timeout in seconds'),
+    cfg.IntOpt('first_openvpn_port',
+               default=1194,
+               help='The first openvpn port for VPN connection'),
+    cfg.IntOpt('max_win_nics',
+               default=20,
+               help='The max number of supported NICs in windows.'),
 ]
 
 
 cfg.CONF.register_opts(hyper_swith_agent_opts, hs_constants.HYPERSWITCH)
 
+
+first_openvpn_port = cfg.CONF.hyperswitch.first_openvpn_port
+max_win_nics = cfg.CONF.hyperswitch.max_win_nics
 
 LOG = logging.getLogger(__name__)
 NIC_NAME_LEN = 14
@@ -160,8 +169,8 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
             hu.execute('ip', 'route', 'add', 'default', 'via', self.routers,
                        run_as_root=True)
 
-    def unplug(self, vif_id):
-        self.open_flow_app.unplug(vif_id)
+    def unplug(self, vif_id, index):
+        self.open_flow_app.unplug(vif_id, index)
 
     def cleanup(self):
         # remove the br-vpn bridge
@@ -175,8 +184,18 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         super(VPNBridgeHandler, self).__init__(*args, **kwargs)
         self._vif_driver = kwargs['vif_hypervm_driver']
         self._drivers = list()
-        self._drivers.append(OpenVPNTCP(first_port=1194))
-        self._drivers.append(OpenVPNUDP(first_port=1194))
+        index = 0
+        for port_number in range(first_openvpn_port,
+                                 first_openvpn_port + max_win_nics):
+            self._drivers.append(OpenVPNTCP(
+                index=index,
+                openvpn_port=port_number,
+                first_port=port_number + max_win_nics + 1))
+            self._drivers.append(OpenVPNUDP(
+                index=index,
+                openvpn_port=port_number,
+                first_port=port_number + max_win_nics + 1))
+            index = index + 1
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
 
     def mod_flow(self,
@@ -248,7 +267,8 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
                 result = self._vif_driver.call_back.get_vif_for_provider_ip(
                     provider_ip=provider_ip,
                     host_id=cfg.CONF.host,
-                    evt='up')
+                    evt='up',
+                    index=vpn_driver.index)
                 if not result:
                     LOG.warn('port not found for IP: %s' % provider_ip)
                     return
@@ -305,26 +325,24 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
             provider_ip = msg.match['ipv4_src']
         if not provider_ip:
             return
+        vpn_driver = self._drivers[msg.cookie - 1]
         LOG.info('_flow_removed_handler provider_ip=%s' % provider_ip)
         with LocalLock():
             LOG.info('_flow_removed_handler after lock')
-            p_found = False
-            for vpn_driver in self._drivers:
-                if not vpn_driver.remove(provider_ip):
-                    pass
-                else:
-                    p_found = True
-            if not p_found:
-                return
+            vpn_driver.remove(provider_ip)
             result = self._vif_driver.call_back.get_vif_for_provider_ip(
-                provider_ip=provider_ip, host_id=cfg.CONF.host, evt='down')
-            self.unplug(result['vif_id'])
+                provider_ip=provider_ip,
+                host_id=cfg.CONF.host,
+                evt='down',
+                index=vpn_driver.index)
+            self.unplug(result['vif_id'], vpn_driver.index)
 
-    def unplug(self, vif_id):
-        LOG.info('unplug vif_id=%s' % vif_id)
+    def unplug(self, vif_id, index):
+        LOG.info('unplug vif_id=%s, index=%s' % (vif_id, index))
         tap = self._vif_driver.remove_br_vnic(vif_id)
         for vpn_driver in self._drivers:
-            vpn_driver.stop_vpn(tap)
+            if vpn_driver.index == index:
+                vpn_driver.stop_vpn(tap)
 
 
 class LocalLock(object):
@@ -341,8 +359,13 @@ class LocalLock(object):
 @six.add_metaclass(abc.ABCMeta)
 class VPNDriver(object):
 
-    def __init__(self, first_port=1194):
+    def __init__(self,
+                 index=0,
+                 openvpn_port=first_openvpn_port,
+                 first_port=first_openvpn_port + max_win_nics + 1):
         self.provider_ips = dict()
+        self.index = index
+        self.openvpn_port = openvpn_port
         self.cur_port = first_port
 
     def add(self, provider_ip):
@@ -382,19 +405,25 @@ class VPNDriver(object):
 
 class OpenVPNTCP(VPNDriver):
 
-    def __init__(self, first_port=1194):
-        super(OpenVPNTCP, self).__init__(first_port)
+    def __init__(self,
+                 index=0,
+                 openvpn_port=first_openvpn_port,
+                 first_port=first_openvpn_port + max_win_nics + 1):
+        super(OpenVPNTCP, self).__init__(
+            index=index,
+            openvpn_port=openvpn_port,
+            first_port=first_port)
         self.proto = 'tcp'
 
     def to_controller_match(self, parser):
         return parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
                                ip_proto=inet.IPPROTO_TCP,
-                               tcp_dst=1194)
+                               tcp_dst=self.openvpn_port)
 
     def intercept_vpn_packets(self, parser, ofproto, provider_ip):
         return (parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
                                 ip_proto=inet.IPPROTO_TCP,
-                                tcp_dst=1194,
+                                tcp_dst=self.openvpn_port,
                                 ipv4_src=provider_ip),
                 [parser.OFPActionSetField(tcp_dst=self.cur_port),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
@@ -404,7 +433,7 @@ class OpenVPNTCP(VPNDriver):
                                 ip_proto=inet.IPPROTO_TCP,
                                 ipv4_dst=provider_ip,
                                 tcp_src=self.cur_port),
-                [parser.OFPActionSetField(tcp_src=1194),
+                [parser.OFPActionSetField(tcp_src=self.openvpn_port),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
     def start_vpn(self, tap, br, vpn_nic_ip, mac):
@@ -450,19 +479,25 @@ class OpenVPNTCP(VPNDriver):
 
 class OpenVPNUDP(OpenVPNTCP):
 
-    def __init__(self, first_port=1194):
-        super(OpenVPNUDP, self).__init__(first_port)
+    def __init__(self,
+                 index=0,
+                 openvpn_port=first_openvpn_port,
+                 first_port=first_openvpn_port + max_win_nics + 1):
+        super(OpenVPNTCP, self).__init__(
+            index=index,
+            openvpn_port=openvpn_port,
+            first_port=first_port)
         self.proto = 'udp'
 
     def to_controller_match(self, parser):
         return parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
                                ip_proto=inet.IPPROTO_UDP,
-                               udp_dst=1194)
+                               udp_dst=self.openvpn_port)
 
     def intercept_vpn_packets(self, parser, ofproto, provider_ip):
         return (parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
                                 ip_proto=inet.IPPROTO_UDP,
-                                udp_dst=1194,
+                                udp_dst=self.openvpn_port,
                                 ipv4_src=provider_ip),
                 [parser.OFPActionSetField(udp_dst=self.cur_port),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
@@ -472,5 +507,5 @@ class OpenVPNUDP(OpenVPNTCP):
                                 ip_proto=inet.IPPROTO_UDP,
                                 ipv4_dst=provider_ip,
                                 udp_src=self.cur_port),
-                [parser.OFPActionSetField(udp_src=1194),
+                [parser.OFPActionSetField(udp_src=self.openvpn_port),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
