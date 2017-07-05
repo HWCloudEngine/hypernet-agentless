@@ -24,15 +24,6 @@ class FSStaticConfig(object):
     def data_security_group(self):
         return 'default'
 
-    def vms_cidr(self):
-        return ['172.20.10.0/24']
-
-    def hs_sg_name(self):
-        return 'hyperswitches_security_group'
-
-    def vm_sg_name(self):
-        return 'vms_security_group'
-
     def hs_flavor_map(self):
         return {'0G': 'hs.0G',
                 '1G': 'hs.1G',

@@ -61,21 +61,6 @@ OPTS_HYPERSWITCH = [
                help=_("Data network id or name.")),
     cfg.StrOpt('data_security_group',
                help=_("Data network security group id or name.")),
-    cfg.ListOpt('vms_cidr', default=['172.31.192.0/20',
-                                     '172.31.208.0/20',
-                                     '172.31.224.0/20'],
-                help=_("VMs networks CIDR list.")),
-    cfg.StrOpt('hs_cidr',
-               help=_("HS network CIDR - if empty the HS are directly "
-                      "connected to the VMS networks")),
-    cfg.StrOpt('vms_hn_router', default='vms_hn_router',
-               help=_("VMs network To HN router name")),
-    cfg.StrOpt('hs_sg_name',
-               default='hs_sg_vms_123456',
-               help=_("HyperSwitch SecurityGroup Name for VPN Server NICS.")),
-    cfg.StrOpt('vm_sg_name',
-               default='vm_sg_vms_123456',
-               help=_("Provider Security Group Name for agent less NICs.")),
     cfg.StrOpt('hs_default_flavor', default='1G',
                help=_("Default flavor for hyperswitch creation.")),
     cfg.DictOpt('hs_flavor_map',
@@ -217,32 +202,12 @@ def data_security_group():
     return cfg.CONF.hyperswitch.data_security_group
 
 
-def vms_cidr():
-    return cfg.CONF.hyperswitch.vms_cidr
-
-
-def hs_cidr():
-    return cfg.CONF.hyperswitch.hs_cidr
-
-
-def vms_hn_router():
-    return cfg.CONF.hyperswitch.vms_hn_router
-
-
 def pod_fip_address():
     return cfg.CONF.hyperswitch.pod_fip_address
 
 
 def isolate_relay_cidr():
     return cfg.CONF.hyperswitch.isolate_relay_cidr
-
-
-def hs_sg_name():
-    return cfg.CONF.hyperswitch.hs_sg_name
-
-
-def vm_sg_name():
-    return cfg.CONF.hyperswitch.vm_sg_name
 
 
 def hs_default_flavor():

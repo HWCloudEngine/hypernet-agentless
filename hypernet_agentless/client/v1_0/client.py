@@ -301,6 +301,9 @@ class Client(ClientBase):
     providerports_path = '/providerports'
     providerport_path = '/providerports/%s'
 
+    providersubnetpools_path = '/providersubnetpools'
+    providersubnetpool_path = '/providersubnetpools/%s'
+
     # API has no way to report plurals, so we have to hard code them
     # EXTED_PLURALS = {}
 
@@ -323,6 +326,10 @@ class Client(ClientBase):
         return self.delete(self.hyperswitch_path % hyperswitch)
 
     @APIParamsCall
+    def update_hyperswitch(self, hyperswitch, body):
+        return self.put(self.hyperswitch_path % hyperswitch, body=body)
+
+    @APIParamsCall
     def list_providerports(self, **_params):
         """Fetch a list of all providerports on server side."""
         return self.get(self.providerports_path, params=_params)
@@ -341,5 +348,25 @@ class Client(ClientBase):
         return self.delete(self.providerport_path % providerport)
 
     @APIParamsCall
-    def update_providerport(self, providerport, body):
-        return self.put(self.providerport_path % providerport, body=body)
+    def list_providersubnetpools(self, **_params):
+        """Fetch a list of all providersubnetpools on server side."""
+        return self.get(self.providersubnetpools_path, params=_params)
+
+    @APIParamsCall
+    def show_providersubnetpool(self, providersubnetpool, **_params):
+        """Fetch a providersubnetpool on server side."""
+        return self.get(
+            self.providersubnetpool_path % providersubnetpool, params=_params)
+
+    @APIParamsCall
+    def create_providersubnetpool(self, body):
+        return self.post(self.providersubnetpools_path, body)
+
+    @APIParamsCall
+    def delete_providersubnetpool(self, providersubnetpool):
+        return self.delete(self.providersubnetpool_path % providersubnetpool)
+
+    @APIParamsCall
+    def update_providersubnetpool(self, providersubnetpool, body):
+        return self.put(
+            self.providersubnetpool_path % providersubnetpool, body=body)
