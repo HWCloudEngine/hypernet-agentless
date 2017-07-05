@@ -1,17 +1,16 @@
 
+import oslo_i18n
 import sys
 
-import eventlet
-eventlet.monkey_patch()
 # FOR Debug with breakpoints:
 # eventlet.monkey_patch(os=False, thread=False)
 from oslo_config import cfg
-import oslo_i18n
 from oslo_service import service
 
 from hypernet_agentless._i18n import _
 from hypernet_agentless.server import config
 from hypernet_agentless.server.api import service as h_service
+
 
 oslo_i18n.install('hypernet')
 

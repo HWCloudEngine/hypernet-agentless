@@ -7,4 +7,5 @@ TYPE_LIST = "list"
 TYPE_DICT = "dict"
 
 PLURALS = {'hyperswitchs': 'hyperswitch',
-           'providerports': 'providerport'}
+           'providerports': 'providerport',
+           'providersubnetpools': 'providersubnetpool'}

@@ -61,24 +61,14 @@ OPTS_HYPERSWITCH = [
                help=_("Data network id or name.")),
     cfg.StrOpt('data_security_group',
                help=_("Data network security group id or name.")),
-    cfg.ListOpt('vms_cidr', default=['172.31.192.0/20',
-                                     '172.31.208.0/20',
-                                     '172.31.224.0/20'],
-                help=_("VMs networks CIDR list.")),
-    cfg.StrOpt('hs_cidr',
-               help=_("HS network CIDR - if empty the HS are directly "
-                      "connected to the VMS networks")),
-    cfg.StrOpt('vms_hn_router', default='vms_hn_router',
-               help=_("VMs network To HN router name")),
-    cfg.StrOpt('hs_sg_name',
-               default='hs_sg_vms_123456',
-               help=_("HyperSwitch SecurityGroup Name for VPN Server NICS.")),
-    cfg.StrOpt('vm_sg_name',
-               default='vm_sg_vms_123456',
-               help=_("Provider Security Group Name for agent less NICs.")),
-    cfg.StrOpt('hs_default_flavor', default='1G',
+    cfg.StrOpt('hs_default_flavor',
+               default='high',
                help=_("Default flavor for hyperswitch creation.")),
     cfg.DictOpt('hs_flavor_map',
+# AWS default
+               default={'low': 't2.micro', 'moderate': 'c3.large',
+                        'high': 'm3.xlarge', '10G': 'c3.8xlarge',
+                        '20G': 'r4.16xlarge'},
                 help=_("HyperSwitch flavor Map")),
     cfg.StrOpt('controller_ip',
                help=_("the controller ip.")),
@@ -102,6 +92,12 @@ OPTS_HYPERSWITCH = [
     cfg.StrOpt('isolate_relay_cidr',
                default="",
                help=_('isolate relay cidr.')),
+    cfg.IntOpt('first_openvpn_port',
+               default=1194,
+               help='The first port for OpenVPN connection'),
+    cfg.IntOpt('max_win_nics',
+               default=20,
+               help='The max number of supported NICs in windows.'),
 ]
 
 OPTS_HYPERSWITCH_AWS = [
@@ -217,32 +213,12 @@ def data_security_group():
     return cfg.CONF.hyperswitch.data_security_group
 
 
-def vms_cidr():
-    return cfg.CONF.hyperswitch.vms_cidr
-
-
-def hs_cidr():
-    return cfg.CONF.hyperswitch.hs_cidr
-
-
-def vms_hn_router():
-    return cfg.CONF.hyperswitch.vms_hn_router
-
-
 def pod_fip_address():
     return cfg.CONF.hyperswitch.pod_fip_address
 
 
 def isolate_relay_cidr():
     return cfg.CONF.hyperswitch.isolate_relay_cidr
-
-
-def hs_sg_name():
-    return cfg.CONF.hyperswitch.hs_sg_name
-
-
-def vm_sg_name():
-    return cfg.CONF.hyperswitch.vm_sg_name
 
 
 def hs_default_flavor():
@@ -328,3 +304,11 @@ def meta_admin_password():
     if cfg.CONF.hyperswitch.meta_admin_password:
         return cfg.CONF.hyperswitch.meta_admin_password
     return cfg.CONF.keystone_authtoken.admin_password
+
+
+def first_openvpn_port():
+    return cfg.CONF.hyperswitch.first_openvpn_port
+
+
+def max_win_nics():
+    return cfg.CONF.hyperswitch.max_win_nics

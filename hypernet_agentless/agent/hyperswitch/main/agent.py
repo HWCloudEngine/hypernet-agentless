@@ -1,5 +1,4 @@
 import eventlet
-eventlet.monkey_patch()
 
 import sys
 
@@ -34,14 +33,15 @@ class HyperSwitchAgentCallback(object):
         self.context = context.get_admin_context_without_session()
         super(HyperSwitchAgentCallback, self).__init__()
 
-    def get_vif_for_provider_ip(self, provider_ip, host_id, evt):
+    def get_vif_for_provider_ip(self, provider_ip, host_id, evt, index=0):
         """Retrieve the VIFs for a provider IP."""
         LOG.debug(self.context.to_dict())
         return self.client.call(
             self.context.to_dict(), 'get_vif_for_provider_ip',
             provider_ip=provider_ip,
             host_id=host_id,
-            evt=evt)
+            evt=evt,
+            index=index)
 
 
 class HyperSwitchAgent(object):
@@ -75,10 +75,11 @@ class HyperSwitchAgent(object):
 
     def unplug_vif(self, context, **kwargs):
         """
-            un
+            unplug a VIF
         """
         vif_id = kwargs['vif_id']
-        self.vif_driver.unplug(vif_id)
+        index = kwargs['index']
+        self.vif_driver.unplug(vif_id, index)
 
     def daemon_loop(self):
         while True:
