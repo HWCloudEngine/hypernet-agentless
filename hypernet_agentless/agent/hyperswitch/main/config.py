@@ -56,7 +56,8 @@ class Config(object):
                 lines = source.readlines()
             for i in range(len(lines)):
                 for key, value in params.iteritems():
-                    lines[i] = lines[i].replace('##%s##' % key, value)
+                    lines[i] = lines[i].replace(
+                        '##%s##' % str(key), str(value))
             self._write_file(
                 file_conf[0:file_conf.rfind('.')], lines)
         if 'host' in params:

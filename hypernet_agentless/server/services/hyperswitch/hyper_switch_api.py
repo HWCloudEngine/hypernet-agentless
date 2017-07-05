@@ -47,11 +47,15 @@ class HyperswitchCallback(object):
         """
         provider_ip = kwargs['provider_ip']
         host_id = kwargs['host_id']
+        index = 0
+        if 'index' in kwargs:
+            index = kwargs['index']
+
         evt = kwargs['evt']
-        LOG.debug('get_vif_for_provider_ip %s' % provider_ip)
+        LOG.debug('get_vif_for_provider_ip (%s, %s)' % (provider_ip, index))
 
         p_ports = self._hyperswitch_plugin.get_providerports(
-            context, filters={'provider_ip': [provider_ip]})
+            context, filters={'provider_ip': [provider_ip], 'index': [index]})
         LOG.debug('provider ports for %s: %s' % (
             provider_ip, p_ports))
         if len(p_ports) != 1:
@@ -101,6 +105,6 @@ class HyperswitchAPI(object):
         self.call_back = HyperswitchCallback()
         super(HyperswitchAPI, self).__init__()
 
-    def unplug_vif(self, context, vif_id):
+    def unplug_vif(self, context, vif_id, index):
         """Propagate a delete port to the agents."""
-        self.client.cast(context, 'unplug_vif', vif_id=vif_id)
+        self.client.cast(context, 'unplug_vif', vif_id=vif_id, index=index)
