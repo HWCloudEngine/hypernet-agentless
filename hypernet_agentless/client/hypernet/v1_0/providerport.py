@@ -28,7 +28,7 @@ class ProviderportCreate(extension.ClientExtensionCreate, Providerport):
             help=_('Optional port name.'))
         parser.add_argument(
             '--flavor', dest='flavor',
-            help=_('Network Flavor for the VM: 0G, 1G or 10G.'))
+            help=_('Network Flavor for the VM: low, moderate, high, 10G, 20G.'))
         parser.add_argument(
             '--device-id', dest='device_id',
             help=_('Optional Device ID of the port to create a '

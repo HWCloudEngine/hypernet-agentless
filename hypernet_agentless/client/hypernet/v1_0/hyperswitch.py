@@ -48,7 +48,7 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
                    'the provider driver).'))
         parser.add_argument(
             'flavor', metavar='<FLAVOR>',
-            help=_('VM network flavor: 0G, 1G or 10G.'))
+            help=_('VM network flavor: low, moderate, high, 10G, 20G.'))
 
     def args2body(self, parsed_args):
         body = {'hyperswitch': {'flavor': parsed_args.flavor}, }

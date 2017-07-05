@@ -27,7 +27,8 @@ RESOURCE_ATTRIBUTE_MAP = {
         'port_id': {'allow_post': True, 'allow_put': False,
                     'is_visible': True, 'required': True},
         'flavor': {'allow_post': True, 'allow_put': False,
-                   'type:values': ['0G', '1G', '10G', None],
+                   'type:values': [
+                       'low', 'moderate', 'high', '10G', '20G.', None],
                    'is_visible': True, 'default': None},
         'device_id': {'allow_post': False, 'allow_put': False,
                       'is_visible': True, 'default': None},
@@ -52,6 +53,8 @@ RESOURCE_ATTRIBUTE_MAP = {
         'device_id': {'allow_post': True, 'allow_put': False,
                       'is_visible': True, 'default': None},
         'flavor': {'allow_post': True, 'allow_put': False,
+                   'type:values': [
+                       'low', 'moderate', 'high', '10G', '20G.', None],
                    'is_visible': True, 'default': None},
         'instance_id': {'allow_post': True, 'allow_put': False,
                         'is_visible': True, 'default': None},
@@ -66,6 +69,18 @@ RESOURCE_ATTRIBUTE_MAP = {
                    'default': None, 'is_visible': True},
         'provider': {'allow_post': False, 'allow_put': False,
                      'is_visible': True},
+    },
+    'providersubnetpools': {
+        'id': {'allow_post': False, 'allow_put': False,
+               'is_visible': True},
+        'tenant_id': {'allow_post': True, 'allow_put': True,
+                      'is_visible': True, 'required': True},
+        'cidr': {'allow_post': True, 'allow_put': False,
+                 'is_visible': True},
+        'used_by': {'allow_post': True, 'allow_put': True,
+                    'is_visible': True, 'default': None},
+        'provider_subnet': {'allow_post': False, 'allow_put': False,
+                            'is_visible': True},
     },
 }
 
@@ -177,6 +192,34 @@ class HyperswitchPluginBase(service_base.ServicePluginBase):
                          page_reverse=False):
         pass
 
+    @abc.abstractmethod
+    def create_providersubnetpool(self, context, providersubnetpool):
+        pass
+
+    @abc.abstractmethod
+    def get_providersubnetpool(self,
+                               context,
+                               providersubnetpool_id,
+                               fields=None):
+        pass
+
+    @abc.abstractmethod
+    def update_providersubnetpool(self,
+                                  context,
+                                  providersubnetpool_id,
+                                  providersubnetpool):
+        pass
+
+    @abc.abstractmethod
+    def delete_providersubnetpool(self, context, providersubnetpool_id):
+        pass
+
+    @abc.abstractmethod
+    def get_providersubnetpools(self, context, filters=None, fields=None,
+                                sorts=None, limit=None, marker=None,
+                                page_reverse=False):
+        pass
+
 
 class HyperswitchNotFound(exceptions.NotFound):
     message = _('Hyperswitch %(hyperswitch_id)s could not be found.')
@@ -213,3 +256,13 @@ class ProviderPortProviderPortMultipleFound(exceptions.Conflict):
 class ProviderPortBadDeviceId(exceptions.Conflict):
     message = _('Device id not match (received: %(device_id)s, '
                 'neutron port: %(neutron_device_id)s).')
+
+
+class ProviderSubnetPoolNotFound(exceptions.NotFound):
+    message = _(
+        'Provider Subnet Pool %(providersubnetpool_id)s could not be found.')
+
+
+class ProviderSubnetPoolUseFailed(exceptions.Conflict):
+    message = _(
+        'Tenant %(tenant_id)s failed to select a provider subnet.')
