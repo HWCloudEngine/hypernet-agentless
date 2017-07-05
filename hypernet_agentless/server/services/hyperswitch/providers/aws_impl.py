@@ -140,30 +140,35 @@ class AWSProvider(provider_api.ProviderDriver):
         for img in images:
             return img.id
 
-    def get_sgs(self):
+    def get_sgs(self, tenant_id):
+        hs_sg_name = 'hs_sg_%s' % tenant_id
+        vm_sg_name = 'vm_sg_%s' % tenant_id
         hs_sg, vm_sg = None, None
         try:
             resp = self.ec2.describe_security_groups(
                 Filters=[
                     {'Name': 'vpc-id', 'Values': [self._cfg.aws_vpc()]},
                     {'Name': 'group-name', 'Values': [
-                        self._cfg.hs_sg_name(), self._cfg.vm_sg_name()]}],
+                        hs_sg_name, vm_sg_name]}],
             )
 
             for sg in resp['SecurityGroups']:
-                if sg['GroupName'] == self._cfg.hs_sg_name():
+                if sg['GroupName'] == hs_sg_name:
                     hs_sg = sg['GroupId']
-                if sg['GroupName'] == self._cfg.vm_sg_name():
+                if sg['GroupName'] == vm_sg_name:
                     vm_sg = sg['GroupId']
         except exceptions.ClientError:
+            pass
+
+        if hs_sg is None or vm_sg is None:
             hs_sg = self.ec2.create_security_group(
-                GroupName=self._cfg.hs_sg_name(),
-                Description='%s security group' % self._cfg.hs_sg_name(),
+                GroupName=hs_sg_name,
+                Description='%s security group' % vm_sg_name,
                 VpcId=self._cfg.aws_vpc()
             )['GroupId']
             vm_sg = self.ec2.create_security_group(
-                GroupName=self._cfg.vm_sg_name(),
-                Description='%s security group' % self._cfg.vm_sg_name(),
+                GroupName=vm_sg_name,
+                Description='%s security group' % hs_sg_name,
                 VpcId=self._cfg.aws_vpc()
             )['GroupId']
             self.ec2.authorize_security_group_ingress(
@@ -184,9 +189,9 @@ class AWSProvider(provider_api.ProviderDriver):
                     'UserIdGroupPairs': [{'GroupId': hs_sg}],
                 }]
             )
-        return hs_sg, vm_sg
+        return {'hs_sg': hs_sg, 'vm_sg': vm_sg}
 
-    def _get_subnet(self, name, cidr):
+    def get_subnet(self, name, cidr):
         vpc = self.ec2_resource.Vpc(self._cfg.aws_vpc())
         subnets = self._find_subnets(vpc, 'Name', name)
         for subnet in subnets:
@@ -205,51 +210,6 @@ class AWSProvider(provider_api.ProviderDriver):
         )
         return subnet_id
 
-    def get_hs_subnet(self):
-        if not self._cfg.hs_cidr():
-            return None
-        return self._get_subnet(
-            'hs_%s' % self._cfg.hs_cidr(), self._cfg.hs_cidr())
-
-    def get_hs_vms_router(self, vms_subnets, hs_subnet):
-        if not hs_subnet:
-            return None
-        vpc = self.ec2_resource.Vpc(self._cfg.aws_vpc())
-        route_tables = vpc.route_tables.filter(Filters=[{
-            'Name': 'tag:Name',
-            'Values': [self._cfg.vms_hn_router()]}])
-        route_table_id = None
-        for route_table in route_tables:
-            route_table_id = route_table.id
-        if not route_table_id:
-            route_table = self.ec2.create_route_table(
-                VpcId=self._cfg.aws_vpc()
-            )
-            route_table_id = route_table['RouteTable']['RouteTableId']
-            self.ec2.create_tags(
-                Resources=[route_table_id],
-                Tags=[{
-                    'Key': 'Name',
-                    'Value': self._cfg.vms_hn_router()
-                }]
-            )
-        self.ec2.associate_route_table(
-            SubnetId=hs_subnet,
-            RouteTableId=route_table_id
-        )
-        for subnet in vms_subnets:
-            self.ec2.associate_route_table(
-                SubnetId=subnet,
-                RouteTableId=route_table_id
-            )
-        return route_table_id
-
-    def get_vms_subnet(self):
-        subnets_id = []
-        for cidr in self._cfg.vms_cidr():
-            subnets_id.append(self._get_subnet('vms_%s' % cidr, cidr))
-        return subnets_id
-
     def _aws_instance_to_dict(self, aws_instance):
         LOG.debug('_aws_instance_to_dict %s' % aws_instance)
         name = None
@@ -259,30 +219,21 @@ class AWSProvider(provider_api.ProviderDriver):
         for tag in aws_instance.tags:
             if tag['Key'] == 'Name':
                 name = tag['Value']
-        vms_nets = self.get_vms_subnet()
-        hs_net = self.get_hs_subnet()
         LOG.debug('network_interfaces_attribute %s' % (
             aws_instance.network_interfaces_attribute))
         for net_int in aws_instance.network_interfaces_attribute:
+            is_vm_net = True
             if net_int['SubnetId'] == self._cfg.mgnt_network():
                 mgnt_ip = net_int['PrivateIpAddress']
+                is_vm_net = False
             if net_int['SubnetId'] == self._cfg.data_network():
                 data_ip = net_int['PrivateIpAddress']
-            if hs_net:
-                if hs_net == net_int['SubnetId']:
-                    vms_ips.append({
-                        'vms_ip': net_int['PrivateIpAddress'],
-                        'index': 0
-                    })
-            else:
-                i = 0
-                for vms_net in vms_nets:
-                    if vms_net == net_int['SubnetId']:
-                        vms_ips.append({
-                            'vms_ip': net_int['PrivateIpAddress'],
-                            'index': i
-                        })
-                    i = i + 1
+                is_vm_net = False
+            if is_vm_net:
+                vms_ips.append({
+                    'vms_ip': net_int['PrivateIpAddress'],
+                    'index': 0
+                })
         return provider_api.ProviderHyperswitch(
             instance_id=aws_instance.id,
             name=name,
@@ -387,6 +338,7 @@ class AWSProvider(provider_api.ProviderDriver):
             port_id=port_id,
             provider_ip=net_int['PrivateIpAddress'],
             name=port_id,
+            provider_id=net_int['NetworkInterfaceId'],
         ).dict
 
     def create_network_interface(self,

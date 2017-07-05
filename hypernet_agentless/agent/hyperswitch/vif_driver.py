@@ -15,5 +15,5 @@ class HyperVIFDriver(object):
         pass
 
     @abc.abstractmethod
-    def unplug(self, vif_id):
+    def unplug(self, vif_id, index):
         pass
