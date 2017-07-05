@@ -108,7 +108,7 @@ class FSProvider(provider_api.ProviderDriver):
         except:
             return flavor_id
 
-    def _get_net(self, name, cidr):
+    def get_subnet(self, name, cidr):
         snets = self._neutron_client.list_subnets(cidr=cidr)['subnets']
         if len(snets) > 0:
             for snet in snets:
@@ -135,73 +135,33 @@ class FSProvider(provider_api.ProviderDriver):
             })['subnet']
             return snet['network_id']
 
-    def get_hs_subnet(self):
-        if not self._cfg.hs_cidr():
-            return None
-        #TODO: add static route to VMs
-        return self._get_net(
-            'hs_%s' % self._cfg.hs_cidr(), self._cfg.hs_cidr())
-
-    def _get_first_subnet_id(self, net_id):
-        snets = self._neutron_client.list_subnets(network_id=net_id)['subnets']
-        return snets[0]['id']
-
-    def get_hs_vms_router(self, vms_subnets, hs_subnet):
-        if not hs_subnet:
-            return None
-        routers = self._neutron_client.list_routers(
-            name=[self._cfg.vms_hn_router()]
-        )['routers']
-        router_id = None
-        for router in routers:
-            router_id = router['id']
-        if not router_id:
-            router_id = self._neutron_client.create_router(
-                {'router': {
-                    'name': self._cfg.vms_hn_router(),
-                    'tenant_id': self._cfg.fs_tenant_id()
-                }}
-            )['router']['id']
-        try:
-            self._neutron_client.add_interface_router(
-                router_id, {
-                    'subnet_id': self._get_first_subnet_id(hs_subnet)})
-        except Exception as e:
-            LOG.warn('%s' % e)
-        for net_id in vms_subnets:
-            try:
-                self._neutron_client.add_interface_router(
-                    router_id, {
-                        'subnet_id': self._get_first_subnet_id(net_id)})
-            except Exception as e:
-                LOG.warn('%s' % e)
-        return router_id
-
-    def get_sgs(self):
+    def get_sgs(self, tenant_id):
+        hs_sg_name = 'hs_sg_%s' % tenant_id
+        vm_sg_name = 'vm_sg_%s' % tenant_id
         hs_sg, vm_sg = None, None
         security_groups = self._neutron_client.list_security_groups(
-            name=[self._cfg.hs_sg_name(), self._cfg.vm_sg_name()]
+            name=[hs_sg_name, vm_sg_name]
         )['security_groups']
         if len(security_groups) > 0:
             for sg in security_groups:
-                if sg['name'] == self._cfg.hs_sg_name():
+                if sg['name'] == hs_sg_name:
                     hs_sg = sg['id']
-                if sg['name'] == self._cfg.vm_sg_name():
+                if sg['name'] == vm_sg_name:
                     vm_sg = sg['id']
         else:
             hs_sg = self._neutron_client.create_security_group(
                 {'security_group': {
-                    'name': self._cfg.hs_sg_name(),
+                    'name': hs_sg_name,
                     'description': ('%s security group' %
-                                    self._cfg.hs_sg_name()),
+                                    hs_sg_name),
                     'tenant_id': self._cfg.fs_tenant_id()
                 }}
             )['security_group']['id']
             vm_sg = self._neutron_client.create_security_group({
                 'security_group': {
-                    'name': self._cfg.vm_sg_name(),
+                    'name': vm_sg_name,
                     'description': ('%s security group' %
-                                    self._cfg.hs_sg_name()),
+                                    hs_sg_name),
                     'tenant_id': self._cfg.fs_tenant_id()
                 }}
             )['security_group']['id']
@@ -224,13 +184,6 @@ class FSProvider(provider_api.ProviderDriver):
                 }}
             )
         return hs_sg, vm_sg
-
-    def get_vms_subnet(self):
-        nets_id = []
-        if len(self._vm_nets) != len(self._cfg.vms_cidr()):
-            for cidr in self._cfg.vms_cidr():
-                nets_id.append(self._get_net('vms_%s' % cidr, cidr))
-        return nets_id
 
     def create_hyperswitch(self,
                            user_data,
