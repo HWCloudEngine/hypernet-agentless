@@ -30,6 +30,7 @@ from hypernet_agentless.client.common import utils
 from hypernet_agentless._i18n import _
 from hypernet_agentless.client.hypernet.v1_0 import hyperswitch
 from hypernet_agentless.client.hypernet.v1_0 import providerport
+from hypernet_agentless.client.hypernet.v1_0 import providersubnetpool
 from hypernet_agentless.version import __version__
 import urlparse
 
@@ -91,6 +92,12 @@ COMMAND_V1 = {
     'hyperswitch-create': hyperswitch.HyperSwitchCreate,
     'hyperswitch-update': hyperswitch.HyperSwitchUpdate,
     'hyperswitch-delete': hyperswitch.HyperSwitchDelete,
+
+    'providersubnetpool-list': providersubnetpool.ProvidersubnetpoolList,
+    'providersubnetpool-show': providersubnetpool.ProvidersubnetpoolShow,
+    'providersubnetpool-create': providersubnetpool.ProvidersubnetpoolCreate,
+    'providersubnetpool-update': providersubnetpool.ProvidersubnetpoolUpdate,
+    'providersubnetpool-delete': providersubnetpool.ProvidersubnetpoolDelete,
 }
 
 COMMANDS = {'1.0': COMMAND_V1}

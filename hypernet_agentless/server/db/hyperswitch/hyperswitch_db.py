@@ -46,3 +46,10 @@ class ProviderPort(model_base.BASEV2, model_base.HasId, model_base.HasTenant):
     provider_ip = sa.Column(sa.String(length=64), nullable=False)
     flavor = sa.Column(sa.String(length=255), nullable=True)
     index = sa.Column(sa.Integer(), nullable=False)
+
+
+class ProviderSubnetPool(
+        model_base.BASEV2, model_base.HasId, model_base.HasTenant):
+
+    cidr = sa.Column(sa.String(64), nullable=False)
+    used_by = sa.Column(sa.String(255))
