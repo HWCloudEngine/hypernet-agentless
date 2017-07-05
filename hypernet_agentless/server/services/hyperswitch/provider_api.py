@@ -4,20 +4,12 @@ import abc
 class ProviderDriver(object):
 
     @abc.abstractmethod
-    def get_sgs(self):
-        return None, None
+    def get_sgs(self, tenant_id):
+        return {'hs_sg': None, 'vm_sg': None}
 
     @abc.abstractmethod
-    def get_hs_subnet(self):
+    def get_subnet(self, name, cidr):
         return None
-
-    @abc.abstractmethod
-    def get_hs_vms_router(self, vms_subnets, hs_subnet):
-        return None
-
-    @abc.abstractmethod
-    def get_vms_subnet(self):
-        return []
 
     @abc.abstractmethod
     def create_hyperswitch(self,
