@@ -46,11 +46,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 )
             self._provider_impl = importutils.import_object(clazz)
             self._hyper_switch_api = hyper_switch_api.HyperswitchAPI()
-            self._vms_subnets = self._provider_impl.get_vms_subnet()
-            self._hs_subnet = self._provider_impl.get_hs_subnet()
-            self._hs_vms_router = self._provider_impl.get_hs_vms_router(
-                self._vms_subnets, self._hs_subnet)
-            self._hs_sg, self._vm_sg = self._provider_impl.get_sgs()
         except Exception as e:
             LOG.exception('execption = %s' % e)
 
@@ -109,7 +104,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 retry = retry + 1
                 sock.close()
 
-    def _get_userdata_net_list(self, hyperswitch_id):
+    def _get_userdata_net_list(self, context, hyperswitch_id, tenant_id):
         user_data = {
             'rabbit_userid': config.rabbit_userid(),
             'rabbit_password': config.rabbit_password(),
@@ -136,59 +131,31 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'name': config.mgnt_network(),
             'security_group': [config.mgnt_security_group()]
         }]
-        i = 0
         if config.data_network() == config.mgnt_network():
             net_list[0]['security_group'].append(
                 config.data_security_group())
+            user_data['network_data_interface'] = 'eth0'
+            user_data['network_vms_interface'] = 'eth1'
         else:
-            i = i + 1
             net_list.append({
                 'name': config.data_network(),
                 'security_group': [config.data_security_group()]
             })
-        user_data['network_data_interface'] = 'eth%d' % i
-
-        if hasattr(self, '_hs_subnet'):
-            if self._hs_subnet == config.mgnt_network():
-                user_data['network_vms_interface'] = 'eth0'
-                net_list[0]['security_group'].append(self._hs_sg)
-            elif self._hs_subnet == config.data_network():
-                user_data['network_vms_interface'] = 'eth1'
-                net_list[1]['security_group'].append(self._hs_sg)
-            else:
-                user_data['network_vms_interface'] = 'eth2'
-                net_list.append({
-                    'name': self._hs_subnet,
-                    'security_group': [self._hs_sg]
-                })
-        else:
-            for vm_subnet in self._vms_subnets:
-                if vm_subnet == config.mgnt_network():
-                    if 'network_vms_interface' in user_data:
-                        user_data['network_vms_interface'] = '%s, eth0' % (
-                            user_data['network_vms_interface'])
-                    else:
-                        user_data['network_vms_interface'] = 'eth0'
-                    net_list[0]['security_group'].append(self._hs_sg)
-                elif vm_subnet == config.data_network():
-                    if 'network_vms_interface' in user_data:
-                        user_data['network_vms_interface'] = '%s, eth1' % (
-                            user_data['network_vms_interface'])
-                    else:
-                        user_data['network_vms_interface'] = 'eth1'
-                    net_list[1]['security_group'].append(self._hs_sg)
-                else:
-                    i = i + 1
-                    if 'network_vms_interface' in user_data:
-                        user_data['network_vms_interface'] = '%s, eth%d' % (
-                            user_data['network_vms_interface'], i)
-                    else:
-                        user_data['network_vms_interface'] = 'eth%d' % i
-                    net_list.append({
-                        'name': vm_subnet,
-                        'security_group': [self._hs_sg]
-                    })
+            user_data['network_data_interface'] = 'eth1'
+            user_data['network_vms_interface'] = 'eth2'
+        hs_sg, _, subnet = self._get_tenant_provider_data(context, tenant_id)
+        net_list.append({
+            'name': subnet,
+            'security_group': [hs_sg]
+        })
         return user_data, net_list
+
+    def _get_tenant_provider_data(self, context, tenant_id):
+        providersubnetpool = self.get_providersubnetpools(
+            context, filters={'tenant_id': [tenant_id]})[0]
+        return (self._provider_impl.get_sgs(tenant_id),
+                providersubnetpool['provider_subnet']['id'])
+
 
     def create_hyperswitch(self, context, hyperswitch):
         LOG.debug('hyper switch %s to create.' % hyperswitch)
@@ -196,7 +163,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
         hyperswitch_id = uuidutils.generate_uuid()
 
-        user_data, net_list = self._get_userdata_net_list(hyperswitch_id)
+        user_data, net_list = self._get_userdata_net_list(
+            hyperswitch_id, hs.get('tenant_id'))
 
         with context.session.begin(subtransactions=True):
             hs_provider = self._provider_impl.create_hyperswitch(
@@ -273,7 +241,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         # hyperswitch provider
         hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
         if hs_provider:
-            user_data, _ = self._get_userdata_net_list(hyperswitch_id)
+            user_data, _ = self._get_userdata_net_list(
+                hyperswitch_id, hs_db.tenant_id)
             user_data['mgnt_ip'] = hs_provider['mgnt_ip']
             user_data['data_ip'] = hs_provider['data_ip']
             self._send(hs_db.mgnt_ip, 8080, user_data)
@@ -411,11 +380,13 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 })]
 
         with context.session.begin(subtransactions=True):
+            _, vm_sg, subnet = self._get_tenant_provider_data(
+                context, tenant_id)
             # create in the provider
             net_int_provider = self._provider_impl.create_network_interface(
                 port_id,
-                self._vms_subnets[index],
-                self._vm_sg)
+                subnet,
+                vm_sg)
             try:
                 # create in DB
                 providerport_db = hyperswitch_db.ProviderPort(
@@ -522,4 +493,97 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 context, neutron_port['device_id'], neutron_port['tenant_id'])
             res.append(self._make_providerport_dict(
                 providerport_db, neutron_port, provider_net_int, hsservers))
+        return res
+
+    def _make_providersubnetpool_dict(self, providersubnetpool_db):
+        LOG.debug('_make_providersubnetpool_dict %s' % (
+            providersubnetpool_db))
+        provider_subnet = None
+        if providersubnetpool_db.tenant_id:
+            name = 'subnet_%s' % providersubnetpool_db.tenant_id
+
+            provider_subnet = {
+                'name': name,
+                'id': self._provider_impl.get_subnet(
+                    name,
+                    providersubnetpool_db.cidr)
+            }
+        return {
+            'id': providersubnetpool_db.id,
+            'tenand_id': providersubnetpool_db.tenant_id,
+            'cidr': providersubnetpool_db.cidr,
+            'provider_subnet': provider_subnet
+        }
+
+    def create_providersubnetpool(self, context, providersubnetpool):
+        with context.session.begin(subtransactions=True):
+            # create in DB
+            providersubnetpool_db = hyperswitch_db.ProviderSubnetPool(
+                id=uuidutils.generate_uuid(),
+                cidr=providersubnetpool['cidr']
+            )
+            context.session.add(providersubnetpool_db)
+        return self._make_providersubnetpool_dict(
+            providersubnetpool_db)
+
+    def get_providersubnetpool(self,
+                               context,
+                               providersubnetpool_id,
+                               fields=None):
+        LOG.debug('get_providersubnetpool %s.' % providersubnetpool_id)
+        try:
+            providersubnetpool_db = self._get_by_id(
+                context,
+                hyperswitch_db.ProviderSubnetPool,
+                providersubnetpool_id)
+        except exc.NoResultFound:
+            raise hyperswitch.ProviderPortNotFound(
+                providersubnetpool_id=providersubnetpool_id)
+
+        return self._make_providersubnetpool_dict(
+            providersubnetpool_db)
+
+    def update_providersubnetpool(self,
+                                  context,
+                                  providersubnetpool_id,
+                                  providersubnetpool):
+        LOG.debug('update_providersubnetpool %s (%s) to update.' % (
+            providersubnetpool_id, providersubnetpool))
+        providersubnetpool_db = self._get_by_id(
+            context, hyperswitch_db.ProviderSubnetPool, providersubnetpool_id)
+
+        psubnetpool = providersubnetpool['providersubnetpool']
+        with context.session.begin(subtransactions=True):
+            providersubnetpool_db.update(psubnetpool)
+
+        return self._make_providersubnetpool_dict(
+            providersubnetpool_db)
+
+    def delete_providersubnetpool(self, context, providersubnetpool_id):
+        LOG.debug('delete_providersubnetpool %s.' % providersubnetpool_id)
+        # remove from DB
+        try:
+            providersubnetpool_db = self._get_by_id(
+                context,
+                hyperswitch_db.ProviderSubnetPool,
+                providersubnetpool_id)
+            with context.session.begin(subtransactions=True):
+                context.session.delete(providersubnetpool_db)
+        except exc.NoResultFound:
+            pass
+        finally:
+            # TODO: maybe remove from provider
+            pass
+
+    def get_providersubnetpools(self, context, filters=None, fields=None,
+                                sorts=None, limit=None, marker=None,
+                                page_reverse=False):
+        LOG.debug('get_providersubnetpools %s.' % filters)
+        providersubnetpools_db = self._get_collection_query(
+            context, hyperswitch_db.ProviderSubnetPool,
+            filters=filters, sorts=sorts, limit=limit)
+        res = []
+        for providersubnetpool_db in providersubnetpools_db:
+            res.append(self._make_providersubnetpool_dict(
+                providersubnetpool_db))
         return res

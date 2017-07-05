@@ -16,17 +16,13 @@ class NULLProvider(provider_api.ProviderDriver):
         else:
             self._cfg = cfg
 
-    def get_sgs(self):
-        return self._cfg.hs_sg_name(), self._cfg.vm_sg_name()
+    def get_sgs(self, tenant_id):
+        hs_sg_name = 'hs_sg_%s' % tenant_id
+        vm_sg_name = 'vm_sg_%s' % tenant_id
+        return hs_sg_name, vm_sg_name
 
-    def get_hs_subnet(self):
-        return None
-
-    def get_hs_vms_router(self, vms_subnets, hs_subnet):
-        return None
-
-    def get_vms_subnet(self):
-        return self._cfg.vms_cidr()
+    def get_subnet(self, name, cidr):
+        return name
 
     def create_hyperswitch(self,
                            user_data,

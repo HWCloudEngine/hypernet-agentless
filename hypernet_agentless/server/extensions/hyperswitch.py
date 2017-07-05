@@ -67,6 +67,16 @@ RESOURCE_ATTRIBUTE_MAP = {
         'provider': {'allow_post': False, 'allow_put': False,
                      'is_visible': True},
     },
+    'providersubnetpools': {
+        'id': {'allow_post': False, 'allow_put': False,
+               'is_visible': True},
+        'tenant_id': {'allow_post': True, 'allow_put': True,
+                      'is_visible': True},
+        'cidr': {'allow_post': True, 'allow_put': False,
+                 'is_visible': True},
+        'provider_subnet': {'allow_post': False, 'allow_put': False,
+                            'is_visible': True},
+    },
 }
 
 
@@ -175,6 +185,34 @@ class HyperswitchPluginBase(service_base.ServicePluginBase):
     def get_hyperswitchs(self, context, filters=None, fields=None,
                          sorts=None, limit=None, marker=None,
                          page_reverse=False):
+        pass
+
+    @abc.abstractmethod
+    def create_providersubnetpool(self, context, providersubnetpool):
+        pass
+
+    @abc.abstractmethod
+    def get_providersubnetpool(self,
+                               context,
+                               providersubnetpool_id,
+                               fields=None):
+        pass
+
+    @abc.abstractmethod
+    def update_providersubnetpool(self,
+                                  context,
+                                  providersubnetpool_id,
+                                  providersubnetpool):
+        pass
+
+    @abc.abstractmethod
+    def delete_providersubnetpool(self, context, providersubnetpool_id):
+        pass
+
+    @abc.abstractmethod
+    def get_providersubnetpools(self, context, filters=None, fields=None,
+                                sorts=None, limit=None, marker=None,
+                                page_reverse=False):
         pass
 
 
