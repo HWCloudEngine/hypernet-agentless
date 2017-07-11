@@ -24,6 +24,9 @@ class NULLProvider(provider_api.ProviderDriver):
     def get_subnet(self, name, cidr):
         return name
 
+    def delete_subnet(self, subnet_id):
+        return None
+
     def create_hyperswitch(self,
                            user_data,
                            flavor,
