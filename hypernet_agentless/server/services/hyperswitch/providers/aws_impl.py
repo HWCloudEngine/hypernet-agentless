@@ -138,6 +138,9 @@ class AWSProvider(provider_api.ProviderDriver):
         )
         return subnet_id
 
+    def delete_subnet(self, subnet_id):
+        self.ec2.delete_subnet(SubnetId=subnet_id)
+
     def _aws_instance_to_dict(self, aws_instance):
         LOG.debug('_aws_instance_to_dict %s' % aws_instance)
         name = None

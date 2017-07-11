@@ -125,6 +125,9 @@ class FSProvider(provider_api.ProviderDriver):
             })['subnet']
             return snet['network_id']
 
+    def delete_subnet(self, subnet_id):
+        self._neutron_client.delete_subnet(subnet_id)
+
     def get_sgs(self, tenant_id):
         hs_sg_name = 'hs_sg_%s' % tenant_id
         vm_sg_name = 'vm_sg_%s' % tenant_id
