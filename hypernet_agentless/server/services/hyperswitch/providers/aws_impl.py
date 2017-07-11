@@ -119,6 +119,27 @@ class AWSProvider(provider_api.ProviderDriver):
             )
         return {'hs_sg': hs_sg, 'vm_sg': vm_sg}
 
+    def delete_sgs(self, tenant_id):
+        hs_sg_name = 'hs_sg_%s' % tenant_id
+        vm_sg_name = 'vm_sg_%s' % tenant_id
+        resp = self.ec2.describe_security_groups(
+            Filters=[
+                {'Name': 'vpc-id', 'Values': [self._cfg.aws_vpc()]},
+                {'Name': 'group-name', 'Values': [
+                    hs_sg_name, vm_sg_name]}],
+        )
+        sgids = list()
+        for sg in resp['SecurityGroups']:
+            sgids.append(sg['GroupId'])
+            self.ec2.authorize_security_group_ingress(
+                GroupId=sg['GroupId'],
+                IpPermissions=[]
+            )
+        for sgid in sgids:
+            self.ec2.delete_security_group(
+                GroupId=sgid,
+            )
+
     def get_subnet(self, name, cidr):
         vpc = self.ec2_resource.Vpc(self._cfg.aws_vpc())
         subnets = self._find_subnets(vpc, 'Name', name)
@@ -137,6 +158,9 @@ class AWSProvider(provider_api.ProviderDriver):
             }]
         )
         return subnet_id
+
+    def delete_subnet(self, subnet_id):
+        self.ec2.delete_subnet(SubnetId=subnet_id)
 
     def _aws_instance_to_dict(self, aws_instance):
         LOG.debug('_aws_instance_to_dict %s' % aws_instance)
@@ -170,6 +194,9 @@ class AWSProvider(provider_api.ProviderDriver):
             data_ip=data_ip,
             vms_ips=vms_ips,
         ).dict
+
+    def _get_hs_name(self, hyperswitch_id):
+        return 'hyperswitch@%s' % hyperswitch_id
 
     def create_hyperswitch(self,
                            user_data,
@@ -209,7 +236,7 @@ class AWSProvider(provider_api.ProviderDriver):
         tags = [{'Key': 'hybrid_cloud_type',
                  'Value': hs_constants.HYPERSWITCH},
                 {'Key': 'Name',
-                 'Value': hyperswitch_id}]
+                 'Value': self._get_hs_name(hyperswitch_id)}]
         self.ec2.create_tags(Resources=[aws_instance.id],
                              Tags=tags)
 
@@ -220,7 +247,9 @@ class AWSProvider(provider_api.ProviderDriver):
     def get_hyperswitch(self, hyperswitch_id):
         LOG.debug('get hyperswitch for %s.' % hyperswitch_id)
         i = 0
-        aws_instances = self._find_vms('Name', [hyperswitch_id])
+        aws_instances = self._find_vms(
+            'Name',
+            [self._get_hs_name(hyperswitch_id)])
         res = None
         for aws_instance in aws_instances:
             if i != 0:
@@ -233,13 +262,17 @@ class AWSProvider(provider_api.ProviderDriver):
 
     def start_hyperswitch(self, hyperswitch_id):
         LOG.debug('start hyperswitch %s.' % hyperswitch_id)
-        aws_instances = self._find_vms('Name', [hyperswitch_id])
+        aws_instances = self._find_vms(
+            'Name',
+            [self._get_hs_name(hyperswitch_id)])
         for aws_instance in aws_instances:
             aws_instance.start()
 
     def stop_hyperswitch(self, hyperswitch_id):
         LOG.debug('start hyperswitch %s.' % hyperswitch_id)
-        aws_instances = self._find_vms('Name', [hyperswitch_id])
+        aws_instances = self._find_vms(
+            'Name',
+            [self._get_hs_name(hyperswitch_id)])
         for aws_instance in aws_instances:
             aws_instance.stop()
 
@@ -247,7 +280,7 @@ class AWSProvider(provider_api.ProviderDriver):
         LOG.debug('hyperswitch to delete: %s.' % (hyperswitch_id))
         aws_instances = self._find_vms(
             'Name',
-            [hyperswitch_id])
+            [self._get_hs_name(hyperswitch_id)])
         LOG.debug('aws_instances to delete: %s.' % (aws_instances))
         for aws_instance in aws_instances:
             aws_instance.stop()

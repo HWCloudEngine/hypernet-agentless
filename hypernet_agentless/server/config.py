@@ -64,6 +64,11 @@ OPTS_HYPERSWITCH = [
     cfg.StrOpt('hs_default_flavor',
                default='high',
                help=_("Default flavor for hyperswitch creation.")),
+    cfg.StrOpt('tenant_subnet_pool_first_cidr',
+               help='The first provider cidr to create in'
+                    ' the provider subnet pool.'),
+    cfg.IntOpt('tenant_subnet_pool_nb',
+               help='The number of provider subnet to create in the pool.'),
     cfg.DictOpt('hs_flavor_map',
 # AWS default
                default={'low': 't2.micro', 'moderate': 'c3.large',
@@ -223,6 +228,14 @@ def isolate_relay_cidr():
 
 def hs_default_flavor():
     return cfg.CONF.hyperswitch.hs_default_flavor
+
+
+def tenant_subnet_pool_first_cidr():
+    return cfg.CONF.hyperswitch.tenant_subnet_pool_first_cidr
+
+
+def tenant_subnet_pool_nb():
+    return cfg.CONF.hyperswitch.tenant_subnet_pool_nb
 
 
 def hs_flavor_map():

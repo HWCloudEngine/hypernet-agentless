@@ -125,6 +125,9 @@ class FSProvider(provider_api.ProviderDriver):
             })['subnet']
             return snet['network_id']
 
+    def delete_subnet(self, subnet_id):
+        self._neutron_client.delete_subnet(subnet_id)
+
     def get_sgs(self, tenant_id):
         hs_sg_name = 'hs_sg_%s' % tenant_id
         vm_sg_name = 'vm_sg_%s' % tenant_id
@@ -174,6 +177,19 @@ class FSProvider(provider_api.ProviderDriver):
                 }}
             )
         return {'hs_sg': hs_sg, 'vm_sg': vm_sg}
+
+    def delete_sgs(self, tenant_id):
+        hs_sg_name = 'hs_sg_%s' % tenant_id
+        vm_sg_name = 'vm_sg_%s' % tenant_id
+        security_groups = self._neutron_client.list_security_groups(
+            name=[hs_sg_name, vm_sg_name]
+        )['security_groups']
+        for sg in security_groups:
+            for sec_rule in sg['security_group_rules']:
+                self._neutron_client.delete_security_group_rule(
+                    sec_rule['id'])
+        for sg in security_groups:
+            self._neutron_client.delete_security_group(sg['id'])
 
     def create_hyperswitch(self,
                            user_data,
