@@ -1,6 +1,7 @@
 import abc
 import glob
 import six
+import socket
 import threading
 
 from oslo_config import cfg
@@ -261,7 +262,7 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         vpn_driver = self._drivers[msg.cookie - 1]
         provider_ip = pkt_ipv4.src
         with LocalLock():
-            if not vpn_driver.add(provider_ip):
+            if not vpn_driver.add(provider_ip, pkt_ipv4.dst):
                 return
             try:
                 result = self._vif_driver.call_back.get_vif_for_provider_ip(
@@ -367,12 +368,22 @@ class VPNDriver(object):
         self.index = index
         self.openvpn_port = openvpn_port
         self.cur_port = first_port
+        self.first_port = first_port
 
-    def add(self, provider_ip):
+    def add(self, provider_ip, local_ip):
         if provider_ip in self.provider_ips:
             return False
-        self.cur_port = self.cur_port + 1
-        self.provider_ips[provider_ip] = self.cur_port
+        port = None
+        while not port:
+            self.cur_port = self.cur_port + 1
+            if self.cur_port == 65534:
+                self.cur_port = self.first_port
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex((local_ip, self.cur_port))
+            if result == 0:
+                port = self.cur_port
+            sock.close()
+        self.provider_ips[provider_ip] = self.choose_port(self.cur_port)
         return self.cur_port
 
     def remove(self, provider_ip):
