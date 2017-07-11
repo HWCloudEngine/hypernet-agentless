@@ -1,3 +1,4 @@
+import netaddr
 import sys
 
 from hypernet_agentless._i18n import _LE, _
@@ -42,3 +43,16 @@ def load_class_by_alias_or_classname(namespace, name):
                       exc_info=True)
             raise ImportError(_("Class not found."))
     return class_to_load
+
+
+def get_networks_cidr(first_cidr, nb):
+    res = list()
+    cur_cidr = first_cidr
+    i = 0
+    while i < nb:
+        print cur_cidr
+        n = netaddr.IPNetwork(cur_cidr)
+        res.append(str(cur_cidr))
+        cur_cidr = n.next()
+        i = i + 1
+    return res

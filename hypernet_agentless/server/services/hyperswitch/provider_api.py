@@ -8,7 +8,15 @@ class ProviderDriver(object):
         return {'hs_sg': None, 'vm_sg': None}
 
     @abc.abstractmethod
+    def delete_sgs(self, tenant_id):
+        return None
+
+    @abc.abstractmethod
     def get_subnet(self, name, cidr):
+        return None
+
+    @abc.abstractmethod
+    def delete_subnet(self, subnet_id):
         return None
 
     @abc.abstractmethod

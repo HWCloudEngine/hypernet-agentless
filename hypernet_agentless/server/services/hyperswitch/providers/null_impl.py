@@ -21,8 +21,14 @@ class NULLProvider(provider_api.ProviderDriver):
         vm_sg_name = 'vm_sg_%s' % tenant_id
         return {'hs_sg': hs_sg_name, 'vm_sg': vm_sg_name}
 
+    def delete_sgs(self, tenant_id):
+        return None
+
     def get_subnet(self, name, cidr):
         return name
+
+    def delete_subnet(self, subnet_id):
+        return None
 
     def create_hyperswitch(self,
                            user_data,
