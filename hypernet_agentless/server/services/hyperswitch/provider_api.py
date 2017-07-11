@@ -12,6 +12,10 @@ class ProviderDriver(object):
         return None
 
     @abc.abstractmethod
+    def delete_subnet(self, subnet_id):
+        return None
+
+    @abc.abstractmethod
     def create_hyperswitch(self,
                            user_data,
                            flavor,
