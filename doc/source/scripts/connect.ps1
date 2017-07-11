@@ -25,6 +25,7 @@ $userdata = ConvertFrom-StringData -StringData $UserData
 $i = 0
 $hsservers = $userdata."hsservers$i"
 $mac = $userdata."mac$i"
+$port = $userdata."port$i"
 $need_restart = $false
 
 While ("$mac" -ne "") {
@@ -45,20 +46,20 @@ While ("$mac" -ne "") {
         $vpn_ind = 2 * $i + 2
         $vpn_eth = "Ethernet " + $vpn_ind
     }
-    echo "n_eth: '$n_eth'" 
-    echo "vpn_eth: '$vpn_eth'" 
+    echo "n_eth: '$n_eth'"
+    echo "vpn_eth: '$vpn_eth'"
     netsh interface ipv4 set address name="$n_eth" source=dhcp
     netsh interface set interface "$n_eth" enable
 
     cd $openvpn_conf_dir
-    
+
     "client" | Out-File -FilePath $openvpn_file_conf -enc UTF8
     "dev tap" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
     "dev-node ""$vpn_eth""" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
-    "proto tcp" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
+    "proto udp" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
     foreach ($hsserver in $hsservers) {
         $hsserver = $hsserver.trim()
-        "remote $hsserver 1194" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
+        "remote $hsserver $port" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
     }
     "resolv-retry infinite" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
     "auth none" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
@@ -94,7 +95,7 @@ While ("$mac" -ne "") {
        netsh interface set interface "$vpn_eth" enable
        $need_restart = $true
     }
-    
+
     $ip = netsh int ip show config name="$n_eth" | findstr /R /C:"IP Address"
     $ip = $ip.split(":")[1].trim()
     $netmask = netsh int ip show config name="$n_eth" | findstr /R /C:"Subnet"
@@ -108,8 +109,9 @@ While ("$mac" -ne "") {
 #    openvpn-gui.exe --connect c-hs.ovpn --config_dir $openvpn_conf_dir
 
     $i = $i + 1
-	$hsservers = $userdata."hsservers$i"
-	$mac = $userdata."mac$i"
+    $hsservers = $userdata."hsservers$i"
+    $mac = $userdata."mac$i"
+    $port = $userdata."port$i"
 }
 
 if ($need_restart) {
