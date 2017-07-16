@@ -415,8 +415,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             if not hsservers or len(hsservers) == 0:
                 hsservers = [self.create_hyperswitch(context, {
                     hs_constants.HYPERSWITCH: {
+                        'tenant_id': tenant_id,
                         'device_id': device_id,
-                        'flavor': flavor
+                        'flavor': flavor,
                     }
                 })]
         else:
@@ -444,7 +445,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 providerport_db = hyperswitch_db.ProviderPort(
                     id=port_id,
                     tenant_id=tenant_id,
-                    device_id=al_device_id,
+                    device_id=device_id,
                     name=p_port.get('name'),
                     type=p_port.get('type'),
                     provider_ip=self._get_attr(
@@ -529,10 +530,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             pass
 
         if config.level() == 'vm':
-            hsservers = self._get_provider_hyperswitch_server(
+            hsservers = self.get_hyperswitchs(
                 context,
-                providerport_db.device_id,
-                None
+                filters={'device_id': [providerport_db.device_id]}
             )
             for hsserver in hsservers:
                 self.delete_hyperswitch(context, hsserver['id'])
@@ -542,11 +542,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         ).count()
         if nb_ports == 0:
             if config.level() == 'tenant':
-                hsservers = self._get_provider_hyperswitch_server(
+                hsservers = self.get_hyperswitchs(
                     context,
-                    None,
-                    providerport_db.tenant_id,
-                )
+                    filters={'tenant_id': [providerport_db.tenant_id]})
                 for hsserver in hsservers:
                     self.delete_hyperswitch(context, hsserver['id'])
             providersubnetpools = self.get_providersubnetpools(
