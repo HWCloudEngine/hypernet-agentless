@@ -415,8 +415,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             if not hsservers or len(hsservers) == 0:
                 hsservers = [self.create_hyperswitch(context, {
                     hs_constants.HYPERSWITCH: {
+                        'tenant_id': tenant_id,
                         'device_id': device_id,
-                        'flavor': flavor
+                        'flavor': flavor,
                     }
                 })]
         else:
