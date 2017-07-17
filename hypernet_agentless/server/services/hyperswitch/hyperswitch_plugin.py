@@ -529,14 +529,19 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         except exc.NoResultFound:
             pass
 
-        if config.level() == 'vm':
-            hsservers = self.get_hyperswitchs(
-                context,
-                filters={'device_id': [providerport_db.device_id]}
-            )
-            for hsserver in hsservers:
-                self.delete_hyperswitch(context, hsserver['id'])
-
+        if providerport_db.device_id is not None:
+            nb_ports = context.session.query(
+                hyperswitch_db.ProviderPort).filter(
+                    hyperswitch_db.ProviderPort.device_id ==
+                    providerport_db.device_id
+            ).count()
+            if nb_ports == 0:
+                hsservers = self.get_hyperswitchs(
+                    context,
+                    filters={'device_id': [providerport_db.device_id]}
+                )
+                for hsserver in hsservers:
+                    self.delete_hyperswitch(context, hsserver['id'])
         nb_ports = context.session.query(hyperswitch_db.ProviderPort).filter(
             hyperswitch_db.ProviderPort.tenant_id == providerport_db.tenant_id
         ).count()
