@@ -88,17 +88,19 @@ class AWSProvider(provider_api.ProviderDriver):
         except exceptions.ClientError:
             pass
 
-        if hs_sg is None or vm_sg is None:
+        if hs_sg is None:
             hs_sg = self.ec2.create_security_group(
                 GroupName=hs_sg_name,
                 Description='%s security group' % vm_sg_name,
                 VpcId=self._cfg.aws_vpc()
             )['GroupId']
+        if vm_sg is None:
             vm_sg = self.ec2.create_security_group(
                 GroupName=vm_sg_name,
                 Description='%s security group' % hs_sg_name,
                 VpcId=self._cfg.aws_vpc()
             )['GroupId']
+        try:
             self.ec2.authorize_security_group_ingress(
                 GroupId=hs_sg,
                 IpPermissions=[{
@@ -108,6 +110,9 @@ class AWSProvider(provider_api.ProviderDriver):
                     'UserIdGroupPairs': [{'GroupId': vm_sg}],
                 }]
             )
+        except:
+            pass
+        try:
             self.ec2.authorize_security_group_ingress(
                 GroupId=vm_sg,
                 IpPermissions=[{
@@ -117,6 +122,8 @@ class AWSProvider(provider_api.ProviderDriver):
                     'UserIdGroupPairs': [{'GroupId': hs_sg}],
                 }]
             )
+        except:
+            pass
         return {'hs_sg': hs_sg, 'vm_sg': vm_sg}
 
     def delete_sgs(self, tenant_id):

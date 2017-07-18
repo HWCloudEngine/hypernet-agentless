@@ -352,12 +352,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 vms_ips = hsserver.get('vms_ips')
                 if vms_ips:
                     for vms_ip in vms_ips:
-                        if vms_ip['index'] == index:
-                            if hsservers_ip:
-                                hsservers_ip = '%s, %s' % (
-                                    hsservers_ip, vms_ip['vms_ip'])
-                            else:
-                                hsservers_ip = '%s' % vms_ip['vms_ip']
+                        if hsservers_ip:
+                            hsservers_ip = '%s, %s' % (
+                                hsservers_ip, vms_ip['vms_ip'])
+                        else:
+                            hsservers_ip = '%s' % vms_ip['vms_ip']
         res = {
             'id': providerport_db.id,
             'tenant_id': providerport_db.tenant_id,
@@ -406,41 +405,56 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         if al_device_id and al_device_id != device_id:
             raise hyperswitch.ProviderPortBadDeviceId(
                 neutron_device_id=device_id, device_id=al_device_id)
-        # retrieve the hyperswitchs to connect
-        if config.level() == 'vm' or al_device_id:
-            hsservers = self.get_hyperswitchs(
-                context,
-                filters={'device_id': [device_id]}
-            )
-            if not hsservers or len(hsservers) == 0:
-                hsservers = [self.create_hyperswitch(context, {
-                    hs_constants.HYPERSWITCH: {
-                        'tenant_id': tenant_id,
-                        'device_id': device_id,
-                        'flavor': flavor,
-                    }
-                })]
-        else:
-            hsservers = self.get_hyperswitchs(
-                context,
-                filters={'tenant_id': [tenant_id]})
-            if not hsservers or len(hsservers) == 0:
-                hsservers = [self.create_hyperswitch(context, {
-                    hs_constants.HYPERSWITCH: {
-                        'tenant_id': tenant_id,
-                        'flavor': flavor
-                    }
-                })]
+        hsservers = []
+        hsserver_created = False
+        try:
+            with context.session.begin(subtransactions=True):
+                # retrieve the hyperswitchs to connect
+                if config.level() == 'vm' or al_device_id:
+                    hsservers = self.get_hyperswitchs(
+                        context,
+                        filters={'device_id': [device_id]}
+                    )
+                    if not hsservers or len(hsservers) == 0:
+                        hsservers = [self.create_hyperswitch(context, {
+                            hs_constants.HYPERSWITCH: {
+                                'tenant_id': tenant_id,
+                                'device_id': device_id,
+                                'flavor': flavor,
+                            }
+                        })]
+                        hsserver_created = True
+                else:
+                    hsservers = self.get_hyperswitchs(
+                        context,
+                        filters={'tenant_id': [tenant_id]})
+                    if not hsservers or len(hsservers) == 0:
+                        hsservers = [self.create_hyperswitch(context, {
+                            hs_constants.HYPERSWITCH: {
+                                'tenant_id': tenant_id,
+                                'flavor': flavor
+                            }
+                        })]
+                        hsserver_created = True
 
-        with context.session.begin(subtransactions=True):
-            vm_sg = self._get_vm_sg(tenant_id)
-            subnet = self._get_tenant_subnet(context, tenant_id)
-            # create in the provider
-            net_int_provider = self._provider_impl.create_network_interface(
-                port_id,
-                subnet,
-                vm_sg)
-            try:
+                o_ports = context.session.query(
+                    hyperswitch_db.ProviderPort).filter(
+                        hyperswitch_db.ProviderPort.device_id == device_id
+                )
+                net_int_prov = None
+                for o_port in o_ports:
+                    net_int_prov = self._provider_impl.get_network_interface(
+                        o_port.id
+                    )
+                    if net_int_prov:
+                        break
+                if not net_int_prov:
+                    subnet = self._get_tenant_subnet(context, tenant_id)
+                    vm_sg = self._get_vm_sg(tenant_id)
+                    net_int_prov = self._provider_impl.create_network_interface(
+                        port_id,
+                        subnet,
+                        vm_sg)
                 # create in DB
                 providerport_db = hyperswitch_db.ProviderPort(
                     id=port_id,
@@ -449,18 +463,32 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     name=p_port.get('name'),
                     type=p_port.get('type'),
                     provider_ip=self._get_attr(
-                        net_int_provider, p_port, 'provider_ip'),
+                        net_int_prov, p_port, 'provider_ip'),
                     flavor=flavor,
                     index=index)
                 context.session.add(providerport_db)
-            except:
-                self._provider_impl.delete_network_interface(port_id)
-                raise
+        except:
+            nb_ports = context.session.query(
+                hyperswitch_db.ProviderPort).filter(
+                    hyperswitch_db.ProviderPort.device_id == device_id
+            ).count()
+            if nb_ports == 0:
+                try:
+                    self._provider_impl.delete_network_interface(port_id)
+                except:
+                    pass
+            if hsserver_created:
+                try:
+                    for hsserver in hsservers:
+                        self.delete_hyperswitch(context, hsserver['id'])
+                except:
+                    pass
+            raise
 
         for hsserver in hsservers:
             self._provider_impl.start_hyperswitch(hsserver['id'])
         return self._make_providerport_dict(
-            providerport_db, neutron_port, net_int_provider, hsservers)
+            providerport_db, neutron_port, net_int_prov, hsservers)
 
     def _get_neutron_port(self, context, port_id):
         neutron_ports = self._neutron_client(context).list_ports(
@@ -499,7 +527,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 providerport_id=providerport_id)
 
         # neutron port
-        neutron_port = self._get_neutron_port(context, providerport_id)
+        try:
+            neutron_port = self._get_neutron_port(context, providerport_id)
+        except:
+            neutron_port = None
+            LOG.warn('neutron port %s not found', providerport_id)
 
         # provider port
         provider_net_int = self._get_provider_net_int(
@@ -507,7 +539,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
 
         # hyperswitch for this agent less port
         hsservers = self._get_provider_hyperswitch_server(
-            context, neutron_port['device_id'], neutron_port['tenant_id'])
+            context, providerport_db.device_id, providerport_db.tenant_id)
 
         return self._make_providerport_dict(
             providerport_db, neutron_port, provider_net_int, hsservers)
@@ -515,20 +547,19 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
     def delete_providerport(self, context, providerport_id):
         LOG.debug('removing agent less port %s.' % providerport_id)
 
-        # remove from provider
-        self._provider_impl.delete_network_interface(providerport_id)
-
         # remove from DB
         try:
             providerport_db = self._get_by_id(
                 context, hyperswitch_db.ProviderPort, providerport_id)
             with context.session.begin(subtransactions=True):
                 context.session.delete(providerport_db)
-            self._hyper_switch_api.unplug_vif(
-                context, providerport_id, providerport_db.index)
         except exc.NoResultFound:
-            pass
+            LOG.warn('providerport %s does not exists.' % providerport_id)
 
+        self._hyper_switch_api.unplug_vif(
+            context, providerport_id, providerport_db.index)
+
+        remove_prov_int = True
         if providerport_db.device_id is not None:
             nb_ports = context.session.query(
                 hyperswitch_db.ProviderPort).filter(
@@ -541,17 +572,28 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     filters={'device_id': [providerport_db.device_id]}
                 )
                 for hsserver in hsservers:
-                    self.delete_hyperswitch(context, hsserver['id'])
+                    try:
+                        self.delete_hyperswitch(context, hsserver['id'])
+                    except Exception as e:
+                        LOG.error('delete hyperswitch %s failed: %s',
+                            hsserver, e)
+            else:
+                remove_prov_int = False
+
         nb_ports = context.session.query(hyperswitch_db.ProviderPort).filter(
             hyperswitch_db.ProviderPort.tenant_id == providerport_db.tenant_id
         ).count()
         if nb_ports == 0:
-            if config.level() == 'tenant':
-                hsservers = self.get_hyperswitchs(
-                    context,
-                    filters={'tenant_id': [providerport_db.tenant_id]})
-                for hsserver in hsservers:
+            hsservers = self.get_hyperswitchs(
+                context,
+                filters={'tenant_id': [providerport_db.tenant_id]})
+            for hsserver in hsservers:
+                try:
                     self.delete_hyperswitch(context, hsserver['id'])
+                except Exception as e:
+                    LOG.error('delete hyperswitch %s failed: %s',
+                              hsserver, e)
+
             providersubnetpools = self.get_providersubnetpools(
                 context, filters={'used_by': [providerport_db.tenant_id]})
             for providersubnetpool in providersubnetpools:
@@ -560,10 +602,28 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     providersubnetpool['id'],
                     {'providersubnetpool': {'used_by': None}}
                 )
-                self._provider_impl.delete_subnet(
-                    providersubnetpool['provider_subnet']['id']
-                )
-            self._provider_impl.delete_sgs(providerport_db.tenant_id)
+                try:
+                    self._provider_impl.delete_subnet(
+                        providersubnetpool['provider_subnet']['id']
+                    )
+                except Exception as e:
+                    LOG.error('delete provider subnet %s failed: %s',
+                            providersubnetpool['provider_subnet'], e)
+            try:
+                self._provider_impl.delete_sgs(providerport_db.tenant_id)
+            except Exception as e:
+                LOG.error('delete provider security groups failed for tenant '
+                          '%s: %s', providerport_db.tenant_id, e)
+
+        if remove_prov_int:
+            try:
+                # remove from provider
+                self._provider_impl.delete_network_interface(
+                    providerport_id)
+            except Exception as e:
+                LOG.error('delete provider interface %s failed: %s',
+                          providerport_id, e)
+
 
     def get_providerports(self, context, filters=None, fields=None,
                           sorts=None, limit=None, marker=None,
@@ -577,11 +637,18 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         # add neutron and provider info
         for providerport_db in providerports_db:
             port_id = providerport_db['id']
-            neutron_port = self._get_neutron_port(context, port_id)
+            try:
+                neutron_port = self._get_neutron_port(context, port_id)
+            except:
+                neutron_port = None
+                LOG.warn('neutron port %s not found', port_id)
+
             provider_net_int = self._get_provider_net_int(
                 context, port_id)
             hsservers = self._get_provider_hyperswitch_server(
-                context, neutron_port['device_id'], neutron_port['tenant_id'])
+                context,
+                providerport_db.device_id,
+                providerport_db.tenant_id)
             res.append(self._make_providerport_dict(
                 providerport_db, neutron_port, provider_net_int, hsservers))
         return res
