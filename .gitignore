@@ -3,3 +3,4 @@ hypernet_agentless.egg-info
 build
 .testrepository
 .tox
+.settings
