@@ -19,8 +19,10 @@ $userdata = ConvertFrom-StringData -StringData $UserData
 # format:
 # hsservers0 = xxx.xxx.xxx.xxx, xxx.xxx.xxx.xxx
 # mac0 = 00:00:00:00:00:00
+# port0 = XXXX
 # hsservers1 = xxx.xxx.xxx.xxx, xxx.xxx.xxx.xxx
 # mac1 = 00:00:00:00:00:00
+# port1 = XXXX
 
 $i = 0
 $hsservers = $userdata."hsservers$i"
@@ -28,30 +30,27 @@ $mac = $userdata."mac$i"
 $port = $userdata."port$i"
 $need_restart = $false
 
+$n_eth = "Ethernet"
+echo "n_eth: '$n_eth'"
+
+$openvpn_bin_dir = "C:\Program Files\OpenVPN\bin"
+$openvpn_conf_dir = "C:\Program Files\OpenVPN\config"
+
+cd $openvpn_conf_dir
+
 While ("$mac" -ne "") {
 
     echo "mac: '$mac'"
     echo "hsservers: '$hsservers'"
+    echo "port: '$port'"
+
     $hsservers = $hsservers -split ","
-    $openvpn_bin_dir = "C:\Program Files\OpenVPN\bin"
-    $openvpn_conf_dir = "C:\Program Files\OpenVPN\config"
     $openvpn_file_conf = "c-hs-" + $i + ".ovpn"
     
-    if ($i -eq 0) {
-        $n_eth = "Ethernet"
-        $vpn_eth = "Ethernet 2"
-    } else {
-        $n_ind = 2 * $i + 1
-        $n_eth = "Ethernet " + $n_ind
-        $vpn_ind = 2 * $i + 2
-        $vpn_eth = "Ethernet " + $vpn_ind
-    }
-    echo "n_eth: '$n_eth'"
-    echo "vpn_eth: '$vpn_eth'"
-    netsh interface ipv4 set address name="$n_eth" source=dhcp
-    netsh interface set interface "$n_eth" enable
+    $vpn_ind = $i + 2
+    $vpn_eth = "Ethernet " + $vpn_ind
 
-    cd $openvpn_conf_dir
+    echo "vpn_eth: '$vpn_eth'"
 
     "client" | Out-File -FilePath $openvpn_file_conf -enc UTF8
     "dev tap" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
@@ -72,7 +71,7 @@ While ("$mac" -ne "") {
     "key client.key" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
     "verb 3" | Out-File -FilePath $openvpn_file_conf -Append -enc UTF8
     
-    # serach the reg key
+    # search the reg key
     $d_id_0 = "ROOT\NET\000" + $i
     echo "d_id_0: '$d_id_0'"
     for ($a = 10; $a -le 30; $a++){
@@ -96,31 +95,28 @@ While ("$mac" -ne "") {
        $need_restart = $true
     }
 
-    $ip = netsh int ip show config name="$n_eth" | findstr /R /C:"IP Address"
-    $ip = $ip.split(":")[1].trim()
-    $netmask = netsh int ip show config name="$n_eth" | findstr /R /C:"Subnet"
-    $netmask = $netmask.split(":")[1].trim().split(" ")[2].trim().split(")")[0].trim()
-    echo "netmask: '$netmask'"
-    netsh interface ipv4 set address name="$n_eth" static $ip $netmask
-    netsh interface set interface "$n_eth" enable
     netsh interface set interface "$vpn_eth" enable
     
-#    cd $openvpn_bin_dir
-#    openvpn-gui.exe --connect c-hs.ovpn --config_dir $openvpn_conf_dir
-
     $i = $i + 1
     $hsservers = $userdata."hsservers$i"
     $mac = $userdata."mac$i"
     $port = $userdata."port$i"
 }
 
+# disable the dhcp and default route
+$ip = netsh int ip show config name="$n_eth" | findstr /R /C:"IP Address"
+$ip = $ip.split(":")[1].trim()
+$netmask = netsh int ip show config name="$n_eth" | findstr /R /C:"Subnet"
+$netmask = $netmask.split(":")[1].trim().split(" ")[2].trim().split(")")[0].trim()
+echo "netmask: '$netmask'"
+netsh interface ipv4 set address name="$n_eth" static $ip $netmask
+netsh interface set interface "$n_eth" enable
+
 if ($need_restart) {
     Restart-Computer
 }
 
-net start OpenVpnService
 
-Start-Sleep -s 5
-
+# restart openvpn service
 net stop OpenVpnService
 net start OpenVpnService
