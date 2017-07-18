@@ -352,12 +352,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 vms_ips = hsserver.get('vms_ips')
                 if vms_ips:
                     for vms_ip in vms_ips:
-                        if vms_ip['index'] == index:
-                            if hsservers_ip:
-                                hsservers_ip = '%s, %s' % (
-                                    hsservers_ip, vms_ip['vms_ip'])
-                            else:
-                                hsservers_ip = '%s' % vms_ip['vms_ip']
+                        if hsservers_ip:
+                            hsservers_ip = '%s, %s' % (
+                                hsservers_ip, vms_ip['vms_ip'])
+                        else:
+                            hsservers_ip = '%s' % vms_ip['vms_ip']
         res = {
             'id': providerport_db.id,
             'tenant_id': providerport_db.tenant_id,
@@ -433,13 +432,24 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 })]
 
         with context.session.begin(subtransactions=True):
-            vm_sg = self._get_vm_sg(tenant_id)
-            subnet = self._get_tenant_subnet(context, tenant_id)
-            # create in the provider
-            net_int_provider = self._provider_impl.create_network_interface(
-                port_id,
-                subnet,
-                vm_sg)
+            o_ports = context.session.query(
+                hyperswitch_db.ProviderPort).filter(
+                    hyperswitch_db.ProviderPort.device_id == device_id
+            )
+            net_int_prov = None
+            for o_port in o_ports:
+                net_int_prov = self._provider_impl.get_network_interface(
+                    o_port.id
+                )
+                if net_int_prov:
+                    break
+            if not net_int_prov:
+                subnet = self._get_tenant_subnet(context, tenant_id)
+                vm_sg = self._get_vm_sg(tenant_id)
+                net_int_prov = self._provider_impl.create_network_interface(
+                    port_id,
+                    subnet,
+                    vm_sg)
             try:
                 # create in DB
                 providerport_db = hyperswitch_db.ProviderPort(
@@ -449,7 +459,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     name=p_port.get('name'),
                     type=p_port.get('type'),
                     provider_ip=self._get_attr(
-                        net_int_provider, p_port, 'provider_ip'),
+                        net_int_prov, p_port, 'provider_ip'),
                     flavor=flavor,
                     index=index)
                 context.session.add(providerport_db)
@@ -460,7 +470,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         for hsserver in hsservers:
             self._provider_impl.start_hyperswitch(hsserver['id'])
         return self._make_providerport_dict(
-            providerport_db, neutron_port, net_int_provider, hsservers)
+            providerport_db, neutron_port, net_int_prov, hsservers)
 
     def _get_neutron_port(self, context, port_id):
         neutron_ports = self._neutron_client(context).list_ports(
