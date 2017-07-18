@@ -140,6 +140,7 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         for nic in self.vms_nics:
             br_nic = 'br-%s' % nic
             vm_nic_mac = hu.get_mac(nic)
+            hu.del_ovs_bridge(br_nic)
             hu.add_ovs_bridge(br_nic, vm_nic_mac)
             vm_nic_cidr, _, static_routes = self._get_cidr_router(nic)
             # Set the IP
@@ -206,7 +207,8 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
                  idle_timeout=0,
                  match=None,
                  actions=None,
-                 priority=0):
+                 priority=0,
+                 command=ofproto_v1_3.OFPFC_ADD):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
@@ -216,7 +218,8 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
                                 idle_timeout=idle_timeout,
                                 cookie_mask=cookie_mask, priority=priority,
                                 match=match, instructions=inst,
-                                flags=ofproto.OFPFF_SEND_FLOW_REM)
+                                flags=ofproto.OFPFF_SEND_FLOW_REM,
+                                command=command)
         datapath.send_msg(mod)
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -307,7 +310,7 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
                     parser, ofproto, provider_ip)
                 self.mod_flow(datapath=datapath,
                               cookie=msg.cookie,
-                              idle_timeout=self.idle_timeout,
+                              idle_timeout=0,
                               match=match,
                               actions=actions,
                               priority=100)
@@ -318,6 +321,9 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
     @set_ev_cls(ofp_event.EventOFPFlowRemoved, MAIN_DISPATCHER)
     def _flow_removed_handler(self, ev):
         msg = ev.msg
+        datapath = msg.datapath
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
         LOG.info('_flow_removed_handler msg= %s' % msg)
         provider_ip = None
         if 'ipv4_dst' in msg.match:
@@ -329,6 +335,14 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         vpn_driver = self._drivers[msg.cookie - 1]
         LOG.info('_flow_removed_handler provider_ip=%s' % provider_ip)
         with LocalLock():
+            match, actions = vpn_driver.return_vpn_packets(
+                parser, ofproto, provider_ip)
+            self.mod_flow(datapath=datapath,
+                          cookie=msg.cookie,
+                          idle_timeout=0,
+                          match=match,
+                          actions=actions,
+                          command=ofproto_v1_3.OFPFC_DELETE)
             LOG.info('_flow_removed_handler after lock')
             vpn_driver.remove(provider_ip)
             result = self._vif_driver.call_back.get_vif_for_provider_ip(
