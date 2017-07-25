@@ -12,6 +12,8 @@ Function WriteLine ([string]$message) {
 
 LogMessage "---------------------  Begin ---------------------"
 
+netsh interface ipv4 set address name=Ethernet source=dhcp
+
 Stop-Process -processname "openvpn-gui" 2>>$log_file
 net stop OpenVpnService 2>>$log_file
 net stop OpenVPNServiceInteractive 2>>$log_file
@@ -71,6 +73,7 @@ While ("$mac" -ne "") {
     }
     cd $openvpn_conf_dir
     WriteLine "client"
+    WriteLine "pull"
     WriteLine "dev tap"
     WriteLine "dev-node ""$vpn_eth"""
     WriteLine "proto udp"
@@ -124,6 +127,12 @@ While ("$mac" -ne "") {
     $mac = $userdata."mac$i"
     $port = $userdata."port$i"
 }
+
+$ip = netsh int ip show config name="$n_eth" | findstr /R /C:"IP Address"
+$ip = $ip.split(":")[1].trim()
+$netmask = netsh int ip show config name="$n_eth" | findstr /R /C:"Subnet"
+$netmask = $netmask.split(":")[1].trim().split(" ")[2].trim().split(")")[0].trim()
+netsh interface ipv4 set address name="$n_eth" static $ip $netmask
 
 if ($need_restart) {
     Restart-Computer
