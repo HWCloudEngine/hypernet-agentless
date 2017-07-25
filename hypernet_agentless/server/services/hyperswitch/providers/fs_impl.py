@@ -2,7 +2,6 @@
 import time
 
 from hypernet_agentless.common import hs_constants
-from hypernet_agentless.server import config
 from hypernet_agentless.server.extensions import hyperswitch
 from hypernet_agentless.server.services.hyperswitch import provider_api
 
@@ -17,8 +16,12 @@ HS_START_NAME = '%s-' % hs_constants.HYPERSWITCH
 
 class FSProvider(provider_api.ProviderDriver):
 
-    def __init__(self):
-        self._cfg = config
+    def __init__(self, cfg=None):
+        if not cfg:
+            from hypernet_agentless.server import config
+            self._cfg = config
+        else:
+            self._cfg = cfg
         self._net_ids = {}
         self._vm_nets = []
 
@@ -203,7 +206,7 @@ class FSProvider(provider_api.ProviderDriver):
             return hs_instance
 
         hs_img = self._find_image('hybrid_cloud_image',
-                                  hs_constants.HYPERSWITCH)
+                                  self._cfg.hyperswitch_img_tag_value())
         hs_flavor = self._find_flavor(self._cfg.hs_flavor_map()[flavor])
         user_metadata = None
         if user_data:
