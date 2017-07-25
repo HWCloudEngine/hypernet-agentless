@@ -225,7 +225,7 @@ class AWSProvider(provider_api.ProviderDriver):
                            hyperswitch_id):
         # find the image according to a tag hybrid_cloud_image=hyperswitch
         image_id = self._find_image_id(
-            'hybrid_cloud_image', hs_constants.HYPERSWITCH)
+            'hybrid_cloud_image', self._cfg.hyperswitch_img_tag_value())
         instance_type = self._cfg.hs_flavor_map()[flavor]
         net_interfaces = []
         i = 0
