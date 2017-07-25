@@ -28,6 +28,10 @@ class ProviderDriver(object):
         return {}
 
     @abc.abstractmethod
+    def get_hyperswitchs(self, hyperswitch_ids):
+        return []
+
+    @abc.abstractmethod
     def get_hyperswitch(self, hyperswitch_id):
         return None
 
@@ -57,6 +61,10 @@ class ProviderDriver(object):
     @abc.abstractmethod
     def get_network_interface(self, port_id):
         return None
+
+    @abc.abstractmethod
+    def num_active_network_interface(self, subnet):
+        return 0
 
 
 class ProviderPort(object):

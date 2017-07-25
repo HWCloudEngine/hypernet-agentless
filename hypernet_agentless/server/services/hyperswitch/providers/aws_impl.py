@@ -183,6 +183,7 @@ class AWSProvider(provider_api.ProviderDriver):
         self.ec2.delete_subnet(SubnetId=subnet_id)
 
     def _aws_instance_to_dict(self, aws_instance):
+        # TODO: add instance state
         LOG.debug('_aws_instance_to_dict %s' % aws_instance)
         name = None
         vms_ips = []
@@ -216,7 +217,7 @@ class AWSProvider(provider_api.ProviderDriver):
         ).dict
 
     def _get_hs_name(self, hyperswitch_id):
-        return 'hyperswitch@%s' % hyperswitch_id
+        return '%s@%s' % (self._cfg.hyperswitch_prefix(), hyperswitch_id)
 
     def create_hyperswitch(self,
                            user_data,
@@ -225,7 +226,7 @@ class AWSProvider(provider_api.ProviderDriver):
                            hyperswitch_id):
         # find the image according to a tag hybrid_cloud_image=hyperswitch
         image_id = self._find_image_id(
-            'hybrid_cloud_image', hs_constants.HYPERSWITCH)
+            'hybrid_cloud_image', self._cfg.hyperswitch_img_tag_value())
         instance_type = self._cfg.hs_flavor_map()[flavor]
         net_interfaces = []
         i = 0
@@ -264,21 +265,24 @@ class AWSProvider(provider_api.ProviderDriver):
         aws_instance.reload()
         return self._aws_instance_to_dict(aws_instance)
 
-    def get_hyperswitch(self, hyperswitch_id):
-        LOG.debug('get hyperswitch for %s.' % hyperswitch_id)
-        i = 0
-        aws_instances = self._find_vms(
-            'Name',
-            [self._get_hs_name(hyperswitch_id)])
-        res = None
+    def get_hyperswitchs(self, hyperswitch_ids):
+        LOG.debug('get hyperswitchs for %s.' % hyperswitch_ids)
+        names = [self._get_hs_name(hyperswitch_id)
+                 for hyperswitch_id in hyperswitch_ids]
+        aws_instances = self._find_vms('Name', names)
+        res = []
         for aws_instance in aws_instances:
-            if i != 0:
-                raise hyperswitch.HyperswitchProviderMultipleFound(
-                    hyperswitch_id=hyperswitch_id)
-            res = self._aws_instance_to_dict(aws_instance)
-        LOG.debug('found hyperswitch for %s = %s.' % (
-            hyperswitch_id, res))
+            res.append(self._aws_instance_to_dict(aws_instance))
+        LOG.debug('found hyperswitchs for %s = %s.' % (
+            hyperswitch_ids, res))
         return res
+
+    def get_hyperswitch(self, hyperswitch_id):
+        res = self.get_hyperswitchs([hyperswitch_id])
+        if len(res) > 1:
+            raise hyperswitch.HyperswitchProviderMultipleFound(
+                hyperswitch_id=hyperswitch_id)
+        return res[0]
 
     def start_hyperswitch(self, hyperswitch_id):
         LOG.debug('start hyperswitch %s.' % hyperswitch_id)
@@ -289,7 +293,7 @@ class AWSProvider(provider_api.ProviderDriver):
             aws_instance.start()
 
     def stop_hyperswitch(self, hyperswitch_id):
-        LOG.debug('start hyperswitch %s.' % hyperswitch_id)
+        LOG.debug('stop hyperswitch %s.' % hyperswitch_id)
         aws_instances = self._find_vms(
             'Name',
             [self._get_hs_name(hyperswitch_id)])
@@ -394,4 +398,26 @@ class AWSProvider(provider_api.ProviderDriver):
                     providerport_id=port_id)
             res = self._network_interface_dict(net_int)
         LOG.debug('found net interface for %s = %s.' % (port_id, res))
+        return res
+
+    def num_active_network_interface(self, subnet):
+        resp = self.ec2.describe_network_interfaces(
+            Filters=[{
+                'Name': 'tag:hybrid_cloud_type',
+                'Values': ['hybrid_provider_port']}],
+            NetworkInterfaceIds=[subnet]
+        )
+        res = 0
+        for net_int in resp['NetworkInterfaces']:
+            if net_int['Attachment'] and net_int['Attachment']['InstanceId']:
+                states = [AWS_STATUS[k] for k in [
+                    'pending', 'running']]
+                aws_instances = self.ec2_resource.instances.filter(Filters=[
+                    {
+                        'Name': 'instance-state-code',
+                        'Values': states
+                    }], InstanceIds=[
+                    net_int['Attachment']['InstanceId']])
+                for _ in aws_instances:
+                    res = res + 1
         return res

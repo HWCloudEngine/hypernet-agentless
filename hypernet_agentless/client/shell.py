@@ -86,6 +86,7 @@ COMMAND_V1 = {
     'providerport-show': providerport.ProviderportShow,
     'providerport-create': providerport.ProviderportCreate,
     'providerport-delete': providerport.ProviderportDelete,
+    'providerport-update': providerport.ProviderportUpdate,
 
     'hyperswitch-list': hyperswitch.HyperSwitchList,
     'hyperswitch-show': hyperswitch.HyperSwitchShow,

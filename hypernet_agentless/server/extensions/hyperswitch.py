@@ -18,7 +18,7 @@ RESOURCE_ATTRIBUTE_MAP = {
     'providerports': {
         'id': {'allow_post': False, 'allow_put': False,
                'is_visible': True},
-        'name': {'allow_post': True, 'allow_put': False,
+        'name': {'allow_post': True, 'allow_put': True,
                  'is_visible': True},
         'type': {'allow_post': True, 'allow_put': False,
                  'is_visible': True, 'default': 'agentless'},
@@ -42,6 +42,8 @@ RESOURCE_ATTRIBUTE_MAP = {
                       'is_visible': True},
         'provider': {'allow_post': False, 'allow_put': False,
                      'is_visible': True},
+        'admin_state_up': {'allow_post': True, 'allow_put': True,
+                           'is_visible': True, 'default': True},
     },
     'hyperswitchs': {
         'id': {'allow_post': False, 'allow_put': False,
@@ -69,6 +71,8 @@ RESOURCE_ATTRIBUTE_MAP = {
                    'default': None, 'is_visible': True},
         'provider': {'allow_post': False, 'allow_put': False,
                      'is_visible': True},
+        'admin_state_up': {'allow_post': True, 'allow_put': True,
+                           'is_visible': True, 'default': True},
     },
     'providersubnetpools': {
         'id': {'allow_post': False, 'allow_put': False,
@@ -155,6 +159,13 @@ class HyperswitchPluginBase(service_base.ServicePluginBase):
 
     @abc.abstractmethod
     def get_providerport(self, context, providerport_id, fields=None):
+        pass
+
+    @abc.abstractmethod
+    def update_providerport(self,
+                            context,
+                            providerport_id,
+                            providerport):
         pass
 
     @abc.abstractmethod

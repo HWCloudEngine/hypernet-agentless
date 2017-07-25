@@ -38,6 +38,9 @@ class ProviderportCreate(extension.ClientExtensionCreate, Providerport):
             '--provider-ip', dest='provider_ip',
             help=_('Optional Provider IP for Null provider.'))
         parser.add_argument(
+            '--admin-state-up', dest='admin_state_up',
+            help=_('Administration state Up or Down (True/False).'))
+        parser.add_argument(
             'port_id', metavar='<NEUTRON_PORT_ID>',
             help=_('Neutron Port ID.'))
         parser.add_argument(
@@ -59,6 +62,8 @@ class ProviderportCreate(extension.ClientExtensionCreate, Providerport):
             body['providerport']['device_id'] = parsed_args.device_id
         if parsed_args.provider_ip:
             body['providerport']['provider_ip'] = parsed_args.provider_ip
+        if parsed_args.admin_state_up:
+            body['providerport']['admin_state_up'] = parsed_args.admin_state_up
         return body
 
 
@@ -82,3 +87,9 @@ class ProviderportDelete(extension.ClientExtensionDelete, Providerport):
     """Delete a given provider port."""
 
     shell_command = 'providerport-delete'
+
+
+class ProviderportUpdate(extension.ClientExtensionUpdate, Providerport):
+    """Update a given provider port."""
+
+    shell_command = 'providerport-update'

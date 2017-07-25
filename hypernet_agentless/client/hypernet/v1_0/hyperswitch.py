@@ -47,6 +47,9 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
             help=_('Optional VMs IP (when not managed by '
                    'the provider driver).'))
         parser.add_argument(
+            '--admin-state-up', dest='admin_state_up',
+            help=_('Administration state Up or Down (True/False).'))
+        parser.add_argument(
             'flavor', metavar='<FLAVOR>',
             help=_('VM network flavor: low, moderate, high, 10G, 20G.'))
 
@@ -66,6 +69,8 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
             body['hyperswitch']['data_ip'] = parsed_args.data_ip
         if parsed_args.vms_ips:
             body['hyperswitch']['vms_ips'] = parsed_args.vms_ips
+        if parsed_args.admin_state_up:
+            body['hyperswitch']['admin_state_up'] = parsed_args.admin_state_up
         return body
 
 

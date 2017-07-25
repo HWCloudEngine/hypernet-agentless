@@ -478,6 +478,8 @@ class OpenVPNTCP(VPNDriver):
         hu.execute('openvpn', '--mktun', '--dev', tap,
                    check_exit_code=False,
                    run_as_root=True)
+        hu.set_device_mtu(tap)
+
         hu.execute('ip', 'link', 'set', 'dev', tap, 'up',
                    run_as_root=True)
         hu.execute('brctl', 'addif', br, tap,

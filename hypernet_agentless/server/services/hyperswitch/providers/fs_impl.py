@@ -2,7 +2,6 @@
 import time
 
 from hypernet_agentless.common import hs_constants
-from hypernet_agentless.server import config
 from hypernet_agentless.server.extensions import hyperswitch
 from hypernet_agentless.server.services.hyperswitch import provider_api
 
@@ -17,8 +16,12 @@ HS_START_NAME = '%s-' % hs_constants.HYPERSWITCH
 
 class FSProvider(provider_api.ProviderDriver):
 
-    def __init__(self):
-        self._cfg = config
+    def __init__(self, cfg=None):
+        if not cfg:
+            from hypernet_agentless.server import config
+            self._cfg = config
+        else:
+            self._cfg = cfg
         self._net_ids = {}
         self._vm_nets = []
 
@@ -203,7 +206,7 @@ class FSProvider(provider_api.ProviderDriver):
             return hs_instance
 
         hs_img = self._find_image('hybrid_cloud_image',
-                                  hs_constants.HYPERSWITCH)
+                                  self._cfg.hyperswitch_img_tag_value())
         hs_flavor = self._find_flavor(self._cfg.hs_flavor_map()[flavor])
         user_metadata = None
         if user_data:
@@ -246,20 +249,22 @@ class FSProvider(provider_api.ProviderDriver):
                     hyperswitch_status=hs_instance.status)
         return self._fs_instance_to_dict(hs_instance)
 
-    def get_hyperswitch(self, hyperswitch_id):
-        LOG.debug('get hyperswitch %s.' % hyperswitch_id)
-        i = 0
-        res = None
+    def get_hyperswitchs(self, hyperswitch_ids):
+        LOG.debug('get hyperswitchs %s.' % hyperswitch_ids)
+        res = []
         hss = self._nova_client.servers.list(
-            search_opts={'name': hyperswitch_id})
+            search_opts={'name': hyperswitch_ids})
         for hs in hss:
-            if i != 0:
-                raise hyperswitch.HyperswitchProviderMultipleFound(
-                    hyperswitch_id=hyperswitch_id)
-            res = self._fs_instance_to_dict(hs)
-            i = i + 1
-        LOG.debug('get hyperswitch %s result %s.' % (hyperswitch_id, res))
+            res.append(self._fs_instance_to_dict(hs))
+        LOG.debug('get hyperswitchs %s result %s.' % (hyperswitch_ids, res))
         return res
+
+    def get_hyperswitch(self, hyperswitch_id):
+        res = self.get_hyperswitchs([hyperswitch_id])
+        if len(res) > 1:
+            raise hyperswitch.HyperswitchProviderMultipleFound(
+                hyperswitch_id=hyperswitch_id)
+        return res[0]
 
     def start_hyperswitch(self, hyperswitch_id):
         LOG.debug('start hyperswitchs %s.' % hyperswitch_id)
@@ -340,3 +345,7 @@ class FSProvider(provider_api.ProviderDriver):
             i = i + 1
         LOG.debug('get network interface %s result = %s.' % (port_id, res))
         return res
+
+    def num_active_network_interface(self, subnet):
+        # TODO: implement it
+        return 1
