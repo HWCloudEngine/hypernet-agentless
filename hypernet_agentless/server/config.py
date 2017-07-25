@@ -103,6 +103,9 @@ OPTS_HYPERSWITCH = [
     cfg.IntOpt('max_win_nics',
                default=20,
                help='The max number of supported NICs in windows.'),
+    cfg.IntOpt('hyperswitch_img_tag_value',
+               default='hyperswitch',
+               help='The tag value of the image of the hyperswitch.'),
 ]
 
 OPTS_HYPERSWITCH_AWS = [
@@ -325,3 +328,7 @@ def first_openvpn_port():
 
 def max_win_nics():
     return cfg.CONF.hyperswitch.max_win_nics
+
+
+def hyperswitch_img_tag_value():
+    return cfg.CONF.hyperswitch.hyperswitch_img_tag_value
