@@ -2,6 +2,8 @@ import datetime
 import shlex
 import time
 import os
+import binascii
+import socket
 
 from hypernet_agentless._i18n import _
 
@@ -9,6 +11,7 @@ from oslo_concurrency import processutils
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import importutils
+from oslo_concurrency import processutils
 
 
 eventlet = importutils.try_import('eventlet')
@@ -91,6 +94,11 @@ def netns_exists(name):
 
 def ovs_vsctl(args):
     full_args = ['ovs-vsctl', '--timeout=%s' % CONF.ovs_vsctl_timeout] + args
+    return execute(*full_args, run_as_root=True)
+
+
+def ovs_ofctl(args):
+    full_args = ['ovs-ofctl', '--timeout=%s' % CONF.ovs_ofctl_timeout] + args
     return execute(*full_args, run_as_root=True)
 
 
@@ -186,6 +194,15 @@ def add_ovs_port(bridge, dev):
     ovs_vsctl(['--', '--if-exists', 'del-port', dev, '--',
                'add-port', bridge, dev])
 
+def get_ovs_port(interface_name):
+    return ovs_vsctl(['get', 'Interface', interface_name, 'ofport'])[0].split('\n')[0]
+
+def add_flow(bridge, prio, match, actions):
+    try:
+        ovs_ofctl(['add-flow', bridge, prio+','+match+' '+actions])
+    except processutils.ProcessExecutionError as pe:
+        LOG.error('failed adding flow due to %s' % pe.stderr)
+        raise pe
 
 def set_mac_ip(nic, mac, cidr):
     execute('ip', 'addr', 'flush', 'dev', nic,
@@ -282,3 +299,62 @@ def extract_cidr_router(lease_file, nic):
                     routers = routers_cur
                     d_renew = d_renew_cur
     return '%s/%s' % (ip, get_nsize(mask)), routers, static_routes
+
+
+def get_namespace_with_prefix(prefix):
+    output = execute('ip', 'netns', 'list',
+                     run_as_root=True)[0]
+    
+    for line in output.split('\n'):
+        name = line.strip()
+        if name.startswith(prefix): 
+            return name                
+    return None 
+
+def get_ns_device_with_prefix(namespace, prefix):
+    output = execute('ip', 'netns', 'exec', namespace, 'ip', 'token',
+                     run_as_root=True)[0]
+    
+    the_device = None
+    for line in output.split('\n'):
+        device = line.split('dev')[1].split()[0]
+        if device.startswith(prefix):
+            the_device = device
+            break
+    
+    if the_device:
+        #get the device mac address
+        output = execute('ip', 'netns', 'exec', namespace, 'ip', 'link', 'show', 'dev', the_device,
+                     run_as_root=True)[0]    
+        line = output.split('\n')[1] #take the second row of output
+        device_mac = line.split('ether')[1].split('brd')[0].split()[0]
+        
+        #get the device ip address:
+        output = execute('ip', 'netns', 'exec', namespace, 'ip', '-4', 'addr', 'show', 'dev', the_device,
+                     run_as_root=True)[0]    
+        
+        line = output.split('\n')[1] #take the second row of output
+        device_cidr = line.split('inet')[1].split('brd')[0].split()[0]
+        device_ip = device_cidr.split('/')[0]
+        
+        device_dict = {'name' : the_device,
+                       'mac'  : device_mac,
+                       'ip'   : device_ip,
+                       'cidr' : device_cidr}
+        
+        return device_dict
+    return None
+        
+def mac_to_hex(mac):
+    return "0x" + mac.upper().replace(":", "")
+ 
+
+def ip_to_hex(ip):
+    return '0x'+binascii.hexlify(socket.inet_aton(ip)).upper()      
+    
+
+
+    
+    
+    
+    

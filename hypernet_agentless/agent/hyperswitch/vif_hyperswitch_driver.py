@@ -10,6 +10,7 @@ from oslo_log import log as logging
 from hypernet_agentless.common import hs_constants
 from hypernet_agentless.agent.hyperswitch import hyperswitch_utils as hu
 from hypernet_agentless.agent.hyperswitch import vif_driver
+from oslo_concurrency import processutils
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
@@ -26,14 +27,17 @@ from ryu.ofproto import ofproto_v1_3
 
 
 hyper_swith_agent_opts = [
-    cfg.StrOpt('network_mngt_interface',
+    cfg.StrOpt('network_fip_interface',
                default='eth0',
                help='The management network interface'),
-    cfg.StrOpt('network_data_interface',
+    cfg.StrOpt('network_mngt_interface',
                default='eth1',
+               help='The management network interface'),
+    cfg.StrOpt('network_data_interface',
+               default='eth2',
                help='The data network interface'),
     cfg.StrOpt('network_vms_interface',
-               default='eth2',
+               default='eth3',
                help='the VM network interface'),
     cfg.IntOpt('idle_timeout',
                default=90,
@@ -44,6 +48,13 @@ hyper_swith_agent_opts = [
     cfg.IntOpt('max_win_nics',
                default=20,
                help='The max number of supported NICs in windows.'),
+    cfg.StrOpt('external_network_bridge',
+               default='br-ex', #TODO change default
+               help='The bridge used to accessing external networks'),
+    cfg.StrOpt('peer_physical_port',
+               default='fg-9ebd9f36-96', #TODO change default
+               help='The peer port connected to the external network bridge'),                      
+                          
 ]
 
 
@@ -52,6 +63,7 @@ cfg.CONF.register_opts(hyper_swith_agent_opts, hs_constants.HYPERSWITCH)
 
 first_openvpn_port = cfg.CONF.hyperswitch.first_openvpn_port
 max_win_nics = cfg.CONF.hyperswitch.max_win_nics
+
 
 LOG = logging.getLogger(__name__)
 NIC_NAME_LEN = 14
@@ -72,10 +84,13 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         self.call_back = kwargs.get('call_back')
         self.device_id = kwargs.get('device_id')
         self.mgnt_nic = cfg.CONF.hyperswitch.network_mngt_interface
+        self.fip_nic = cfg.CONF.hyperswitch.network_fip_interface
         self.vms_nics = list()
         for nic in cfg.CONF.hyperswitch.network_vms_interface.split(','):
             self.vms_nics.append(nic.strip())
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
+        self.ex_br = cfg.CONF.hyperswitch.external_network_bridge
+        self.peer_port_name = cfg.CONF.hyperswitch.peer_physical_port
 
         _, self.routers, _ = self._get_cidr_router(self.mgnt_nic)
 
@@ -143,7 +158,7 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
             hu.del_ovs_bridge(br_nic)
             hu.add_ovs_bridge(br_nic, vm_nic_mac)
             vm_nic_cidr, _, static_routes = self._get_cidr_router(nic)
-            # Set the IP
+            # Set the IPadd_ovs_bridge
             hu.execute('ip', 'addr', 'flush', 'dev', nic,
                        run_as_root=True)
             hu.execute('ip', 'link', 'set', 'dev', nic, 'promisc', 'on',
@@ -170,6 +185,91 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         if self.routers and self.mgnt_nic in self.vms_nics:
             hu.execute('ip', 'route', 'add', 'default', 'via', self.routers,
                        run_as_root=True)
+        
+        self._set_hs_fip()
+        
+        
+    def _set_hs_fip(self):
+        LOG.info('entering set_pod_fip, fip_nic = %s' % self.fip_nic)
+        
+        #pod_fip is always attached to the primary ip of the vm (FS convention)
+        fip_cidr, _, static_routes = self._get_cidr_router(self.fip_nic)
+        pod_fip = fip_cidr.split('/')[0]
+        
+        # modify nic & bridge interface
+        fip_mac = hu.get_mac(self.fip_nic)
+        hu.add_ovs_bridge(self.ex_br, fip_mac)
+        hu.execute('ip', 'addr', 'flush', 'dev', self.fip_nic,
+                   run_as_root=True)
+        hu.execute('ip', 'link', 'set', 'dev', self.fip_nic, 'promisc', 'on',
+                   run_as_root=True)
+        hu.execute('ip', 'link', 'set', 'dev', self.ex_br, 'up',
+                   run_as_root=True)
+        hu.set_mac_ip(self.ex_br, fip_mac, fip_cidr)
+        
+        # fix static routing
+        if static_routes:
+                for static_route in static_routes:
+                    hu.execute('ip', 'route', 'add', static_route['cidr'],
+                               'via', static_route['gw'],
+                               run_as_root=True)
+        
+        # add nic to external bridge
+        hu.add_ovs_port(self.ex_br, self.fip_nic)
+        
+        # fix default gw routing that goes via external bridge
+        try:
+            hu.execute('ip', 'route', 'add', 'default', 'via', self.routers, 'dev', self.ex_br,
+                   run_as_root=True)
+        except processutils.ProcessExecutionError as pe:
+            if pe.stderr.find('File exists') > 0:
+                LOG.info('default route to %s already exist' % self.routers)
+            else:
+                LOG.error('failed adding default route to %s with error %s' % (self.routers, pe.stderr))  
+                raise pe
+           
+        # discover fg details, will be used in the ovs flows
+        
+        #TODO avig - remove 
+        LOG.info('going to sleep b4 looking for fip ns')
+        import time; time.sleep (10)
+        fip_ns = hu.get_namespace_with_prefix('fip')
+        if not fip_ns:
+            LOG.error("Cannot continue with fip setup, no fip namespace exist")
+            return
+        fg_device = hu.get_ns_device_with_prefix(fip_ns, 'fg')
+        if not fg_device:
+            LOG.error("Cannot continue with fip setup, no fg interface exist in fip namespace")
+            return
+        
+        fg_mac          = fg_device['mac']
+        #fg_ip           = fg_device['ip']
+        peer_port_id    = hu.get_ovs_port(self.peer_port_name)
+        fip_port_id   = hu.get_ovs_port(self.fip_nic)
+
+        
+        # add flows to external bridge
+        # handle outgoing ip packets coming from fg interface
+        hu.add_flow(self.ex_br, "priority=5", 
+                    "ip,dl_src=%s" %fg_mac, 
+                    "actions=mod_dl_src:%s,strip_vlan,output:%s" %(fip_mac, fip_port_id))
+        
+        # handle incoming ip requests targeted to pod_fip
+        hu.add_flow(self.ex_br, "priority=4", 
+                    "ip,in_port=%s,dl_dst=%s, nw_dst=%s" %(fip_port_id, fip_mac, pod_fip), 
+                    "actions=mod_dl_dst=%s,output:%s" %(fg_mac,peer_port_id))
+        
+        # handle outgoing arp requests coming from fg interface
+        hu.add_flow(self.ex_br, "priority=5", 
+                    "arp,dl_src=%s,arp_op=1" %(fg_mac,), 
+                    "actions=mod_dl_src:%s,load:%s->NXM_NX_ARP_SHA[], load:%s->NXM_OF_ARP_SPA[],strip_vlan,output:%s " 
+                    % (fip_mac, hu.mac_to_hex(fip_mac), hu.ip_to_hex(pod_fip), fip_port_id))
+        
+        # handle incoming arp responses targeted to fip ip
+        hu.add_flow(self.ex_br, "priority=4", 
+                    "arp,in_port=%s,dl_dst=%s,arp_tpa=%s,arp_op=2" % (fip_port_id, fip_mac, pod_fip), 
+                    "actions=mod_dl_dst:%s,output:%s" % (fg_mac, peer_port_id))
+        
 
     def unplug(self, vif_id, index):
         self.open_flow_app.unplug(vif_id, index)

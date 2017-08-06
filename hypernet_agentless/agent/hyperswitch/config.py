@@ -15,6 +15,8 @@ LOG = logging.getLogger(__name__)
 
 # Default timeout for ovs-vsctl command
 DEFAULT_OVS_VSCTL_TIMEOUT = 10
+# Default timeout for ovs-ofctl command
+DEFAULT_OVS_OFCTL_TIMEOUT = 10
 
 OPTS = [
     cfg.StrOpt('host', default=socket.gethostname(),
@@ -37,6 +39,11 @@ OPTS = [
                help=_('Timeout in seconds for ovs-vsctl commands. '
                       'If the timeout expires, ovs commands will fail with '
                       'ALARMCLOCK error.')),
+    cfg.IntOpt('ovs_ofctl_timeout',
+               default=DEFAULT_OVS_OFCTL_TIMEOUT,
+               help=_('Timeout in seconds for ovs-vsctl commands. '
+                      'If the timeout expires, ovs commands will fail with '
+                      'ALARMCLOCK error.')),    
 ]
 cfg.CONF.register_opts(OPTS)
 OPTS_AGENT = [

@@ -80,6 +80,7 @@ class HyperSwitchAgent(object):
         vif_id = kwargs['vif_id']
         index = kwargs['index']
         self.vif_driver.unplug(vif_id, index)
+         
 
     def daemon_loop(self):
         while True:

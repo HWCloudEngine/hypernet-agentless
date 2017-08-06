@@ -53,6 +53,10 @@ OPTS_HYPERSWITCH = [
                help=_("Provider: aws|openstack|null.")),
     cfg.StrOpt('level', default='tenant',
                help=_("Level: tenant|vm.")),
+    cfg.StrOpt('fip_network',
+               help=_("FIP network id or name.")),
+    cfg.StrOpt('fip_security_group',
+               help=_("FIP network security group id or name.")),
     cfg.StrOpt('mgnt_network',
                help=_("Management network id or name.")),
     cfg.StrOpt('mgnt_security_group',
@@ -91,12 +95,6 @@ OPTS_HYPERSWITCH = [
                help=_("the metadata admin_user.")),
     cfg.StrOpt('meta_admin_password',
                help=_("the metadata admin_password.")),
-    cfg.StrOpt('pod_fip_address',
-               default='100.64.0.0/10',
-               help=_('pod fip address.')),
-    cfg.StrOpt('isolate_relay_cidr',
-               default="",
-               help=_('isolate relay cidr.')),
     cfg.IntOpt('first_openvpn_port',
                default=1194,
                help='The first port for OpenVPN connection'),
@@ -207,6 +205,12 @@ def provider():
 def level():
     return cfg.CONF.hyperswitch.level
 
+def fip_network():
+    return cfg.CONF.hyperswitch.fip_network
+
+
+def fip_security_group():
+    return cfg.CONF.hyperswitch.mgnt_security_group
 
 def mgnt_network():
     return cfg.CONF.hyperswitch.mgnt_network
@@ -222,14 +226,6 @@ def data_network():
 
 def data_security_group():
     return cfg.CONF.hyperswitch.data_security_group
-
-
-def pod_fip_address():
-    return cfg.CONF.hyperswitch.pod_fip_address
-
-
-def isolate_relay_cidr():
-    return cfg.CONF.hyperswitch.isolate_relay_cidr
 
 
 def hs_default_flavor():

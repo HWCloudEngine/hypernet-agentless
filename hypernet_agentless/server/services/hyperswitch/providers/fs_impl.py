@@ -352,3 +352,21 @@ class FSProvider(provider_api.ProviderDriver):
         # TODO: implement it
         return 1
 
+    def associate_eip(self, hyperswitch_id, eip):
+        #TODO: implement
+        pass  
+    
+    def disassociate_eip(self, hyperswitch_id):
+        #TODO: implement and return eip
+        return None
+    
+    def allocate_eip(self):
+        #TODO : implement and return eip
+        return None  
+      
+    def release_eip(self, allocation_id):
+        #TODO  : implement 
+        pass  
+     
+    def get_eip(self, hyperswitch_id):
+        return None
