@@ -77,6 +77,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         LOG.debug('_make_hyperswitch_dict %s, %s' % (
             hs_db, hs_provider))
         vms_ips = []
+        admin_state_up = (hs_provider and 'state' in hs_provider and
+            hs_provider['state'] == 'ACTIVE')
         for vms_ip in hs_db.vms_ips:
             vms_ips.append({
                 'vms_ip': vms_ip.vms_ip,
@@ -94,6 +96,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'data_ip': hs_db.data_ip,
             'vms_ips': vms_ips,
             'provider': hs_provider,
+            'admin_state_up': admin_state_up,
         }
         LOG.debug('_make_hyperswitch_dict result: %s' % res)
         return res
@@ -249,15 +252,18 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     vms_ips=vms_ips
                 )
                 context.session.add(hs_db)
-                if 'mgnt_ip' in hs_provider:
-                    user_data['mgnt_ip'] = hs_provider['mgnt_ip']
-                    user_data['data_ip'] = hs_provider['data_ip']
-                    self._send(
-                        hs_provider['mgnt_ip'], 8080, user_data)
                 if hs['admin_state_up']:
                     self._provider_impl.start_hyperswitch(hyperswitch_id)
                 else:
                     self._provider_impl.stop_hyperswitch(hyperswitch_id)
+                hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
+                if (hs_provider and 'state' in hs_provider and
+                        hs_provider['state'] == 'ACTIVE' and
+                        'mgnt_ip' in hs_provider):
+                    user_data['mgnt_ip'] = hs_provider['mgnt_ip']
+                    user_data['data_ip'] = hs_provider['data_ip']
+                    self._send(
+                        hs_provider['mgnt_ip'], 8080, user_data)
                 return self._make_hyperswitch_dict(hs_db, hs_provider)
             except:
                 self._provider_impl.delete_hyperswitch(hyperswitch_id)
@@ -292,17 +298,18 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         with context.session.begin(subtransactions=True):
             hs_db.update(hs)
 
-        # hyperswitch provider
-        hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
-        if hs_provider:
-            user_data = self._get_userdata(hyperswitch_id)
-            user_data['mgnt_ip'] = hs_provider['mgnt_ip']
-            user_data['data_ip'] = hs_provider['data_ip']
-            self._send(hs_db.mgnt_ip, 8080, user_data)
         if hs['admin_state_up']:
             self._provider_impl.start_hyperswitch(hyperswitch_id)
         else:
             self._provider_impl.stop_hyperswitch(hyperswitch_id)
+
+        hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
+        if (hs_provider and 'state' in hs_provider and
+                hs_provider['state'] == 'ACTIVE' and 'mgnt_ip' in hs_provider):
+            user_data = self._get_userdata(hyperswitch_id)
+            user_data['mgnt_ip'] = hs_provider['mgnt_ip']
+            user_data['data_ip'] = hs_provider['data_ip']
+            self._send(hs_db.mgnt_ip, 8080, user_data)
         return self._make_hyperswitch_dict(hs_db, hs_provider)
 
     def delete_hyperswitch(self, context, hyperswitch_id):
@@ -344,6 +351,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             for hs_db in hss_db:
                 if hs_db['id'] == hs['id']:
                     hs_db['provider'] = hs
+                    hs_db['admin_state_up'] = (hs and 'state' in hs and
+                        hs['state'] == 'ACTIVE')
         return hss_db
 
     def _make_providerport_dict(self,
@@ -358,8 +367,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         if neutron_port:
             mac_address = neutron_port['mac_address']
         hsservers_ip = None
+        admin_state_up = False
         if hsservers:
             for hsserver in hsservers:
+                if 'admin_state_up' in hsserver and hsserver['admin_state_up']:
+                    admin_state_up = True
                 vms_ips = hsserver.get('vms_ips')
                 if vms_ips:
                     for vms_ip in vms_ips:
@@ -383,8 +395,22 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 index, config.first_openvpn_port() + index,
             ),
             'provider': provider_net_int,
+            'admin_state_up': admin_state_up,
         }
         return res
+
+    def _update_admin_state_up(self, context, hsservers, admin_state_up):
+        for hsserver in hsservers:
+            if admin_state_up != hsserver['admin_state_up']:
+                self.update_hyperswitch(
+                    context,
+                    hsserver['id'],
+                    {
+                        hs_constants.HYPERSWITCH: {
+                            'admin_state_up': admin_state_up,
+                        }
+                    },
+                )
 
     def create_providerport(self, context, providerport):
         p_port = providerport[hs_constants.PROVIDERPORT]
@@ -405,6 +431,9 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         neutron_port = neutron_ports[0]
 
         index = p_port['index']
+        admin_state_up = True
+        if 'admin_state_up' in p_port:
+            admin_state_up = p_port['admin_state_up']
 
         device_id = neutron_port['device_id']
         tenant_id = neutron_port['tenant_id']
@@ -432,9 +461,13 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                                 'tenant_id': tenant_id,
                                 'device_id': device_id,
                                 'flavor': flavor,
+                                'admin_state_up': admin_state_up,
                             }
                         })]
                         hsserver_created = True
+                    else:
+                        self._update_admin_state_up(
+                            context, hsservers, admin_state_up)
                 else:
                     hsservers = self.get_hyperswitchs(
                         context,
@@ -443,10 +476,15 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                         hsservers = [self.create_hyperswitch(context, {
                             hs_constants.HYPERSWITCH: {
                                 'tenant_id': tenant_id,
-                                'flavor': flavor
+                                'flavor': flavor,
+                                'admin_state_up': admin_state_up,
                             }
                         })]
                         hsserver_created = True
+                    else:
+                        if admin_state_up:
+                            self._update_admin_state_up(
+                                context, hsservers, admin_state_up)
 
                 o_ports = context.session.query(
                     hyperswitch_db.ProviderPort).filter(
@@ -496,8 +534,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     pass
             raise
 
-        for hsserver in hsservers:
-            self._provider_impl.start_hyperswitch(hsserver['id'])
         return self._make_providerport_dict(
             providerport_db, neutron_port, net_int_prov, hsservers)
 
@@ -571,39 +607,24 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             with context.session.begin(subtransactions=True):
                 pp_db.update(pp)
         if 'admin_state_up' in pp:
-            if pp['admin_state_up']:
-                if pp_db.device_id:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'device_id': [pp_db.device_id]}
-                    )
-                    for hsserver in hsservers:
-                        self.start_hyperswitch(context, hsserver['id'])
-                else:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'tenant_id': [pp_db.tenant_id]}
-                    )
-                    for hsserver in hsservers:
-                        self.start_hyperswitch(context, hsserver['id'])
+            if pp_db.device_id:
+                hsservers = self.get_hyperswitchs(
+                    context,
+                    filters={'device_id': [pp_db.device_id]}
+                )
+                self._update_admin_state_up(
+                    context, hsservers, pp['admin_state_up'])
             else:
-                if pp_db.device_id:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'device_id': [pp_db.device_id]}
-                    )
-                    for hsserver in hsservers:
-                        self.stop_hyperswitch(context, hsserver['id'])
-                else:
-                    if self._provider_impl.num_active_network_interface(
+                hsservers = self.get_hyperswitchs(
+                    context,
+                    filters={'tenant_id': [pp_db.tenant_id]}
+                )
+                if (pp['admin_state_up'] or 
+                        self._provider_impl.num_active_network_interface(
                             self._get_tenant_subnet(
-                                context, pp_db.tenant_id)) == 0:
-                        hsservers = self.get_hyperswitchs(
-                            context,
-                            filters={'tenant_id': [pp_db.tenant_id]}
-                        )
-                        for hsserver in hsservers:
-                            self.stop_hyperswitch(context, hsserver['id'])
+                                context, pp_db.tenant_id)) == 0):
+                    self._update_admin_state_up(
+                        context, hsservers, pp['admin_state_up'])
 
     def delete_providerport(self, context, providerport_id):
         LOG.debug('removing agent less port %s.' % providerport_id)
@@ -817,3 +838,4 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             res.append(self._make_providersubnetpool_dict(
                 providersubnetpool_db))
         return res
+

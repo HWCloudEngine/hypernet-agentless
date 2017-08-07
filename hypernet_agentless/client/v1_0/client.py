@@ -348,6 +348,10 @@ class Client(ClientBase):
         return self.delete(self.providerport_path % providerport)
 
     @APIParamsCall
+    def update_providerport(self, providerport, body):
+        return self.put(self.providerport_path % providerport, body=body)
+
+    @APIParamsCall
     def list_providersubnetpools(self, **_params):
         """Fetch a list of all providersubnetpools on server side."""
         return self.get(self.providersubnetpools_path, params=_params)
@@ -370,3 +374,4 @@ class Client(ClientBase):
     def update_providersubnetpool(self, providersubnetpool, body):
         return self.put(
             self.providersubnetpool_path % providersubnetpool, body=body)
+

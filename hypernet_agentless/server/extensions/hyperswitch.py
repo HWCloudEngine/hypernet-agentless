@@ -43,7 +43,8 @@ RESOURCE_ATTRIBUTE_MAP = {
         'provider': {'allow_post': False, 'allow_put': False,
                      'is_visible': True},
         'admin_state_up': {'allow_post': True, 'allow_put': True,
-                           'is_visible': True, 'default': True},
+                           'is_visible': True, 'default': True,
+                           'convert_to': attributes.convert_to_boolean},
     },
     'hyperswitchs': {
         'id': {'allow_post': False, 'allow_put': False,
@@ -72,7 +73,8 @@ RESOURCE_ATTRIBUTE_MAP = {
         'provider': {'allow_post': False, 'allow_put': False,
                      'is_visible': True},
         'admin_state_up': {'allow_post': True, 'allow_put': True,
-                           'is_visible': True, 'default': True},
+                           'is_visible': True, 'default': True,
+                           'convert_to': attributes.convert_to_boolean},
     },
     'providersubnetpools': {
         'id': {'allow_post': False, 'allow_put': False,
@@ -277,3 +279,4 @@ class ProviderSubnetPoolNotFound(exceptions.NotFound):
 class ProviderSubnetPoolUseFailed(exceptions.Conflict):
     message = _(
         'Tenant %(tenant_id)s failed to select a provider subnet.')
+
