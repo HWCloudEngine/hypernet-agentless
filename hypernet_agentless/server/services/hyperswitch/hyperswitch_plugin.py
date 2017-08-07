@@ -77,6 +77,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         LOG.debug('_make_hyperswitch_dict %s, %s' % (
             hs_db, hs_provider))
         vms_ips = []
+        admin_state_up = (hs_provider and 'state' in hs_provider and
+            hs_provider['state'] == 'ACTIVE')
         for vms_ip in hs_db.vms_ips:
             vms_ips.append({
                 'vms_ip': vms_ip.vms_ip,
@@ -94,6 +96,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'data_ip': hs_db.data_ip,
             'vms_ips': vms_ips,
             'provider': hs_provider,
+            'admin_state_up': admin_state_up,
         }
         LOG.debug('_make_hyperswitch_dict result: %s' % res)
         return res
@@ -292,17 +295,17 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         with context.session.begin(subtransactions=True):
             hs_db.update(hs)
 
-        # hyperswitch provider
-        hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
-        if hs_provider:
-            user_data = self._get_userdata(hyperswitch_id)
-            user_data['mgnt_ip'] = hs_provider['mgnt_ip']
-            user_data['data_ip'] = hs_provider['data_ip']
-            self._send(hs_db.mgnt_ip, 8080, user_data)
         if hs['admin_state_up']:
             self._provider_impl.start_hyperswitch(hyperswitch_id)
         else:
             self._provider_impl.stop_hyperswitch(hyperswitch_id)
+
+        hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
+        if hs_provider and hs_provider['state'] == 'ACTIVE':
+            user_data = self._get_userdata(hyperswitch_id)
+            user_data['mgnt_ip'] = hs_provider['mgnt_ip']
+            user_data['data_ip'] = hs_provider['data_ip']
+            self._send(hs_db.mgnt_ip, 8080, user_data)
         return self._make_hyperswitch_dict(hs_db, hs_provider)
 
     def delete_hyperswitch(self, context, hyperswitch_id):
@@ -817,3 +820,4 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             res.append(self._make_providersubnetpool_dict(
                 providersubnetpool_db))
         return res
+
