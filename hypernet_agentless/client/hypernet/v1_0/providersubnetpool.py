@@ -71,3 +71,9 @@ class ProvidersubnetpoolUpdate(
     """Update a given Providersubnetpool."""
 
     shell_command = 'providersubnetpool-update'
+
+    def add_known_arguments(self, parser):
+        parser.add_argument(
+            '--used-by', dest='used_by',
+            help=_('tenant id using the provider subnet.'))
+

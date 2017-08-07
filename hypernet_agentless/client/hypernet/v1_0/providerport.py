@@ -71,8 +71,8 @@ class ProviderportList(extension.ClientExtensionList, Providerport):
     """List provider ports that belongs to a given tenant."""
 
     shell_command = 'providerport-list'
-    list_columns = ['id', 'port_id', 'device_id', 'tenant_id', 'index',
-                    'user_data']
+    list_columns = ['id', 'port_id', 'admin_state_up', 'device_id',
+                    'tenant_id', 'index', 'user_data']
     pagination_support = True
     sorting_support = True
 
@@ -93,3 +93,12 @@ class ProviderportUpdate(extension.ClientExtensionUpdate, Providerport):
     """Update a given provider port."""
 
     shell_command = 'providerport-update'
+
+    def add_known_arguments(self, parser):
+        parser.add_argument(
+            '--name', dest='name',
+            help=_('Optional port name.'))
+        parser.add_argument(
+            '--admin-state-up', dest='admin_state_up',
+            help=_('Administration state Up or Down (True/False).'))
+

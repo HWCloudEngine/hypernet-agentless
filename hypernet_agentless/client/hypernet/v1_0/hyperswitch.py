@@ -78,7 +78,7 @@ class HyperSwitchList(extension.ClientExtensionList, HyperSwitch):
     """List hyperswitch that belongs to a given tenant."""
 
     shell_command = 'hyperswitch-list'
-    list_columns = ['id', 'device_id', 'tenant_id', 'flavor']
+    list_columns = ['id', 'device_id', 'tenant_id', 'flavor', 'admin_state_up']
     pagination_support = True
     sorting_support = True
 
@@ -99,3 +99,12 @@ class HyperSwitchUpdate(extension.ClientExtensionUpdate, HyperSwitch):
     """Update a given hyperswitch."""
 
     shell_command = 'hyperswitch-update'
+
+    def add_known_arguments(self, parser):
+        parser.add_argument(
+            '--name', dest='name',
+            help=_('Optional Hyperswitch name.'))
+        parser.add_argument(
+            '--admin-state-up', dest='admin_state_up',
+            help=_('Administration state Up or Down (True/False).'))
+

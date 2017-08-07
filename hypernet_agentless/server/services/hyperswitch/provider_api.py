@@ -84,7 +84,7 @@ class ProviderPort(object):
 class ProviderHyperswitch(object):
 
     def __init__(self, instance_id, name, instance_type,
-                 mgnt_ip, data_ip, vms_ips):
+                 mgnt_ip, data_ip, vms_ips, id, state):
         self._vals = {
             'instance_id': instance_id,
             'name': name,
@@ -92,8 +92,11 @@ class ProviderHyperswitch(object):
             'mgnt_ip': mgnt_ip,
             'data_ip': data_ip,
             'vms_ips': vms_ips,
+            'id': id,
+            'state': state,
         }
 
     @property
     def dict(self):
         return self._vals
+

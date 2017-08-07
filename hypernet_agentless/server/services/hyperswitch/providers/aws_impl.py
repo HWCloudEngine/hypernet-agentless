@@ -23,6 +23,15 @@ AWS_STATUS = {
     'stopped': '80',
 }
 
+HYPERSWITCH_STATES = {
+    0: 'ACTIVE',
+    16: 'ACTIVE',
+    32: 'UNACTIVE',
+    48: 'KILLED',
+    64: 'UNACTIVE',
+    80: 'UNACTIVE',
+}
+
 
 class AWSProvider(provider_api.ProviderDriver):
 
@@ -189,9 +198,12 @@ class AWSProvider(provider_api.ProviderDriver):
         vms_ips = []
         mgnt_ip = None
         data_ip = None
+        hs_id = None
         for tag in aws_instance.tags:
             if tag['Key'] == 'Name':
                 name = tag['Value']
+            if tag['Key'] == 'hybrid_cloud_hyperswitch_id':
+                hs_id = tag['Value']
         LOG.debug('network_interfaces_attribute %s' % (
             aws_instance.network_interfaces_attribute))
         for net_int in aws_instance.network_interfaces_attribute:
@@ -214,6 +226,8 @@ class AWSProvider(provider_api.ProviderDriver):
             mgnt_ip=mgnt_ip,
             data_ip=data_ip,
             vms_ips=vms_ips,
+            id=hs_id,
+            state=HYPERSWITCH_STATES[aws_instance.state['Code']],
         ).dict
 
     def _get_hs_name(self, hyperswitch_id):
@@ -256,6 +270,8 @@ class AWSProvider(provider_api.ProviderDriver):
 
         tags = [{'Key': 'hybrid_cloud_type',
                  'Value': hs_constants.HYPERSWITCH},
+                {'Key': 'hybrid_cloud_hyperswitch_id',
+                 'Value': hyperswitch_id},
                 {'Key': 'Name',
                  'Value': self._get_hs_name(hyperswitch_id)}]
         self.ec2.create_tags(Resources=[aws_instance.id],
@@ -403,10 +419,15 @@ class AWSProvider(provider_api.ProviderDriver):
     def num_active_network_interface(self, subnet):
         resp = self.ec2.describe_network_interfaces(
             Filters=[{
-                'Name': 'tag:hybrid_cloud_type',
-                'Values': ['hybrid_provider_port']}],
-            NetworkInterfaceIds=[subnet]
+                        'Name': 'tag:hybrid_cloud_type',
+                        'Values': ['hybrid_provider_port']},
+                     {
+                         'Name': 'subnet-id',
+                         'Values': [subnet],
+                     }
+            ],
         )
+        LOG.debug('net interfaces for %s: %s' % (subnet, resp))
         res = 0
         for net_int in resp['NetworkInterfaces']:
             if net_int['Attachment'] and net_int['Attachment']['InstanceId']:
@@ -421,3 +442,4 @@ class AWSProvider(provider_api.ProviderDriver):
                 for _ in aws_instances:
                     res = res + 1
         return res
+

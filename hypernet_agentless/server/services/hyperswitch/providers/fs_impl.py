@@ -90,6 +90,8 @@ class FSProvider(provider_api.ProviderDriver):
             mgnt_ip=mgnt_ip,
             data_ip=data_ip,
             vms_ips=vms_ips,
+            id=fs_instance.name,
+            state=fs_instance.status,
         ).dict
         LOG.debug('_fs_instance_to_dict result %s' % res)
         return res
@@ -349,3 +351,4 @@ class FSProvider(provider_api.ProviderDriver):
     def num_active_network_interface(self, subnet):
         # TODO: implement it
         return 1
+
