@@ -260,6 +260,7 @@ def extract_cidr_router(lease_file, nic):
     in_lease_nic = False
     d_renew = 0
     static_routes = None
+    routers_cur = None
     with open(lease_file, 'r') as f:
         for line in f:
             if ' interface ' in line and nic in line:
@@ -282,3 +283,4 @@ def extract_cidr_router(lease_file, nic):
                     routers = routers_cur
                     d_renew = d_renew_cur
     return '%s/%s' % (ip, get_nsize(mask)), routers, static_routes
+

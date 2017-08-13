@@ -298,10 +298,11 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         with context.session.begin(subtransactions=True):
             hs_db.update(hs)
 
-        if hs['admin_state_up']:
-            self._provider_impl.start_hyperswitch(hyperswitch_id)
-        else:
-            self._provider_impl.stop_hyperswitch(hyperswitch_id)
+        if 'admin_state_up' in hs:
+            if hs['admin_state_up']:
+                self._provider_impl.start_hyperswitch(hyperswitch_id)
+            else:
+                self._provider_impl.stop_hyperswitch(hyperswitch_id)
 
         hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
         if (hs_provider and 'state' in hs_provider and
@@ -854,4 +855,5 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             res.append(self._make_providersubnetpool_dict(
                 providersubnetpool_db))
         return res
+
 
