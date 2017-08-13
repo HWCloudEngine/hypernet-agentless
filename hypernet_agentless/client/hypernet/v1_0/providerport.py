@@ -102,3 +102,11 @@ class ProviderportUpdate(extension.ClientExtensionUpdate, Providerport):
             '--admin-state-up', dest='admin_state_up',
             help=_('Administration state Up or Down (True/False).'))
 
+    def args2body(self, parsed_args):
+        body = {'providerport': {}}
+        if parsed_args.name:
+            body['providerport']['name'] = parsed_args.name
+        if parsed_args.admin_state_up:
+            body['providerport']['admin_state_up'] = parsed_args.admin_state_up
+        return body
+

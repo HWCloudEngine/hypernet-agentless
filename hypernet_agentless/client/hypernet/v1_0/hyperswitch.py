@@ -108,3 +108,11 @@ class HyperSwitchUpdate(extension.ClientExtensionUpdate, HyperSwitch):
             '--admin-state-up', dest='admin_state_up',
             help=_('Administration state Up or Down (True/False).'))
 
+    def args2body(self, parsed_args):
+        body = {'hyperswitch': {}}
+        if parsed_args.name:
+            body['hyperswitch']['name'] = parsed_args.name
+        if parsed_args.admin_state_up:
+            body['hyperswitch']['admin_state_up'] = parsed_args.admin_state_up
+        return body
+
