@@ -77,3 +77,10 @@ class ProvidersubnetpoolUpdate(
             '--used-by', dest='used_by',
             help=_('tenant id using the provider subnet.'))
 
+    def args2body(self, parsed_args):
+        body = {'providersubnetpool': {}}
+        if parsed_args.used_by:
+            body['providersubnetpool']['used_by'] = parsed_args.used_by
+        return body
+
+

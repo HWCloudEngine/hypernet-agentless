@@ -277,6 +277,7 @@ def extract_cidr_router(lease_file, nic):
     in_lease_nic = False
     d_renew = 0
     static_routes = None
+    routers_cur = None
     with open(lease_file, 'r') as f:
         for line in f:
             if ' interface ' in line and nic in line:
@@ -353,8 +354,3 @@ def ip_to_hex(ip):
     return '0x'+binascii.hexlify(socket.inet_aton(ip)).upper()      
     
 
-
-    
-    
-    
-    

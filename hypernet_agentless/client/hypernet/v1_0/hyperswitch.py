@@ -121,3 +121,11 @@ class HyperSwitchUpdate(extension.ClientExtensionUpdate, HyperSwitch):
             body['hyperswitch']['eip'] = parsed_args.admin_state_up    
         return body
 
+    def args2body(self, parsed_args):
+        body = {'hyperswitch': {}}
+        if parsed_args.name:
+            body['hyperswitch']['name'] = parsed_args.name
+        if parsed_args.admin_state_up:
+            body['hyperswitch']['admin_state_up'] = parsed_args.admin_state_up
+        return body
+

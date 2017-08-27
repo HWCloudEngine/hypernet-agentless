@@ -119,3 +119,4 @@ class ProviderportUpdate(extension.ClientExtensionUpdate, Providerport):
         if parsed_args.eip_associate:
             body['providerport']['eip_associate'] = parsed_args.eip_associate     
         return body
+
