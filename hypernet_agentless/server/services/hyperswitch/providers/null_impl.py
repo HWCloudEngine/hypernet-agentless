@@ -60,3 +60,18 @@ class NULLProvider(provider_api.ProviderDriver):
 
     def get_network_interface(self, port_id):
         return None
+
+    def associate_eip(self, hyperswitch_id, eip):
+        pass
+
+    def disassociate_eip(self, hyperswitch_id):
+        return None
+
+    def allocate_eip(self):
+        return None
+
+    def release_eip(self, allocation_id):
+        pass
+
+    def get_eip(self, hyperswitch_id):
+        return None
