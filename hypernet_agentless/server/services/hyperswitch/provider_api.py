@@ -66,6 +66,26 @@ class ProviderDriver(object):
     def num_active_network_interface(self, subnet):
         return 0
 
+    @abc.abstractmethod
+    def associate_eip(self, hyperswitch_id, eip):
+        pass
+
+    @abc.abstractmethod
+    def disassociate_eip(self, hyperswitch_id):
+        return None
+
+    @abc.abstractmethod
+    def allocate_eip(self):
+        return None
+
+    @abc.abstractmethod
+    def release_eip(self, allocation_id):
+        pass
+
+    @abc.abstractmethod
+    def get_eip(self, hyperswitch_id):
+        return None
+
 
 class ProviderPort(object):
 
@@ -84,13 +104,14 @@ class ProviderPort(object):
 class ProviderHyperswitch(object):
 
     def __init__(self, instance_id, name, instance_type,
-                 mgnt_ip, data_ip, vms_ips, id, state):
+                 mgnt_ip, data_ip, fip_ip, vms_ips, id, state):
         self._vals = {
             'instance_id': instance_id,
             'name': name,
             'instance_type': instance_type,
             'mgnt_ip': mgnt_ip,
             'data_ip': data_ip,
+            'fip_ip': fip_ip,
             'vms_ips': vms_ips,
             'id': id,
             'state': state,
@@ -99,4 +120,3 @@ class ProviderHyperswitch(object):
     @property
     def dict(self):
         return self._vals
-

@@ -41,6 +41,9 @@ class ProviderportCreate(extension.ClientExtensionCreate, Providerport):
             '--admin-state-up', dest='admin_state_up',
             help=_('Administration state Up or Down (True/False).'))
         parser.add_argument(
+            '--eip-associate', dest='eip_associate',
+            help=_('Associate EIP to this port (True/False).'))
+        parser.add_argument(
             'port_id', metavar='<NEUTRON_PORT_ID>',
             help=_('Neutron Port ID.'))
         parser.add_argument(
@@ -64,6 +67,8 @@ class ProviderportCreate(extension.ClientExtensionCreate, Providerport):
             body['providerport']['provider_ip'] = parsed_args.provider_ip
         if parsed_args.admin_state_up:
             body['providerport']['admin_state_up'] = parsed_args.admin_state_up
+        if parsed_args.eip_associate:
+            body['providerport']['eip_associate'] = parsed_args.eip_associate
         return body
 
 
@@ -71,7 +76,8 @@ class ProviderportList(extension.ClientExtensionList, Providerport):
     """List provider ports that belongs to a given tenant."""
 
     shell_command = 'providerport-list'
-    list_columns = ['id', 'port_id', 'admin_state_up', 'device_id',
+    list_columns = ['id', 'port_id', 'admin_state_up',
+                    'eip_associate', 'device_id',
                     'tenant_id', 'index', 'user_data']
     pagination_support = True
     sorting_support = True
@@ -101,6 +107,9 @@ class ProviderportUpdate(extension.ClientExtensionUpdate, Providerport):
         parser.add_argument(
             '--admin-state-up', dest='admin_state_up',
             help=_('Administration state Up or Down (True/False).'))
+        parser.add_argument(
+            '--eip-associate', dest='eip_associate',
+            help=_('Associate elastic IP to this port (True/False).'))
 
     def args2body(self, parsed_args):
         body = {'providerport': {}}
@@ -108,5 +117,6 @@ class ProviderportUpdate(extension.ClientExtensionUpdate, Providerport):
             body['providerport']['name'] = parsed_args.name
         if parsed_args.admin_state_up:
             body['providerport']['admin_state_up'] = parsed_args.admin_state_up
+        if parsed_args.eip_associate:
+            body['providerport']['eip_associate'] = parsed_args.eip_associate
         return body
-

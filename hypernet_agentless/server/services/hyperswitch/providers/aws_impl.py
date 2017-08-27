@@ -198,6 +198,7 @@ class AWSProvider(provider_api.ProviderDriver):
         vms_ips = []
         mgnt_ip = None
         data_ip = None
+        fip_ip = None
         hs_id = None
         for tag in aws_instance.tags:
             if tag['Key'] == 'Name':
@@ -214,6 +215,9 @@ class AWSProvider(provider_api.ProviderDriver):
             if net_int['SubnetId'] == self._cfg.data_network():
                 data_ip = net_int['PrivateIpAddress']
                 is_vm_net = False
+            if net_int['SubnetId'] == self._cfg.fip_network():
+                fip_ip = net_int['PrivateIpAddress']
+                is_vm_net = False
             if is_vm_net:
                 vms_ips.append({
                     'vms_ip': net_int['PrivateIpAddress'],
@@ -225,6 +229,7 @@ class AWSProvider(provider_api.ProviderDriver):
             instance_type=aws_instance.instance_type,
             mgnt_ip=mgnt_ip,
             data_ip=data_ip,
+            fip_ip=fip_ip,
             vms_ips=vms_ips,
             id=hs_id,
             state=HYPERSWITCH_STATES[aws_instance.state['Code']],
@@ -318,6 +323,7 @@ class AWSProvider(provider_api.ProviderDriver):
 
     def delete_hyperswitch(self, hyperswitch_id):
         LOG.debug('hyperswitch to delete: %s.' % (hyperswitch_id))
+        self.disassociate_eip(hyperswitch_id)
         aws_instances = self._find_vms(
             'Name',
             [self._get_hs_name(hyperswitch_id)])
@@ -423,9 +429,8 @@ class AWSProvider(provider_api.ProviderDriver):
                         'Values': ['hybrid_provider_port']},
                      {
                          'Name': 'subnet-id',
-                         'Values': [subnet],
-                     }
-            ],
+                         'Values': [subnet], }
+                     ],
         )
         LOG.debug('net interfaces for %s: %s' % (subnet, resp))
         res = 0
@@ -443,3 +448,58 @@ class AWSProvider(provider_api.ProviderDriver):
                     res = res + 1
         return res
 
+    def _get_primary_eni(self, hyperswitch_id):
+        hs_instance = self.get_hyperswitch(hyperswitch_id)
+        aws_instance_id = hs_instance['instance_id']
+        aws_instance = self.ec2.describe_instances(
+            InstanceIds=[aws_instance_id])['Reservations'][0]['Instances'][0]
+        aws_instance_primary_ip = aws_instance['PrivateIpAddress']
+
+        aws_net_interfaces = aws_instance['NetworkInterfaces']
+        for aws_net_interface in aws_net_interfaces:
+            for ip_address in aws_net_interface['PrivateIpAddresses']:
+                if ip_address['PrivateIpAddress'] == aws_instance_primary_ip:
+                    return aws_net_interface
+
+        return None
+
+    ''' Return eip connected to primary interface only'''
+    def get_eip(self, hyperswitch_id):
+        aws_primary_net_interface = self._get_primary_eni(hyperswitch_id)
+        if 'Association' in aws_primary_net_interface:
+            return aws_primary_net_interface['Association']['PublicIp']
+        else:
+            return None
+
+    def associate_eip(self, hyperswitch_id, eip):
+        if eip:
+            ws_primary_net_interface = self._get_primary_eni(hyperswitch_id)
+            primary_eni_id = ws_primary_net_interface['NetworkInterfaceId']
+            self.ec2.associate_address(NetworkInterfaceId=primary_eni_id,
+                                       AllocationId=eip)
+
+    def disassociate_eip(self, hyperswitch_id):
+        addresses = self.ec2.describe_addresses(
+            PublicIps=[self.get_eip(hyperswitch_id)])
+        allocation_id = addresses['Addresses'][0]['AllocationId']
+
+        aws_eip = self.ec2_resource.VpcAddress(allocation_id)
+        aws_eip.association.delete()
+
+        return allocation_id
+
+    def allocate_eip(self):
+        eip = None
+        try:
+            eip = self.ec2.allocate_address()
+        except exceptions.ClientError as ce:
+            LOG.error('failed allocating eip in aws %s' % ce)
+            return None
+        allocation_id = None
+        if eip:
+            allocation_id = eip['AllocationId']
+        return allocation_id
+
+    def release_eip(self, allocation_id):
+        aws_eip = self.ec2_resource.VpcAddress(allocation_id)
+        aws_eip.release()
