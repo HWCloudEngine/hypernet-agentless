@@ -21,7 +21,7 @@ class HyperSwitchCreate(extension.ClientExtensionCreate, HyperSwitch):
         parser.add_argument(
             '--name', dest='name',
             help=_('Optional Hyperswitch name.'))
-        parser.add_argument(
+        parser.add_argument(    
             '--device-id', dest='device_id',
             help=_('Device ID if created for one device.'))
         parser.add_argument(
@@ -107,6 +107,10 @@ class HyperSwitchUpdate(extension.ClientExtensionUpdate, HyperSwitch):
         parser.add_argument(
             '--admin-state-up', dest='admin_state_up',
             help=_('Administration state Up or Down (True/False).'))
+        parser.add_argument(
+            '--eip', dest='eip',
+            help=_('Elastic IP allocation ID' +
+                   ' to be associated with this Hyperswitch.'))
 
     def args2body(self, parsed_args):
         body = {'hyperswitch': {}}
@@ -114,5 +118,6 @@ class HyperSwitchUpdate(extension.ClientExtensionUpdate, HyperSwitch):
             body['hyperswitch']['name'] = parsed_args.name
         if parsed_args.admin_state_up:
             body['hyperswitch']['admin_state_up'] = parsed_args.admin_state_up
+        if parsed_args.eip:
+            body['hyperswitch']['eip'] = parsed_args.eip
         return body
-

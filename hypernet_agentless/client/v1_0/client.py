@@ -374,4 +374,3 @@ class Client(ClientBase):
     def update_providersubnetpool(self, providersubnetpool, body):
         return self.put(
             self.providersubnetpool_path % providersubnetpool, body=body)
-

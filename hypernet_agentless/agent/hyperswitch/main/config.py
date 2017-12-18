@@ -68,6 +68,7 @@ class Config(object):
         # debian/ubuntu like net configuration with dhcp
         if os.path.exists('/etc/network/interfaces'):
             net_ints = set()
+            net_ints.add(params['network_fip_interface'])
             net_ints.add(params['network_mngt_interface'])
             net_ints.add(params['network_data_interface'])
             for net_int in params['network_vms_interface'].split(','):
