@@ -79,9 +79,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         vms_ips = []
         admin_state_up = (hs_provider and 'state' in hs_provider and
             hs_provider['state'] == 'ACTIVE')
-        eip = None
-        if hs_provider and 'eip' in hs_provider:
-            eip = hs_provider['eip']
         for vms_ip in hs_db.vms_ips:
             vms_ips.append({
                 'vms_ip': vms_ip.vms_ip,
@@ -100,7 +97,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'vms_ips': vms_ips,
             'provider': hs_provider,
             'admin_state_up': admin_state_up,
-            'eip': eip,
         }
         LOG.debug('_make_hyperswitch_dict result: %s' % res)
         return res
@@ -131,16 +127,10 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 sock.close()
 
     def _get_net_list(self, context, tenant_id):
-        net_list = []
-        fip_network = config.fip_network()
-        net_list.append({
-            'name': fip_network,
-            'security_group': [config.fip_security_group()]
-        })
-        net_list.append({
+        net_list = [{
             'name': config.mgnt_network(),
             'security_group': [config.mgnt_security_group()]
-        })
+        }]
         if config.data_network() == config.mgnt_network():
             net_list[0]['security_group'].append(
                 config.data_security_group())
@@ -158,17 +148,12 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         return net_list
 
     def _get_userdata(self, hyperswitch_id):
-        fip_subnet = config.fip_network()
-        network_fip_interface = 'eth0'
-        network_mngt_interface = 'eth1'
-
         user_data = {
             'rabbit_userid': config.rabbit_userid(),
             'rabbit_password': config.rabbit_password(),
             'rabbit_hosts': config.rabbit_hosts(),
             'host': hyperswitch_id,
-            'network_fip_interface': network_fip_interface,
-            'network_mngt_interface': network_mngt_interface,
+            'network_mngt_interface': 'eth0',
             'auth_uri': config.meta_auth_uri(),
             'auth_url': config.meta_auth_uri(),
             'auth_region': config.meta_auth_region(),
@@ -181,18 +166,18 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             'controller_host': config.controller_host(),
             'metadata_proxy_shared_secret': (
                 config.meta_metadata_proxy_shared_secret()),
+            'pod_fip_address': config.pod_fip_address(),
+            'isolate_relay_cidr': config.isolate_relay_cidr(),
             'first_openvpn_port': config.first_openvpn_port(),
             'max_win_nics': config.max_win_nics(),
-            'external_network_bridge': config.external_network_bridge(),
-            'peer_physical_port': config.peer_physical_port(),
         }
 
         if config.data_network() == config.mgnt_network():
+            user_data['network_data_interface'] = 'eth0'
+            user_data['network_vms_interface'] = 'eth1'
+        else:
             user_data['network_data_interface'] = 'eth1'
             user_data['network_vms_interface'] = 'eth2'
-        else:
-            user_data['network_data_interface'] = 'eth2'
-            user_data['network_vms_interface'] = 'eth3'
         return user_data
 
     def _get_hs_sg(self, tenant_id):
@@ -271,8 +256,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     self._provider_impl.start_hyperswitch(hyperswitch_id)
                 else:
                     self._provider_impl.stop_hyperswitch(hyperswitch_id)
-                hs_provider = self._provider_impl.get_hyperswitch(
-                    hyperswitch_id)
+                hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
                 if (hs_provider and 'state' in hs_provider and
                         hs_provider['state'] == 'ACTIVE' and
                         'mgnt_ip' in hs_provider):
@@ -295,8 +279,10 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         except exc.NoResultFound:
             raise hyperswitch.HyperswitchNotFound(
                 hyperswitch_id=hyperswitch_id)
+
         # hyperswitch provider
         hs_provider = self._provider_impl.get_hyperswitch(hyperswitch_id)
+
         return self._make_hyperswitch_dict(hs_db, hs_provider)
 
     def update_hyperswitch(self,
@@ -325,13 +311,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             user_data['mgnt_ip'] = hs_provider['mgnt_ip']
             user_data['data_ip'] = hs_provider['data_ip']
             self._send(hs_db.mgnt_ip, 8080, user_data)
-
-        if 'eip' in hs:
-            if hs['eip']:
-                self._provider_impl.associate_eip(hyperswitch_id, hs['eip'])
-            else:
-                self._provider_impl.disassociate_eip(hyperswitch_id)
-
         return self._make_hyperswitch_dict(hs_db, hs_provider)
 
     def delete_hyperswitch(self, context, hyperswitch_id):
@@ -375,7 +354,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     hs_db['provider'] = hs
                     hs_db['admin_state_up'] = (hs and 'state' in hs and
                         hs['state'] == 'ACTIVE')
-                    hs_db['eip'] = hs['eip']
         return hss_db
 
     def _make_providerport_dict(self,
@@ -403,8 +381,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                                 hsservers_ip, vms_ip['vms_ip'])
                         else:
                             hsservers_ip = '%s' % vms_ip['vms_ip']
-        # checking only first hs, since eip can be associated with 1 hs only                    
-        eip_associate = hsservers and hsservers[0] and not hsservers[0]['eip'] == None
         res = {
             'id': providerport_db.id,
             'tenant_id': providerport_db.tenant_id,
@@ -421,7 +397,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             ),
             'provider': provider_net_int,
             'admin_state_up': admin_state_up,
-            'eip_associate': eip_associate,
         }
         return res
 
@@ -439,25 +414,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                         }
                     },
                 )
-
-    def _update_eip(self, context, hsservers, eip):
-        LOG.debug('_update_eip %s, %s.' % (
-            hsservers, eip))
-        if hsservers.len() > 0:
-            LOG.error('Cannot associate eip to more than 1 hyperswitch : %s'
-                      % hsservers)
-            return
-        hsserver = hsservers[0]
-        if eip != hsserver['eip']:
-            self.update_hyperswitch(
-                    context,
-                    hsserver['id'],
-                    {
-                        hs_constants.HYPERSWITCH: {
-                            'eip': eip,
-                        }
-                    },
-                                    )
 
     def create_providerport(self, context, providerport):
         p_port = providerport[hs_constants.PROVIDERPORT]
@@ -481,14 +437,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         admin_state_up = True
         if 'admin_state_up' in p_port:
             admin_state_up = p_port['admin_state_up']
-
-        eip_associate = False
-        if 'eip_associate' in p_port:
-            eip_associate = p_port['eip_associate']
-
-        allocation_id = None
-        if eip_associate:
-            allocation_id = self._provider_impl.allocate_eip()
 
         device_id = neutron_port['device_id']
         tenant_id = neutron_port['tenant_id']
@@ -517,15 +465,12 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                                 'device_id': device_id,
                                 'flavor': flavor,
                                 'admin_state_up': admin_state_up,
-                                'eip': allocation_id,
                             }
                         })]
                         hsserver_created = True
                     else:
                         self._update_admin_state_up(
                             context, hsservers, admin_state_up)
-                        self._update_eip(
-                            context, hsservers, allocation_id)
                 else:
                     hsservers = self.get_hyperswitchs(
                         context,
@@ -536,7 +481,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                                 'tenant_id': tenant_id,
                                 'flavor': flavor,
                                 'admin_state_up': admin_state_up,
-                                'eip': allocation_id,
                             }
                         })]
                         hsserver_created = True
@@ -544,13 +488,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                         if admin_state_up:
                             self._update_admin_state_up(
                                 context, hsservers, admin_state_up)
-
-                        if eip_associate:
-                            # we cannot associate a single eip to
-                            # multiple hyperswitches.
-                            # we must assume it's a single one.
-                            self._provider_impl.associate_eip(
-                                hsservers[0]['id'], allocation_id)
 
                 o_ports = context.session.query(
                     hyperswitch_db.ProviderPort).filter(
@@ -663,9 +600,8 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                             context,
                             providerport_id,
                             providerport):
-        LOG.debug('providerport %s (%s) to update.'
-                  % (providerport_id, providerport)
-                  )
+        LOG.debug('providerport %s (%s) to update.' % (
+            providerport_id, providerport))
 
         pp = providerport['providerport']
         pp_db = self._get_by_id(
@@ -673,83 +609,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
         if 'name' in pp:
             with context.session.begin(subtransactions=True):
                 pp_db.update(pp)
-        if 'eip_associate' in pp:
-            if pp['eip_associate']:
-                if pp_db.device_id:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'device_id': [pp_db.device_id]}
-                    )
-                    for hsserver in hsservers:
-                        if (not self._provider_impl.get_eip(hsserver['id'])):
-                            allocation_id = self._provider_impl.allocate_eip()
-                            self._provider_impl.associate_eip(hsserver['id'],
-                                                               allocation_id)
-                else:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'tenant_id': [pp_db.tenant_id]}
-                    )
-                    for hsserver in hsservers:
-                        if (not self._provider_impl.get_eip(hsserver['id'])):
-                            allocation_id = self._provider_impl.allocate_eip()
-                            self._provider_impl.associate_eip(hsserver['id'],
-                                                               allocation_id)
-            else:
-                if pp_db.device_id:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'device_id': [pp_db.device_id]}
-                    )
-                    for hsserver in hsservers:
-                        if (self._provider_impl.get_eip(hsserver['id'])):
-                            allocation_id = self._provider_impl.disassociate_eip(hsserver['id'])
-                            self._provider_impl.release_eip(allocation_id)
-                else:
-                    hsservers = self.get_hyperswitchs(context,
-                                                      filters={'tenant_id': [pp_db.tenant_id]}
-                                                      )
-                    for hsserver in hsservers:
-                        if (self._provider_impl.get_eip(hsserver['id'])):
-                            allocation_id = self._provider_impl.disassociate_eip(hsserver['id'])
-                            self._provider_impl.release_eip(allocation_id)
-
         if 'admin_state_up' in pp:
-
-            if pp['admin_state_up']:
-                if pp_db.device_id:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'device_id': [pp_db.device_id]}
-                    )
-                    for hsserver in hsservers:
-                        self.start_hyperswitch(context, hsserver['id'])
-                else:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'tenant_id': [pp_db.tenant_id]}
-                    )
-                    for hsserver in hsservers:
-                        self.start_hyperswitch(context, hsserver['id'])
-            else:
-                if pp_db.device_id:
-                    hsservers = self.get_hyperswitchs(
-                        context,
-                        filters={'device_id': [pp_db.device_id]}
-                    )
-                    for hsserver in hsservers:
-                        self.stop_hyperswitch(context, hsserver['id'])
-                else:
-                    if self._provider_impl.num_active_network_interface(
-                            self._get_tenant_subnet(
-                                context, pp_db.tenant_id)) == 0:
-                        hsservers = self.get_hyperswitchs(
-                            context,
-                            filters={'tenant_id': [pp_db.tenant_id]}
-                        )
-                        for hsserver in hsservers:
-                            self.stop_hyperswitch(context, hsserver['id'])
-
             LOG.debug('pp_db.device_id %s.' % (pp_db.device_id))
             hsservers = []
             if pp_db.device_id:
@@ -765,7 +625,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                     context,
                     filters={'tenant_id': [pp_db.tenant_id]}
                 )
-                if (pp['admin_state_up'] or
+                if (pp['admin_state_up'] or 
                         self._provider_impl.num_active_network_interface(
                             self._get_tenant_subnet(
                                 context, pp_db.tenant_id)) == 0):
@@ -854,9 +714,6 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
                 LOG.error('delete provider security groups failed for tenant '
                           '%s: %s', providerport_db.tenant_id, e)
 
-        allocation_id = self.diassociate_eip(hsserver['id'])
-        self._provider_impl.release_eip(allocation_id)
-
         if remove_prov_int:
             try:
                 # remove from provider
@@ -865,6 +722,7 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             except Exception as e:
                 LOG.error('delete provider interface %s failed: %s',
                           providerport_id, e)
+
 
     def get_providerports(self, context, filters=None, fields=None,
                           sorts=None, limit=None, marker=None,
@@ -997,3 +855,5 @@ class HyperswitchPlugin(common_db_mixin.CommonDbMixin,
             res.append(self._make_providersubnetpool_dict(
                 providersubnetpool_db))
         return res
+
+
