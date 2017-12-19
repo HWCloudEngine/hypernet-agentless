@@ -192,15 +192,24 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         self._vif_driver = kwargs['vif_hypervm_driver']
         self._drivers = list()
         index = 0
+        
+        ## Initiate L2TP tunnel based environment
+        for srv_ip in l2tp_srv_ips:
+            self._drivers.append(L2tpTUN(
+            index=index,
+            vpn_tnl_id=srv_ip)
+            index = index + 1
+
+        ## Initiate OpenVPN tunnel based environment
         for port_number in range(first_openvpn_port,
                                  first_openvpn_port + max_win_nics):
             self._drivers.append(OpenVPNTCP(
                 index=index,
-                openvpn_port=port_number,
+                vpn_tnl_id=port_number,
                 first_port=port_number + max_win_nics + 1))
             self._drivers.append(OpenVPNUDP(
                 index=index,
-                openvpn_port=port_number,
+                vpn_tnl_id=port_number,
                 first_port=port_number + max_win_nics + 1))
             index = index + 1
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout

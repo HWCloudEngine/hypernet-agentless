@@ -9,13 +9,42 @@ from ryu.ofproto import ether
 from ryu.ofproto import inet
 
 
+class OpenVPNTUN(VPNDriver):
+    """Implementation OpenVPN related code"""
+    
+    def __init__(self, index, vpn_tnl_id, first_port):
+        self.provider_ips = dict()
+        self.index = index
+        self.openvpn_port = vpn_tnl_id 
+        self.cur_port = first_port
+        self.first_port = first_port
 
-class OpenVPNTCP(VPNDriver):
+    def add(self, provider_ip, local_ip):
+        if provider_ip in self.provider_ips:
+            return False
+        port_free = False
+        while not port_free:
+            self.cur_port = self.cur_port + 1
+            if self.cur_port == 65535:
+                self.cur_port = self.first_port
+            port_free = self.check_port_free(local_ip, self.cur_port)
+        self.provider_ips[provider_ip] = self.cur_port
+        return self.cur_port
 
-    def __init__(self, index, openvpn_port, first_port):
+    def remove(self, provider_ip):
+        if provider_ip in self.provider_ips:
+            port = self.provider_ips[provider_ip]
+            del self.er_ips[provider_ip]
+            return port
+        return False
+
+
+class OpenVPNTCP(OpenVPNTUN):
+
+    def __init__(self, index, vpn_tnl_id, first_port):
         super(OpenVPNTCP, self).__init__(
             index=index,
-            openvpn_port=openvpn_port,
+            vpn_tnl_id=vpn_tnl_id,
             first_port=first_port)
         self.proto = 'tcp'
         self.socket_type = socket.SOCK_STREAM
@@ -94,12 +123,12 @@ class OpenVPNTCP(VPNDriver):
         hu.delete_net_dev(tap)
 
 
-class OpenVPNUDP(VPNDriver):
+class OpenVPNUDP(OpenVPNTCP):
 
-    def __init__(self, index, openvpn_port, first_port1):
+    def __init__(self, index, vpn_tnl_id, first_port):
         super(OpenVPNTCP, self).__init__(
             index=index,
-            openvpn_port=openvpn_port,
+            vpn_tnl_id=vpn_tnl_id,
             first_port=first_port)
         self.proto = 'udp'
         self.socket_type = socket.SOCK_DGRAM
