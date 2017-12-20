@@ -192,7 +192,7 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         self._vif_driver = kwargs['vif_hypervm_driver']
         self._drivers = list()
         index = 0
-        
+
         ## Initiate L2TP tunnel based environment
         for srv_ip in l2tp_srv_ips:
             self._drivers.append(L2tpTUN(

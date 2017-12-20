@@ -11,11 +11,11 @@ from ryu.ofproto import inet
 
 class OpenVPNTUN(VPNDriver):
     """Implementation OpenVPN related code"""
-    
+
     def __init__(self, index, vpn_tnl_id, first_port):
         self.provider_ips = dict()
         self.index = index
-        self.openvpn_port = vpn_tnl_id 
+        self.openvpn_port = vpn_tnl_id
         self.cur_port = first_port
         self.first_port = first_port
 

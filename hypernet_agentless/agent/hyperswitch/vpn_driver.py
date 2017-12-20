@@ -12,7 +12,7 @@ class VPNDriver(object):
     @abc.abstractmethod
     def add(self, provider_ip, local_ip):
         pass
-    
+
     @abc.abstractmethod
     def remove(self, provider_ip):
         pass
