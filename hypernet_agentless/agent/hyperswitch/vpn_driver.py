@@ -34,7 +34,7 @@ class VPNDriver(object):
         pass
 
     @abc.abstractmethod
-    def start_vpn(self, tap, br, vpn_nic_ip, mac):
+    def start_vpn(self, tap, br, vpn_nic_ip, br_nic):
         pass
 
     @abc.abstractmethod

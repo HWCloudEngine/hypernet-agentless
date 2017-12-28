@@ -2,6 +2,7 @@ import datetime
 import shlex
 import time
 import os
+import shutil
 
 from hypernet_agentless._i18n import _
 
@@ -25,6 +26,22 @@ CONF = cfg.CONF
 def _get_root_helper():
     return 'sudo hyperswitch-rootwrap %s' % CONF.rootwrap_config
 
+## Directory/FS related
+## TODO: add SEH
+
+def dir_exist(path):
+    pass
+
+def dir_create(path):
+    os.mkdir(path)
+
+def dir_delete(path):
+    ##os.rmdir(path)
+    shutil.rmtree(path)
+
+
+
+## Process related
 
 def execute(*cmd, **kwargs):
     """Convenience wrapper around oslo's execute() method."""
@@ -79,6 +96,7 @@ def device_exists(device):
     """Check if ethernet device exists."""
     return os.path.exists('/sys/class/net/%s' % device)
 
+## Network Namespace related
 
 def netns_exists(name):
     output = execute('ip', 'netns', 'list',
@@ -88,6 +106,50 @@ def netns_exists(name):
             return True
     return False
 
+def netns_add(name):
+    if netns_exists(name):
+        LOG.debug("Network namespace '%s' is already exist", name)
+        return False
+    execute('ip', 'netns', 'add', name,
+        run_as_root=True, check_exit_code=False)
+    LOG.debug("Network namespace '%s' successfull created", name)
+    return True
+
+def netns_del(name):
+    if not netns_exists(name):
+        LOG.debug("Network namespace '%s' does not exist", name)
+        return False
+    execute('ip', 'netns', 'delete', name,
+        run_as_root=True, check_exit_code=False)
+    LOG.debug("Network namespace '%s' successfull removed", name)
+    return True
+
+def netns_move_to(ns_name, dev_name):
+    if not netns_exists(ns_name):
+        LOG.debug("Network namespace '%s' does not exist", ns_name)
+        return False
+    if not device_exists(dev_name):
+        LOG.debug("Network device '%s' does not exist", dev_name)
+        return False
+
+    execute('ip', 'link', 'set', dev_name, 'netns', ns_name,
+        run_as_root=True, check_exit_code=False)
+    execute('ip', 'netns', 'exec', ns_name,
+            'ip', 'link', 'set', dev_name, 'up',
+            run_as_root=True, check_exit_code=False)
+    LOG.debug("Network device '%s' is successfull moved to '%s'", dev_name, ns_name)
+    return True
+
+def netns_exec(ns_name, *cmd):
+    if not netns_exists(ns_name):
+        LOG.debug("Network namespace '%s' does not exist", ns_name)
+        return False
+
+    LOG.debug("Launch in network namespace %s cmd: %s", ns_name, cmd)
+    execute('ip', 'netns', 'exec', ns_name,
+            *cmd,
+            run_as_root=True, check_exit_code=False)
+    return True
 
 def ovs_vsctl(args):
     full_args = ['ovs-vsctl', '--timeout=%s' % CONF.ovs_vsctl_timeout] + args
