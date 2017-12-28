@@ -13,6 +13,7 @@ from hypernet_agentless.agent.hyperswitch import vif_driver
 from hypernet_agentless.agent.hyperswitch.vpn_driver import VPNDriver
 from hypernet_agentless.agent.hyperswitch.ovpn_tun import OpenVPNTCP
 from hypernet_agentless.agent.hyperswitch.ovpn_tun import OpenVPNUDP
+from hypernet_agentless.agent.hyperswitch.l2tp_tun import L2tpTUN
 
 
 
@@ -49,6 +50,9 @@ hyper_swith_agent_opts = [
     cfg.IntOpt('max_win_nics',
                default=20,
                help='The max number of supported NICs in windows.'),
+    cfg.StrOpt('l2tp_srv_ips',
+               default='172.31.230.191',
+               help='Pool of provider IPs for L2TP tunnels'),
 ]
 
 
@@ -57,6 +61,7 @@ cfg.CONF.register_opts(hyper_swith_agent_opts, hs_constants.HYPERSWITCH)
 
 first_openvpn_port = cfg.CONF.hyperswitch.first_openvpn_port
 max_win_nics = cfg.CONF.hyperswitch.max_win_nics
+l2tp_srv_ips = cfg.CONF.hyperswitch.l2tp_srv_ips.split(' ')
 
 LOG = logging.getLogger(__name__)
 NIC_NAME_LEN = 14
@@ -83,6 +88,9 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
         self.idle_timeout = cfg.CONF.hyperswitch.idle_timeout
 
         _, self.routers, _ = self._get_cidr_router(self.mgnt_nic)
+
+    def get_br_nic_name(self, iface_name):
+        return ("br-" + iface_name)[:NIC_NAME_LEN]
 
     def get_br_name(self, iface_id):
         return ("qbr" + iface_id)[:NIC_NAME_LEN]
@@ -143,7 +151,8 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
 
         # prepare all the nic bridges
         for nic in self.vms_nics:
-            br_nic = 'br-%s' % nic
+            #br_nic = 'br-%s' % nic
+            br_nic = self.get_br_nic_name(nic)
             vm_nic_mac = hu.get_mac(nic)
             hu.del_ovs_bridge(br_nic)
             hu.add_ovs_bridge(br_nic, vm_nic_mac)
@@ -165,7 +174,7 @@ class HyperSwitchVIFDriver(vif_driver.HyperVIFDriver):
 
             # add the vm interface to the bridge
             hu.add_ovs_port(br_nic, nic)
-
+            LOG.debug('TUN: debug br-eth configuration for nic %s', nic)
             hu.execute('ovs-vsctl',
                        'set-controller',
                        br_nic,
@@ -197,7 +206,7 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
         for srv_ip in l2tp_srv_ips:
             self._drivers.append(L2tpTUN(
             index=index,
-            vpn_tnl_id=srv_ip)
+            vpn_tnl_id=srv_ip))
             index = index + 1
 
         ## Initiate OpenVPN tunnel based environment
@@ -250,6 +259,8 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
             match = driver.to_controller_match(parser)
             actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                               ofproto.OFPCML_NO_BUFFER)]
+            LOG.debug('TUN: configure flow for driver %d: match = %s , action = %s',
+            driver.index, match, actions)
             self.mod_flow(datapath=datapath,
                           cookie=n,
                           match=match,
@@ -303,12 +314,16 @@ class VPNBridgeHandler(ofp_handler.OFPHandler):
                 # - call plug: create the tap/bridge/...
                 # - create the bridge/br-int entry....
                 tap, br = self._vif_driver.create_br_vnic(
+
                     device_id,
                     vif_id,
                     mac)
 
+                # - get name of  br_nic
+                m_br_nic = self._vif_driver.get_br_nic_name('eth2') ## TEMPORARY!
+
                 # - start openvpn process for the VM
-                vpn_driver.start_vpn(tap, br, pkt_ipv4.dst, mac)
+                vpn_driver.start_vpn(tap, br, pkt_ipv4.dst, m_br_nic)
 
                 # - add the flow for the vpn packet match/action
                 match, actions = vpn_driver.intercept_vpn_packets(

@@ -2,11 +2,15 @@ import abc
 import six
 import socket
 
+from oslo_log import log as logging
+
 from hypernet_agentless.agent.hyperswitch.vpn_driver import VPNDriver
 from hypernet_agentless.agent.hyperswitch import hyperswitch_utils as hu
 
 from ryu.ofproto import ether
 from ryu.ofproto import inet
+
+LOG = logging.getLogger(__name__)
 
 
 class OpenVPNTUN(VPNDriver):
@@ -48,6 +52,7 @@ class OpenVPNTCP(OpenVPNTUN):
             first_port=first_port)
         self.proto = 'tcp'
         self.socket_type = socket.SOCK_STREAM
+        LOG.debug('OvpnTUN: init driver(%d)', self.index)
 
     def check_port_free(self, local_ip, port):
         try:
@@ -60,11 +65,13 @@ class OpenVPNTCP(OpenVPNTUN):
             sock.close()
 
     def to_controller_match(self, parser):
+        LOG.debug('OvpnTUN: match for driver(%d)', self.index)
         return parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
                                ip_proto=inet.IPPROTO_TCP,
                                tcp_dst=self.openvpn_port)
 
     def intercept_vpn_packets(self, parser, ofproto, provider_ip):
+        LOG.debug('OvpnTUN: intercept for driver(%d)', self.index)
         return (parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
                                 ip_proto=inet.IPPROTO_TCP,
                                 tcp_dst=self.openvpn_port,
@@ -73,6 +80,7 @@ class OpenVPNTCP(OpenVPNTUN):
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
     def return_vpn_packets(self, parser, ofproto, provider_ip):
+        LOG.debug('OvpnTUN: return vpn for driver(%d)', self.index)
         return (parser.OFPMatch(eth_type=ether.ETH_TYPE_IP,
                                 ip_proto=inet.IPPROTO_TCP,
                                 ipv4_dst=provider_ip,
@@ -80,7 +88,8 @@ class OpenVPNTCP(OpenVPNTUN):
                 [parser.OFPActionSetField(tcp_src=self.openvpn_port),
                  parser.OFPActionOutput(ofproto.OFPP_NORMAL)])
 
-    def start_vpn(self, tap, br, vpn_nic_ip, mac):
+    def start_vpn(self, tap, br, vpn_nic_ip, br_nic):
+        LOG.debug('OvpnTUN: start vpn for driver(%d)', self.index)
         if hu.device_exists(tap):
             hu.delete_net_dev(tap)
 
@@ -117,6 +126,7 @@ class OpenVPNTCP(OpenVPNTUN):
                   run_as_root=True)
 
     def stop_vpn(self, tap):
+        LOG.debug('OvpnTUN: stop vpn for driver(%d)', self.index)
         pid = hu.process_exist(['openvpn', tap])
         if pid:
             hu.execute('kill', str(pid), run_as_root=True)
